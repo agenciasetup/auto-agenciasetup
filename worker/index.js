@@ -36,6 +36,36 @@ function registrar(env, ctx, anuncios) {
   if (ids.length) ctx.waitUntil(contarAnuncio(env, ids, 'impressao'));
 }
 
+// Filtros da lista de recursos, lidos do endereço (tudo vira link: dá para compartilhar e voltar).
+function filtrosDe(url, cats) {
+  const s = url.searchParams;
+  const tipo = P.TIPOS[s.get('tipo')] ? s.get('tipo') : null;
+  const c = cats.some((x) => x.slug === s.get('c')) ? s.get('c') : null;
+  const f = /^[a-z0-9-]{2,30}$/.test(s.get('f') || '') ? s.get('f') : null;
+  const ordem = s.get('ordem') === 'novos' ? 'novos' : null;
+  const q = (s.get('q') || '').trim().slice(0, 80) || null;
+  return { tipo, c, f, ordem, q };
+}
+
+async function lista(env, ctx, base, url, cats, n, fixoTipo) {
+  const f = filtrosDe(url, cats);
+  if (fixoTipo) f.tipo = fixoTipo;
+  const atual = f.c ? cats.find((x) => x.slug === f.c) : null;
+  const [r, cont, anuncios] = await Promise.all([
+    C.recursos(env, { tipo: f.tipo, categoria: atual && atual.id, ferramenta: f.f, busca: f.q, ordem: f.ordem || 'populares', limite: POR_PAGINA, offset: (n - 1) * POR_PAGINA }),
+    C.contagens(env),
+    escolher(env, ['fim'], { categoria_id: atual && atual.id, tags: f.tipo ? [f.tipo] : [] }),
+  ]);
+  registrar(env, ctx, anuncios);
+  const rota = fixoTipo ? '/agentes' : '/recursos';
+  const titulo = fixoTipo ? 'Agentes de IA prontos para usar' : atual ? `Recursos de ${atual.nome}` : f.tipo ? `${P.TIPOS[f.tipo].p} grátis` : 'Recursos grátis';
+  return html(casca({
+    ...base, titulo, caminho: `${rota}${url.search}`, noindex: !!(f.q || n > 1 || f.f || f.ordem),
+    descricao: fixoTipo ? 'Assistentes de IA já configurados para Social Media e Design. Abra no ChatGPT ou no Claude e use na hora.' : atual?.descricao,
+    corpo: P.listaRecursos({ base: rota, titulo, intro: fixoTipo ? P.introAgentes() : P.introRecursos(atual), itens: r.linhas, total: r.total, cats, cont, f: { ...f, tipo: fixoTipo ? null : f.tipo }, pagina: n, porPagina: POR_PAGINA, anuncios, cfg: base.cfg, fixoTipo }),
+  }));
+}
+
 async function pagina(request, env, ctx, url) {
   const caminho = url.pathname.replace(/\/+$/, '') || '/';
   const [cfg, cats] = await Promise.all([C.config(env), C.categorias(env)]);
@@ -43,49 +73,66 @@ async function pagina(request, env, ctx, url) {
   const n = Math.max(1, parseInt(url.searchParams.get('p') || '1', 10) || 1);
 
   if (caminho === '/') {
-    const [r, a, anuncios] = await Promise.all([C.recursos(env, { limite: 6 }), C.artigos(env, { limite: 3 }), escolher(env, ['meio'])]);
+    const [destaques, agentes, novidades, cont, anuncios] = await Promise.all([
+      C.recursos(env, { semTipo: 'agente', limite: 8 }), C.recursos(env, { tipo: 'agente', limite: 6 }), C.artigos(env, { limite: 3 }), C.contagens(env), escolher(env, ['meio']),
+    ]);
     registrar(env, ctx, anuncios);
-    return html(casca({ ...base, corpo: P.home({ recursos: r.linhas, artigos: a.linhas, cats, anuncios, cfg }), classe: 'pagina-home', ldjson: { '@context': 'https://schema.org', '@type': 'WebSite', name: 'Agência Setup', url: env.SITE_URL } }));
+    return html(casca({
+      ...base, classe: 'pagina-home',
+      corpo: P.home({ destaques: destaques.linhas, agentes: agentes.linhas, novidades: novidades.linhas, cats, cont, anuncios, cfg }),
+      ldjson: { '@context': 'https://schema.org', '@type': 'WebSite', name: 'Agência Setup', url: env.SITE_URL, potentialAction: { '@type': 'SearchAction', target: `${env.SITE_URL}/busca?q={q}`, 'query-input': 'required name=q' } },
+    }));
   }
 
-  if (caminho === '/recursos') {
-    const atual = cats.find((c) => c.slug === url.searchParams.get('c')) || null;
-    const [r, anuncios] = await Promise.all([C.recursos(env, { categoria: atual && atual.id, limite: POR_PAGINA, offset: (n - 1) * POR_PAGINA }), escolher(env, ['fim'], { categoria_id: atual && atual.id })]);
-    registrar(env, ctx, anuncios);
-    return html(casca({ ...base, titulo: atual ? `Recursos de ${atual.nome}` : 'Recursos grátis', descricao: atual?.descricao, caminho: atual ? `/recursos?c=${atual.slug}` : '/recursos', corpo: P.listaRecursos({ recursos: r.linhas, total: r.total, cats, atual, pagina: n, porPagina: POR_PAGINA, anuncios, cfg }) }));
-  }
+  if (caminho === '/recursos') return lista(env, ctx, base, url, cats, n, null);
+  if (caminho === '/agentes') return lista(env, ctx, base, url, cats, n, 'agente');
 
   let m = caminho.match(/^\/recursos\/([a-z0-9-]+)$/);
   if (m) {
     const r = await C.recurso(env, m[1]);
     if (!r) return naoEncontrada(base);
-    const anuncios = await escolher(env, ['lateral', 'fim'], { tags: r.tags, categoria_id: r.categoria_id });
+    const [relacionados, anuncios] = await Promise.all([C.relacionados(env, r, 3), escolher(env, ['lateral', 'fim'], { tags: [...(r.tags || []), r.tipo], categoria_id: r.categoria_id })]);
     registrar(env, ctx, anuncios);
-    return html(casca({ ...base, titulo: r.titulo, descricao: r.resumo, imagem: r.capa_url, corpo: P.paginaRecurso({ r, cats, anuncios, cfg }), ldjson: { '@context': 'https://schema.org', '@type': 'CreativeWork', name: r.titulo, description: r.resumo, isAccessibleForFree: true, datePublished: r.publicado_em, publisher: { '@type': 'Organization', name: 'Agência Setup' } } }));
+    const capa = r.capa_url || (Array.isArray(r.galeria) && r.galeria[0] && r.galeria[0].url) || undefined;
+    return html(casca({
+      ...base, titulo: r.titulo, descricao: r.resumo, imagem: capa, classe: 'pagina-recurso', aba: r.tipo === 'agente' ? '/agentes' : '/recursos',
+      corpo: P.paginaRecurso({ r, cats, relacionados, anuncios, cfg }),
+      ldjson: { '@context': 'https://schema.org', '@type': r.tipo === 'agente' ? 'SoftwareApplication' : 'CreativeWork', name: r.titulo, description: r.resumo, isAccessibleForFree: true, image: capa, datePublished: r.publicado_em, dateModified: r.atualizado_em, offers: { '@type': 'Offer', price: 0, priceCurrency: 'BRL' }, publisher: { '@type': 'Organization', name: 'Agência Setup' } },
+    }));
   }
 
-  m = caminho.match(/^\/baixar\/([a-z0-9-]+)$/);
+  // Baixar o arquivo ou abrir o agente: conta e redireciona.
+  m = caminho.match(/^\/(baixar|usar)\/([a-z0-9-]+)$/);
   if (m) {
-    const r = await C.recurso(env, m[1]);
-    const destino = r && (r.arquivo_url || r.link_externo);
+    const r = await C.recurso(env, m[2]);
+    const destino = r && (m[1] === 'usar' ? r.link_uso : r.arquivo_url || r.link_externo);
     if (!destino) return naoEncontrada(base);
     const origem = (request.headers.get('referer') || '').slice(0, 200) || null;
     ctx.waitUntil(db.rpc(env, 'contar_download', { p_recurso: r.id, p_origem: origem, p_pais: request.cf?.country || null }).catch(() => {}));
     return Response.redirect(urlSegura(destino), 302);
   }
 
+  if (caminho === '/busca') {
+    const q = (url.searchParams.get('q') || '').trim().slice(0, 80);
+    const res = q ? await C.buscar(env, q, 40) : { recursos: [], artigos: [] };
+    return html(casca({ ...base, titulo: q ? `Busca: ${q}` : 'Buscar', caminho: '/busca', noindex: true, corpo: P.paginaBusca({ q, res }) }), 200, 'no-store');
+  }
+
   if (caminho === '/novidades') {
     const a = await C.artigos(env, { limite: POR_PAGINA, offset: (n - 1) * POR_PAGINA });
-    return html(casca({ ...base, titulo: 'Novidades', descricao: 'O que mudou nas ferramentas de IA e o que isso muda no seu trabalho.', corpo: P.listaArtigos({ artigos: a.linhas, total: a.total, cats, pagina: n, porPagina: POR_PAGINA, cfg }) }));
+    return html(casca({ ...base, titulo: 'Novidades da IA', descricao: 'O que mudou nas ferramentas de IA e o que isso muda no seu trabalho.', corpo: P.listaNovidades({ itens: a.linhas, total: a.total, pagina: n, porPagina: POR_PAGINA, cfg }) }));
   }
 
   m = caminho.match(/^\/novidades\/([a-z0-9-]+)$/);
   if (m) {
     const a = await C.artigo(env, m[1]);
     if (!a) return naoEncontrada(base);
-    const anuncios = await escolher(env, ['meio', 'lateral'], { tags: a.tags, categoria_id: a.categoria_id });
+    const [anuncios, recurso] = await Promise.all([
+      escolher(env, ['meio'], { tags: a.tags, categoria_id: a.categoria_id }),
+      a.recurso_id ? db.um(env, 'recursos', { id: `eq.${a.recurso_id}`, status: 'eq.publicado' }).catch(() => null) : null,
+    ]);
     registrar(env, ctx, anuncios);
-    return html(casca({ ...base, titulo: a.titulo, descricao: a.resumo, imagem: a.capa_url, corpo: P.paginaArtigo({ a, cats, anuncios, cfg }), ldjson: { '@context': 'https://schema.org', '@type': 'Article', headline: a.titulo, description: a.resumo, datePublished: a.publicado_em, dateModified: a.atualizado_em, image: a.capa_url || undefined, publisher: { '@type': 'Organization', name: 'Agência Setup' } } }));
+    return html(casca({ ...base, titulo: a.titulo, descricao: a.resumo, imagem: a.capa_url, corpo: P.paginaNovidade({ a, recurso, anuncios, cfg }), ldjson: { '@context': 'https://schema.org', '@type': 'Article', headline: a.titulo, description: a.resumo, datePublished: a.publicado_em, dateModified: a.atualizado_em, image: a.capa_url || undefined, publisher: { '@type': 'Organization', name: 'Agência Setup' } } }));
   }
 
   if (caminho === '/cursos') {
@@ -106,13 +153,36 @@ async function pagina(request, env, ctx, url) {
   return naoEncontrada(base);
 }
 
+// Busca instantânea (a caixa do site): JSON curto, com o que a lista precisa para desenhar.
+async function apiBusca(env, url) {
+  const q = (url.searchParams.get('q') || '').trim();
+  const r = await C.buscar(env, q, 8);
+  return json({
+    q,
+    recursos: (r.recursos || []).slice(0, 8).map((x) => ({ titulo: x.titulo, url: `/recursos/${x.slug}`, tipo: (P.TIPOS[x.tipo] || {}).t || 'Recurso', icone: x.tipo, resumo: x.resumo })),
+    artigos: (r.artigos || []).slice(0, 4).map((x) => ({ titulo: x.titulo, url: `/novidades/${x.slug}`, resumo: x.resumo })),
+  }, 200, { 'cache-control': 'public, max-age=60' });
+}
+
+// "Receber novidades": guarda o e-mail. Sem JavaScript, o formulário volta para a página com ?inscrito=1.
+async function apiLead(request, env) {
+  const tipo = request.headers.get('content-type') || '';
+  const d = tipo.includes('application/json') ? await request.json().catch(() => ({})) : Object.fromEntries(await request.formData().catch(() => new FormData()));
+  const email = String(d.email || '').trim().toLowerCase();
+  const voltar = (ok) => (tipo.includes('application/json') ? json({ ok }, ok ? 200 : 400) : Response.redirect(new URL(`/?inscrito=${ok ? 1 : 0}#receber`, request.url).toString(), 303));
+  if (d.site) return voltar(true); // armadilha para robô: finge que deu certo
+  if (!/^[^@\s]{1,64}@[^@\s]{1,190}\.[a-z]{2,24}$/i.test(email)) return voltar(false);
+  await db.rpc(env, 'guardar_lead', { p_email: email, p_origem: String(d.origem || 'site').slice(0, 60), p_recurso: null });
+  return voltar(true);
+}
+
 function naoEncontrada(base) {
   return html(casca({ ...base, titulo: 'Página não encontrada', corpo: P.naoEncontrada(), noindex: true }), 404, 'no-store');
 }
 
 async function sitemap(env) {
   const site = env.SITE_URL;
-  const fixos = ['/', '/recursos', '/novidades', '/cursos'].map((loc) => ({ loc }));
+  const fixos = ['/', '/recursos', '/agentes', '/novidades', '/cursos'].map((loc) => ({ loc }));
   const todos = [...fixos, ...(await C.enderecos(env))];
   const corpo = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${todos.map((u) => `<url><loc>${esc(site + u.loc)}</loc>${u.lastmod ? `<lastmod>${u.lastmod.slice(0, 10)}</lastmod>` : ''}</url>`).join('\n')}\n</urlset>`;
   return new Response(corpo, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=600' } });
@@ -127,6 +197,8 @@ export default {
       if (url.pathname === '/mcp') return await servidorMcp(request, env, ctx);
       if (ehRotaOauth(url.pathname)) return await rotasOauth(request, env, url);
       if (url.pathname.startsWith('/api/admin/')) return await apiPainel(request, env, ctx, url);
+      if (url.pathname === '/api/busca') return await apiBusca(env, url);
+      if (url.pathname === '/api/lead' && request.method === 'POST') return await apiLead(request, env);
       const volta = url.pathname.match(/^\/api\/redes\/([a-z]+)\/retorno$/);
       if (volta) return await retornoConexao(request, env, url, volta[1]);
       if (url.pathname === '/admin') return Response.redirect(`${url.origin}/admin/`, 301);
@@ -136,7 +208,7 @@ export default {
         try { await db.select(env, 'config', { select: 'chave', limite: 1 }); } catch { banco = 'fora'; }
         return json({ site: 'ok', banco, quando: new Date().toISOString() });
       }
-      if (url.pathname === '/robots.txt') return new Response(`User-agent: *\nAllow: /\nDisallow: /baixar/\nDisallow: /ir/\nDisallow: /mcp\nDisallow: /admin/\nDisallow: /api/\nDisallow: /oauth/\nSitemap: ${env.SITE_URL}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain; charset=utf-8' } });
+      if (url.pathname === '/robots.txt') return new Response(`User-agent: *\nAllow: /\nDisallow: /baixar/\nDisallow: /usar/\nDisallow: /busca\nDisallow: /ir/\nDisallow: /mcp\nDisallow: /admin/\nDisallow: /api/\nDisallow: /oauth/\nSitemap: ${env.SITE_URL}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain; charset=utf-8' } });
       if (url.pathname === '/sitemap.xml') return await sitemap(env);
       if (url.pathname === '/ads.txt') {
         const cfg = await C.config(env);

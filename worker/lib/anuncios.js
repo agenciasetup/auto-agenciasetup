@@ -45,7 +45,7 @@ export function htmlAnuncio(a, pos) {
   <span class="anuncio-selo">Da Agência Setup</span>
   ${a.imagem_url ? `<img src="${esc(urlSegura(a.imagem_url))}" alt="" loading="lazy">` : ''}
   <div class="anuncio-texto"><strong>${esc(a.titulo)}</strong>${a.texto ? `<p>${esc(a.texto)}</p>` : ''}</div>
-  <a class="botao" href="/ir/${esc(a.id)}" rel="sponsored">${esc(a.cta)}</a>
+  <a class="bt bt-marca" href="/ir/${esc(a.id)}" rel="sponsored">${esc(a.cta)}</a>
 </aside>`;
 }
 

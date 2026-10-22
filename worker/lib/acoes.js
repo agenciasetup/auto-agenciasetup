@@ -11,7 +11,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Campos que cada tabela aceita de fora.
 const CAMPOS = {
-  recursos: ['slug', 'titulo', 'resumo', 'corpo_md', 'tipo', 'categoria_id', 'capa_url', 'arquivo_url', 'arquivo_nome', 'arquivo_bytes', 'link_externo', 'tags', 'destaque', 'seo'],
+  recursos: ['slug', 'titulo', 'resumo', 'corpo_md', 'tipo', 'categoria_id', 'capa_url', 'arquivo_url', 'arquivo_nome', 'arquivo_bytes', 'link_externo', 'tags', 'destaque', 'seo',
+    'ferramentas', 'galeria', 'video_url', 'link_uso', 'itens', 'formato', 'nivel'],
   artigos: ['slug', 'titulo', 'resumo', 'corpo_md', 'categoria_id', 'capa_url', 'tags', 'fontes', 'recurso_id', 'destaque', 'seo'],
   landing_pages: ['slug', 'titulo', 'produto_id', 'blocos', 'seo'],
   produtos: ['slug', 'nome', 'chamada', 'descricao', 'preco_centavos', 'preco_de_centavos', 'link_checkout', 'imagem_url', 'tags', 'ativo'],

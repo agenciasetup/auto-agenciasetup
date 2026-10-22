@@ -25,6 +25,15 @@
 - **Publicar nas redes é "perigosa"** no conector (o app do Claude pede o sim); publicar no site é "escrita" (dá para arquivar depois).
 - **Teste local sem senha:** membro "Teste local (só no computador)", desativado, usado só com `DEV_USUARIO` + `AMBIENTE=local` + cabeçalho de teste.
 
+## Tomadas em 22/10/2026 (site novo)
+
+- **Referências estudadas:** Designi (frase do que é + busca grande + atalhos com contagem + calendário do marketing), Magnific (palavra que troca, abas de produto), Hubla (preto, seções que aparecem na rolagem). Mais as telas de painel e bento que o dono mandou.
+- **Só tema escuro**, como a marca e as referências. Um tema só = consistência e menos coisa para conferir.
+- **Inter + Instrument Serif itálico** (uma palavra por título), no lugar da Anton condensada: mais limpo, jeito iOS, e ainda conversa com a serifa dos carrosséis de 2026.
+- **Agente de IA vira tipo de recurso**, com "abrir no ChatGPT/Claude" (`link_uso`, contado em `/usar/<slug>`). Recursos ganham ferramentas, galeria, vídeo, "o que vem", formato e nível.
+- **Sem conta para quem visita.** Baixar e abrir é direto. O contato fica no "Receber novidades" (e-mail opcional, tabela `leads`).
+- **Busca de verdade** no banco (sem acento, em título, resumo, tags e ferramentas) e instantânea no site.
+
 ## Em aberto
 
 - **SPF não inclui o Google.** O registro atual é `v=spf1 a mx include:websitewelcome.com ~all`, mas o e-mail chega pelo Google Workspace. Se os e-mails enviados pelo Gmail caem no spam, falta `include:_spf.google.com` (e talvez o DKIM do Google). Não mexi: e-mail ficou como estava.

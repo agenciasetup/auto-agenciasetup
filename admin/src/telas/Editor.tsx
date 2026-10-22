@@ -4,10 +4,13 @@ import { Archive, ExternalLink, FileUp, ImagePlus, Plus, Save, Send, Trash2 } fr
 import { enviarArquivo, get, patch, post } from '../nucleo/api';
 import { guardarSaida, useRota } from '../nucleo/roteador';
 import { AreaTexto, Campo, Carregando, ErroCarga, Escolha, Faixa, Grupo, Marcar, Titulo, useAcao, useCarregar, useSessao } from '../nucleo/ui';
-import { TIPOS_RECURSO, dataHora, listaDeTexto, tamanho, textoDeLista } from '../nucleo/util';
+import { FERRAMENTAS_SUGERIDAS, NIVEIS, TIPOS_RECURSO, dataHora, listaDeTexto, tamanho, textoDeLista } from '../nucleo/util';
 import { EtiquetaConteudo } from './comum';
 
-const VAZIO_RECURSO = { titulo: '', slug: '', resumo: '', corpo_md: '', tipo: 'guia', categoria_id: '', capa_url: '', arquivo_url: '', arquivo_nome: '', arquivo_bytes: null, link_externo: '', tags: '', destaque: false };
+const VAZIO_RECURSO = {
+  titulo: '', slug: '', resumo: '', corpo_md: '', tipo: 'guia', categoria_id: '', capa_url: '', arquivo_url: '', arquivo_nome: '', arquivo_bytes: null, link_externo: '', tags: '', destaque: false,
+  ferramentas: '', link_uso: '', itens: '', formato: '', nivel: '', video_url: '', galeria: [] as { url: string; alt: string }[],
+};
 const VAZIO_ARTIGO = { titulo: '', slug: '', resumo: '', corpo_md: '', categoria_id: '', capa_url: '', tags: '', fontes: [], recurso_id: '', destaque: false };
 
 function paraForm(tipo: string, d: any) {
@@ -17,6 +20,11 @@ function paraForm(tipo: string, d: any) {
   base.tags = textoDeLista(d.tags);
   base.categoria_id = d.categoria_id ? String(d.categoria_id) : '';
   if (tipo === 'artigos') base.fontes = Array.isArray(d.fontes) ? d.fontes.map((f: any) => (typeof f === 'string' ? { nome: '', url: f } : { nome: f.nome || '', url: f.url || '' })) : [];
+  if (tipo === 'recursos') {
+    base.ferramentas = textoDeLista(d.ferramentas);
+    base.itens = Array.isArray(d.itens) ? d.itens.join('\n') : '';
+    base.galeria = Array.isArray(d.galeria) ? d.galeria.map((g: any) => ({ url: g.url || '', alt: g.alt || '' })) : [];
+  }
   return base;
 }
 
@@ -28,6 +36,10 @@ function paraCorpo(tipo: string, f: any) {
     c.recurso_id = f.recurso_id || null;
   } else {
     c.arquivo_bytes = f.arquivo_bytes ? Number(f.arquivo_bytes) : null;
+    c.ferramentas = listaDeTexto(f.ferramentas).map((x: string) => x.toLowerCase());
+    c.itens = String(f.itens || '').split('\n').map((x) => x.trim()).filter(Boolean);
+    c.galeria = (f.galeria || []).filter((g: any) => g.url).map((g: any) => ({ url: g.url, alt: g.alt || '' }));
+    c.nivel = f.nivel || null;
   }
   return c;
 }
@@ -87,11 +99,12 @@ export default function Editor({ params }: { params: { tipo: string; id: string 
     setDados((d: any) => ({ ...d, ...r }));
   }, acao === 'publicar' ? 'Publicado no site.' : 'Tirado do ar.');
 
-  const subir = (arquivo: File, onde: 'arquivo' | 'capa') => rodar(onde, async () => {
+  const subir = (arquivo: File, onde: 'arquivo' | 'capa' | 'galeria') => rodar(onde, async () => {
     const r = await enviarArquivo(arquivo, onde === 'arquivo' ? 'recursos' : 'midia');
     if (onde === 'arquivo') setForm((f: any) => ({ ...f, arquivo_url: r.url, arquivo_nome: r.nome || arquivo.name, arquivo_bytes: r.bytes }));
+    else if (onde === 'galeria') setForm((f: any) => ({ ...f, galeria: [...(f.galeria || []), { url: r.url, alt: '' }] }));
     else mudar('capa_url', r.url);
-  }, onde === 'arquivo' ? 'Arquivo enviado. Salve para guardar.' : 'Capa enviada. Salve para guardar.');
+  }, onde === 'arquivo' ? 'Arquivo enviado. Salve para guardar.' : onde === 'galeria' ? 'Imagem adicionada. Salve para guardar.' : 'Capa enviada. Salve para guardar.');
 
   const endereco = dados?.endereco;
   return (
@@ -122,6 +135,40 @@ export default function Editor({ params }: { params: { tipo: string; id: string 
         <Campo rotulo="Tags" valor={form.tags} mudar={(v) => mudar('tags', v)} desativado={!podeEditar} dica="Separadas por vírgula. Ajudam a escolher o anúncio certo para a página." />
         <Marcar rotulo="Destaque" valor={form.destaque} mudar={(v) => mudar('destaque', v)} desativado={!podeEditar} dica={ehRecurso ? 'Aparece primeiro na lista de recursos.' : 'Aparece primeiro nas novidades.'} />
       </Grupo>
+
+      {ehRecurso && (
+        <Grupo titulo="Onde se usa" rodape={form.tipo === 'agente' ? 'Agente: o botão principal da página abre o link do agente (GPT, Projeto do Claude, Gem). O arquivo, se houver, vira um botão extra.' : 'Aparece na página do recurso e nos filtros do site.'}>
+          <Campo rotulo="Ferramentas" valor={form.ferramentas} mudar={(v) => mudar('ferramentas', v)} desativado={!podeEditar} dica={`Separadas por vírgula. Ex.: ${FERRAMENTAS_SUGERIDAS.slice(0, 6).join(', ')}.`} />
+          {form.tipo === 'agente' && <Campo rotulo="Link do agente" valor={form.link_uso} mudar={(v) => mudar('link_uso', v)} desativado={!podeEditar} placeholder="https://chatgpt.com/g/..." />}
+          <div className="linha-campos">
+            <Campo rotulo="Formato" valor={form.formato} mudar={(v) => mudar('formato', v)} desativado={!podeEditar} placeholder="PDF, Notion, Planilha Google…" />
+            <Escolha rotulo="Nível" valor={form.nivel} mudar={(v) => mudar('nivel', v)} desativado={!podeEditar} opcoes={Object.entries(NIVEIS).map(([v, t]) => ({ v, t }))} />
+          </div>
+          <AreaTexto rotulo="O que vem" valor={form.itens} mudar={(v) => mudar('itens', v)} linhas={4} desativado={!podeEditar} dica="Um item por linha. Ex.: 10 prompts prontos." />
+          <Campo rotulo="Vídeo de como usar (opcional)" valor={form.video_url} mudar={(v) => mudar('video_url', v)} desativado={!podeEditar} placeholder="https://youtube.com/..." />
+        </Grupo>
+      )}
+
+      {ehRecurso && (
+        <Grupo titulo="Galeria de prévia" rodape="Imagens que mostram o recurso por dentro. A primeira vira a capa quando não houver capa.">
+          {form.galeria.length ? (
+            <div className="galeria-editor">
+              {form.galeria.map((g: any, i: number) => (
+                <div key={i} className="galeria-item">
+                  <img src={g.url} alt={g.alt || ''} />
+                  <Campo rotulo="Descrição" valor={g.alt} mudar={(v) => mudar('galeria', form.galeria.map((x: any, j: number) => (j === i ? { ...x, alt: v } : x)))} desativado={!podeEditar} />
+                  {podeEditar && <button className="bt bt-texto bt-mini" onClick={() => mudar('galeria', form.galeria.filter((_: any, j: number) => j !== i))}><Trash2 />Tirar</button>}
+                </div>
+              ))}
+            </div>
+          ) : <p className="mudo" style={{ marginTop: 0 }}>Nenhuma imagem de prévia.</p>}
+          {podeEditar && pode('arquivos.enviar') && (
+            <label className="bt" style={{ marginBottom: 14 }}><ImagePlus />{ocupado === 'galeria' ? 'Enviando…' : 'Adicionar imagem'}
+              <input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) subir(f, 'galeria'); e.target.value = ''; }} />
+            </label>
+          )}
+        </Grupo>
+      )}
 
       {ehRecurso && (
         <Grupo titulo="Arquivo para baixar" rodape="O botão Baixar grátis leva ao arquivo; sem arquivo, leva ao link externo. Até 50 MB.">

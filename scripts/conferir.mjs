@@ -46,7 +46,13 @@ await pagina('/termos', 200);
 await pagina('/essa-pagina-nao-existe', 404);
 await pagina('/robots.txt', 200, 'Sitemap');
 await pagina('/sitemap.xml', 200, '<urlset');
-await pagina('/estatico/site.css', 200, '--laranja');
+await pagina('/estatico/site.css', 200, '--marca');
+await pagina('/agentes', 200, 'Agentes de IA');
+await pagina('/busca', 200, 'O que você quer fazer hoje?');
+await pagina('/busca?q=xyzsemresultado', 200, 'Nada para');
+await pagina('/recursos?tipo=prompt&ordem=novos', 200);
+const leadRuim = await fetch(`${base}/api/lead`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'nao-e-email' }) });
+ok(leadRuim.status === 400, 'cadastro de e-mail recusa endereço inválido');
 
 const semChave = await mcp('initialize', {}, null);
 ok(semChave.status === 401, 'conector recusa quem chega sem chave');
@@ -68,6 +74,13 @@ try {
   await pagina(`/recursos/${slug}`, 200, 'Recurso de teste');
   const b = await fetch(`${base}/baixar/${slug}`, { redirect: 'manual' });
   ok(b.status === 302, '/baixar redireciona para o arquivo');
+  const achou = await (await fetch(`${base}/api/busca?q=${encodeURIComponent('Recurso de teste')}`)).json();
+  ok((achou.recursos || []).some((x) => x.url === `/recursos/${slug}`), 'busca instantânea acha o recurso publicado');
+  // Vira agente: a página troca o "Baixar" por "Abrir no ChatGPT" e /usar leva ao link do agente.
+  await ferramenta('salvar_recurso', { id, tipo: 'agente', link_uso: 'https://chatgpt.com/g/teste', ferramentas: ['chatgpt'], itens: ['Agente pronto'] });
+  await pagina(`/recursos/${slug}`, 200, 'Abrir no ChatGPT');
+  const u = await fetch(`${base}/usar/${slug}`, { redirect: 'manual' });
+  ok(u.status === 302 && (u.headers.get('location') || '').startsWith('https://chatgpt.com/g/teste'), '/usar abre o agente');
   const pecas = await ferramenta('criar_pecas', { origem_tipo: 'recurso', origem_id: id, pecas: [{ rede: 'instagram', formato: 'carrossel', titulo: 'Teste', slides: [{ titulo: 'Capa' }] }, { rede: 'x', formato: 'thread', legenda: 'Teste' }] });
   ok(pecas.pecas.length === 2, 'fila das redes recebe as peças');
   await ferramenta('arquivar', { tipo: 'recursos', id });

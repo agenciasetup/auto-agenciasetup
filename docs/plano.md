@@ -34,10 +34,14 @@ Marque `[x]` quando ficar pronto e conferido. Pare onde está escrito **PARE**.
 
 ## Fase 1. Design system e templates de peça
 
+- [x] Sistema de design do site (`docs/design-system.md`): tokens, componentes, celular como app, busca instantânea, animações de rolagem, transição entre páginas, capas automáticas (22/10/2026).
+- [x] Site novo: início, recursos com filtros, agentes, página do recurso, busca, novidades, cursos, receber novidades. Publicado em 22/10/2026, com as conferências passando em produção.
+- [x] Modelo de dados: agentes, ferramentas, galeria, vídeo, "o que vem", formato, nível, busca e leads (migration 003).
+- [ ] Conteúdo inicial: os materiais que já foram iscas no Instagram (fontes, textura, Trello, Prompt Maker) e os primeiros agentes.
 - [ ] Templates de carrossel 4:5 em código (6 papéis: capa, "Calango,", desenvolvimento, chamada), no visual de 2026 com a fórmula de 2024.
 - [ ] Gerar PNG dos slides no Worker (Browser Rendering ou Satori) e guardar em `midia`.
 - [ ] Mascote calango 3D (Magnific) e banco de imagens da marca.
-- [ ] Site: refinar visual (camadas, profundidade, imagens), capas automáticas dos recursos.
+- [ ] Painel com os mesmos tokens do site.
 
 ## Fase 2. Meta (Instagram, Facebook, Threads)
 

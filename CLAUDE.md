@@ -8,6 +8,7 @@ Leia antes de qualquer comando:
 - `docs/plano.md`: em que fase estamos e o que vem agora.
 - `docs/decisoes.md`: o que já foi decidido e o que está em aberto.
 - `docs/estilo-instagram.md`: a voz e o visual da marca (lido dos carrosséis que mais engajaram).
+- `docs/design-system.md`: o sistema de design do site (princípios de UX, tokens, componentes). Tela nova segue ele.
 
 ## A grande ideia
 

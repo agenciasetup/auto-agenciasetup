@@ -134,8 +134,13 @@ export const FORMATOS: Record<string, string> = {
 };
 
 export const TIPOS_RECURSO: Record<string, string> = {
-  prompt: 'Prompt', template: 'Template', planilha: 'Planilha', automacao: 'Automação', guia: 'Guia', pack: 'Pack', ferramenta: 'Ferramenta', video: 'Vídeo',
+  agente: 'Agente de IA', prompt: 'Prompt', template: 'Template', planilha: 'Planilha', automacao: 'Automação', guia: 'Guia', pack: 'Pack', ferramenta: 'Ferramenta', video: 'Vídeo',
 };
+
+export const NIVEIS: Record<string, string> = { '': 'Sem nível', iniciante: 'Iniciante', intermediario: 'Intermediário', avancado: 'Avançado' };
+
+// Ferramentas mais usadas (o campo aceita outras, separadas por vírgula).
+export const FERRAMENTAS_SUGERIDAS = ['chatgpt', 'claude', 'gemini', 'midjourney', 'magnific', 'n8n', 'make', 'notion', 'figma', 'capcut', 'sheets'];
 
 export const ACOES_HISTORICO: Record<string, string> = {
   criar: 'Criou', editar: 'Editou', publicar: 'Publicou', arquivar: 'Arquivou', aprovar: 'Aprovou', agendar: 'Agendou', cancelar: 'Cancelou',

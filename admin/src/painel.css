@@ -283,3 +283,8 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--ambar); outline
 .entrar-topo h1 { font: 400 34px/1.05 var(--display); text-transform: uppercase; margin: 14px 0 6px; letter-spacing: 0.01em; }
 .entrar-topo p { margin: 0; }
 .entrar-cx .grupo { background: var(--fundo); }
+
+/* Galeria de prévia no editor de recurso */
+.galeria-editor { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.galeria-item { display: flex; flex-direction: column; gap: 8px; }
+.galeria-item img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; border: 1px solid var(--borda); }
