@@ -1,0 +1,17 @@
+{
+  "name": "auto-agenciasetup",
+  "private": true,
+  "type": "module",
+  "description": "Agência Setup: site de recursos e novidades sobre IA, landing pages, anúncios e o conector do Claude (MCP). Worker da Cloudflare + Supabase.",
+  "scripts": {
+    "dev": "wrangler dev --port 8787 --test-scheduled",
+    "deploy": "wrangler deploy",
+    "migrar": "node scripts/migrar.mjs",
+    "chave": "node scripts/nova-chave.mjs",
+    "estilo": "node scripts/estilo.mjs",
+    "conferir": "node scripts/conferir.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.135.0"
+  }
+}

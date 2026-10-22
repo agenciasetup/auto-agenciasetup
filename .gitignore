@@ -1,0 +1,22 @@
+# Segredos: nunca no Git
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+
+# Dependências e builds
+node_modules/
+dist/
+.wrangler/
+public/admin/
+
+# Backups e dados locais
+_backup/
+_local/
+telas/
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
