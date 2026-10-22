@@ -2,16 +2,25 @@
   "name": "auto-agenciasetup",
   "private": true,
   "type": "module",
-  "description": "Agência Setup: site de recursos e novidades sobre IA, landing pages, anúncios e o conector do Claude (MCP). Worker da Cloudflare + Supabase.",
+  "description": "Agência Setup: site de recursos e novidades sobre IA, painel, landing pages, anúncios, fila das redes e o conector do Claude (MCP). Worker da Cloudflare + Supabase.",
   "scripts": {
-    "dev": "wrangler dev --port 8787 --test-scheduled",
-    "deploy": "wrangler deploy",
+    "painel": "vite build --config admin/vite.config.ts",
+    "painel:dev": "vite --config admin/vite.config.ts",
+    "dev": "vite build --config admin/vite.config.ts --logLevel warn && wrangler dev --port 8787 --test-scheduled",
+    "deploy": "vite build --config admin/vite.config.ts --logLevel warn && wrangler deploy",
     "migrar": "node scripts/migrar.mjs",
     "chave": "node scripts/nova-chave.mjs",
+    "convidar": "node scripts/convidar.mjs",
     "estilo": "node scripts/estilo.mjs",
     "conferir": "node scripts/conferir.mjs"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.116.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "lucide-react": "^1.47.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "vite": "^8.3.0",
     "wrangler": "4.135.0"
   }
 }

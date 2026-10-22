@@ -73,7 +73,7 @@ try {
   await ferramenta('arquivar', { tipo: 'recursos', id });
   await pagina(`/recursos/${slug}`, 404);
 } finally {
-  if (id) await sql(`delete from pecas where origem_id = '${id}'; delete from recursos where id = '${id}';`);
+  if (id) await sql(`delete from auditoria where alvo like '%${id}%' or (alvo = 'pecas' and quando > now() - interval '10 minutes' and via = 'mcp'); delete from pecas where origem_id = '${id}'; delete from recursos where id = '${id}';`);
   console.log('\nteste apagado do banco');
 }
 

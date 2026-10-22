@@ -1,12 +1,28 @@
-// Worker da Agência Setup: site público, downloads, anúncios e o conector do Claude (/mcp).
-// Os arquivos fixos (CSS, imagens) saem direto de public/; o resto passa por aqui.
+// Worker da Agência Setup: site público, downloads, anúncios, painel (/admin), API do painel (/api/admin),
+// login do conector (/oauth) e o conector do Claude (/mcp). Arquivos fixos (CSS, imagens, painel compilado) saem de public/.
 import { db } from './nucleo/db.js';
 import { Erro, esc, json, respostaErro, urlSegura } from './nucleo/util.js';
+import { ehRotaOauth, rotasOauth } from './nucleo/oauth.js';
 import * as C from './lib/conteudo.js';
 import { escolher, contar as contarAnuncio } from './lib/anuncios.js';
 import { servidorMcp } from './lib/mcp.js';
+import { apiPainel } from './lib/api/painel.js';
+import { retornoConexao } from './plataformas/conexao.js';
+import { processarFila } from './plataformas/fila.js';
 import { casca } from './render/casca.js';
 import * as P from './render/paginas.js';
+
+// O painel é um app de uma página só: qualquer /admin/... devolve o mesmo index.html compilado.
+async function painel(request, env) {
+  const r = await env.ASSETS.fetch(new Request(new URL('/admin/index.html', request.url)));
+  if (!r.ok) return new Response('O painel ainda não foi montado (npm run painel).', { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+  return new Response(r.body, {
+    headers: {
+      'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-frame-options': 'DENY', 'x-robots-tag': 'noindex',
+      'referrer-policy': 'same-origin', 'x-content-type-options': 'nosniff',
+    },
+  });
+}
 
 const POR_PAGINA = 24;
 
@@ -109,12 +125,18 @@ export default {
     if (url.hostname === 'www.agenciasetup.com.br') return Response.redirect(`https://agenciasetup.com.br${url.pathname}${url.search}`, 301);
     try {
       if (url.pathname === '/mcp') return await servidorMcp(request, env, ctx);
+      if (ehRotaOauth(url.pathname)) return await rotasOauth(request, env, url);
+      if (url.pathname.startsWith('/api/admin/')) return await apiPainel(request, env, ctx, url);
+      const volta = url.pathname.match(/^\/api\/redes\/([a-z]+)\/retorno$/);
+      if (volta) return await retornoConexao(request, env, url, volta[1]);
+      if (url.pathname === '/admin') return Response.redirect(`${url.origin}/admin/`, 301);
+      if (url.pathname.startsWith('/admin/')) return await painel(request, env);
       if (url.pathname === '/api/saude') {
         let banco = 'ok';
         try { await db.select(env, 'config', { select: 'chave', limite: 1 }); } catch { banco = 'fora'; }
         return json({ site: 'ok', banco, quando: new Date().toISOString() });
       }
-      if (url.pathname === '/robots.txt') return new Response(`User-agent: *\nAllow: /\nDisallow: /baixar/\nDisallow: /ir/\nDisallow: /mcp\nSitemap: ${env.SITE_URL}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain; charset=utf-8' } });
+      if (url.pathname === '/robots.txt') return new Response(`User-agent: *\nAllow: /\nDisallow: /baixar/\nDisallow: /ir/\nDisallow: /mcp\nDisallow: /admin/\nDisallow: /api/\nDisallow: /oauth/\nSitemap: ${env.SITE_URL}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain; charset=utf-8' } });
       if (url.pathname === '/sitemap.xml') return await sitemap(env);
       if (url.pathname === '/ads.txt') {
         const cfg = await C.config(env);
@@ -139,12 +161,9 @@ export default {
     }
   },
 
-  // Relógio: publica o que foi agendado. A publicação nas redes entra quando cada rede for conectada.
+  // Relógio (a cada 10 minutos): publica as peças agendadas, cada uma pelo módulo da sua rede.
   async scheduled(event, env, ctx) {
-    const agora = new Date().toISOString();
-    for (const tabela of ['recursos', 'artigos']) {
-      ctx.waitUntil(db.update(env, tabela, { status: 'eq.rascunho', 'seo->>agendar_para': `lte.${agora}` }, { status: 'publicado', publicado_em: agora }, 'id').catch((e) => console.error('agendados', tabela, e && e.message)));
-    }
+    ctx.waitUntil(processarFila(env).catch((e) => console.error('fila', e && e.stack)));
   },
 };
 

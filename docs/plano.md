@@ -16,7 +16,21 @@ Marque `[x]` quando ficar pronto e conferido. Pare onde está escrito **PARE**.
 - [x] DNS: backup, e-mail preservado, registros do site antigo (Vercel, parado com erro 402) removidos.
 - [x] Site no ar em agenciasetup.com.br (Worker com domínio próprio).
 
-**PARE.** Mostrar ao dono e decidir a ordem das próximas fases.
+**PARE.** Mostrar ao dono e decidir a ordem das próximas fases. (Decidido em 22/10: painel e login do conector primeiro.)
+
+## Fase 0.5. Painel, login do conector e redes plugáveis (22/10/2026)
+
+- [x] Banco (migration 002): equipe com cargos, chaves de API (coladas ou do login do app), conexões das redes (credenciais cifradas), fila com tentativas e "pegar sem repetir".
+- [x] Login do painel pelo Supabase Auth (ES256), só por convite; links de convite e troca de senha gerados no painel.
+- [x] OAuth 2.1 do conector (fichas de descoberta, registro do app, PKCE, código de uso único, chave de 1 hora que gira, revogação): o app do Claude conecta pelo endereço `/mcp`.
+- [x] Ações num lugar só (`acoes.js`): painel e Claude com as mesmas regras de cargo e a mesma auditoria.
+- [x] Redes como módulos (8, "em breve"), cofre AES-GCM, retorno de login das redes, fila no relógio com 3 tentativas.
+- [x] Painel: início, fila e peça (slides), recursos e novidades, cursos (produtos, landing pages por blocos, anúncios), pautas, redes, Claude (conectar e chaves), equipe, configuração, histórico, tela "Permitir".
+- [x] Conferência: `conferir-painel.mjs` (52 itens) e `conferir.mjs`, no computador e em produção.
+- [ ] Primeiro administrador entrar (precisa do dono: o e-mail).
+- [ ] Conectar no app do Claude e testar um pedido de verdade (precisa do dono).
+
+**PARE.** Próxima: Fase 1 (templates e imagens dos carrosséis) ou Fase 2 (app da Meta).
 
 ## Fase 1. Design system e templates de peça
 
@@ -47,11 +61,10 @@ Marque `[x]` quando ficar pronto e conferido. Pare onde está escrito **PARE**.
 - [ ] Landing pages dos cursos e anúncios ligados aos produtos.
 - [ ] Captura de e-mail opcional nos downloads.
 
-## Fase 6. Painel e app do Claude
+## Fase 6. Skills
 
-- [ ] Painel em `/admin` (aprovar peças, ver números).
-- [ ] Login OAuth do conector para usar no app do Claude (claude.ai).
-- [ ] Skills da agência (post, carrossel, vídeo, recurso) empacotadas.
+- [x] Painel e login do conector (adiantados para a Fase 0.5).
+- [ ] Skills da agência (post, carrossel, vídeo, recurso) empacotadas para o app do Claude.
 
 ## Fase 7. Vídeo
 

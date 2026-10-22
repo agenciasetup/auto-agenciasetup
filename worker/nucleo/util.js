@@ -69,6 +69,33 @@ export async function sha256(texto) {
   return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join('');
 }
 
+export function aleatorio(n = 32) {
+  const abc = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const b = crypto.getRandomValues(new Uint8Array(n));
+  return [...b].map((x) => abc[x % abc.length]).join('');
+}
+
+// Corpo JSON com limite de tamanho; erro claro em vez de exceção solta.
+export async function corpoJson(request, limite = 200_000) {
+  const t = await request.text();
+  if (t.length > limite) throw new Erro(413, 'Conteúdo grande demais.');
+  if (!t) return {};
+  try {
+    const d = JSON.parse(t);
+    if (!d || typeof d !== 'object') throw new Error();
+    return d;
+  } catch {
+    throw new Erro(400, 'O conteúdo enviado não é um JSON válido.');
+  }
+}
+
+// Teste no computador: só com AMBIENTE=local, pedido de localhost e o cabeçalho de teste. Em produção nada disso existe.
+export function ehLocal(request, env) {
+  if (env.AMBIENTE !== 'local') return false;
+  const h = new URL(request.url).hostname;
+  return (h === 'localhost' || h === '127.0.0.1') && request.headers.get('x-teste') === '1';
+}
+
 // Só endereços http(s); o resto vira "#".
 export function urlSegura(u) {
   try {

@@ -72,6 +72,18 @@ export const db = {
   },
 };
 
+// Auth do Supabase (admin): gerar link de convite ou de troca de senha, criar e apagar logins.
+export async function authAdmin(env, caminho, opcoes = {}) {
+  const r = await fetch(`${env.SUPABASE_URL}/auth/v1${caminho}`, { ...opcoes, headers: cabecalhos(env, opcoes.headers) });
+  const t = await r.text();
+  if (!r.ok) {
+    let msg = t;
+    try { const j = JSON.parse(t); msg = j.msg || j.message || j.error_description || t; } catch {}
+    throw new Erro(r.status === 422 || r.status === 400 ? 400 : 502, `O login do Supabase recusou: ${msg}`.slice(0, 300));
+  }
+  return t ? JSON.parse(t) : null;
+}
+
 // Envia um arquivo para o Storage do Supabase e devolve o endereço público.
 export async function enviarArquivo(env, bucket, caminho, corpo, tipo) {
   const r = await fetch(`${env.SUPABASE_URL}/storage/v1/object/${bucket}/${caminho}`, {

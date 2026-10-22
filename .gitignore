@@ -11,10 +11,10 @@ dist/
 .wrangler/
 public/admin/
 
-# Backups e dados locais
-_backup/
-_local/
-telas/
+# Backups e dados locais (só na raiz: admin/src/telas é código do painel)
+/_backup/
+/_local/
+/telas/
 
 # Sistema
 .DS_Store

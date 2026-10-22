@@ -1,5 +1,6 @@
 // Worker da Agência Setup: site público, downloads, anúncios e conector do Claude (/mcp).
-// Segredos (SUPABASE_URL, SUPABASE_SECRET_KEY) ficam no .dev.vars (computador) e em "wrangler secret" (produção).
+// Segredos (SUPABASE_URL, SUPABASE_SECRET_KEY, OAUTH_SEGREDO, CRIPTO_CHAVE e os apps de cada rede) ficam no
+// .dev.vars (computador) e em "wrangler secret" (produção). O painel compilado sai em public/admin (npm run painel).
 {
   "name": "agenciasetup",
   "main": "worker/index.js",
@@ -12,7 +13,7 @@
     "not_found_handling": "none",
     "html_handling": "none",
     // O Worker atende tudo, menos os arquivos fixos (CSS, JS, imagens).
-    "run_worker_first": ["/*", "!/estatico/*", "!/img/*"]
+    "run_worker_first": ["/*", "!/estatico/*", "!/img/*", "!/admin/assets/*"]
   },
   // Domínio próprio: a Cloudflare cria o DNS e o certificado sozinha. Sem endereço *.workers.dev público.
   "workers_dev": false,
@@ -24,6 +25,8 @@
   // Relógio: publica o que foi agendado (e, quando as redes forem conectadas, a fila delas).
   "triggers": { "crons": ["*/10 * * * *"] },
   "observability": { "enabled": true },
+  // No computador, o endereço continua localhost (sem isto, o wrangler troca pelo domínio da rota).
+  "dev": { "host": "localhost:8787", "upstream_protocol": "http" },
   "vars": {
     "SITE_URL": "https://agenciasetup.com.br"
   }

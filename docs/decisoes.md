@@ -13,6 +13,18 @@
 - **Estilo:** visual de 2026 (escuro, âmbar/laranja, serifada + condensada, cards de vidro, grão) com a fórmula de conteúdo de 2024 (cultura pop + lição, polêmica com virada, palavra-chave nos comentários levando a um recurso grátis).
 - **DNS:** mantidos todos os registros de e-mail (MX Google, SendGrid, mail, SRV, SPF, DKIM, DMARC) e as verificações do Google e do Facebook. Removidos os do site antigo na Vercel (raiz, www, proposta, `_vercel`), o `_acme-challenge` antigo e o teste do cPanel. Todos respondiam 402 (Vercel parada). Backup em `_backup/`.
 
+## Tomadas em 22/10/2026 (painel e conector)
+
+- **Ordem:** o dono pediu painel e login do conector antes da Meta, com a base pronta para receber cada rede de forma modular.
+- **Painel em React + Vite, igual ao do olharondoniense** (mesmos padrões: roteador sem biblioteca, login do Supabase no navegador, dados só pela API do Worker). Compilado fora do Git.
+- **Cargos:** Administrador, Editor, Redator. App que se registra sozinho no OAuth liga no máximo como Redator; a sugestão para apps conferidos (Claude, ChatGPT) é Editor.
+- **OAuth do conector trazido do olharondoniense** (que veio do Olhar de Fé e já funciona com o app do Claude). Prefixos `as_` (chave) e `asc_` (app registrado). Segredo `OAUTH_SEGREDO`.
+- **Convites por link, não por e-mail.** No plano grátis do Supabase, o e-mail padrão só chega a quem é da organização e o texto não pode ser trocado sem SMTP próprio. O painel gera o link (convite ou troca de senha) e o administrador envia.
+- **Cadastro fechado** no Supabase Auth; senha mínima de 10 caracteres.
+- **Redes plugáveis:** um módulo por rede com contrato único; credenciais cifradas (AES-GCM, `CRIPTO_CHAVE`); fila no relógio de 10 minutos, 3 tentativas (5, 10, 15 minutos). Rede sem módulo pronto: a peça vira erro com explicação, sem tentar de novo.
+- **Publicar nas redes é "perigosa"** no conector (o app do Claude pede o sim); publicar no site é "escrita" (dá para arquivar depois).
+- **Teste local sem senha:** membro "Teste local (só no computador)", desativado, usado só com `DEV_USUARIO` + `AMBIENTE=local` + cabeçalho de teste.
+
 ## Em aberto
 
 - **SPF não inclui o Google.** O registro atual é `v=spf1 a mx include:websitewelcome.com ~all`, mas o e-mail chega pelo Google Workspace. Se os e-mails enviados pelo Gmail caem no spam, falta `include:_spf.google.com` (e talvez o DKIM do Google). Não mexi: e-mail ficou como estava.
