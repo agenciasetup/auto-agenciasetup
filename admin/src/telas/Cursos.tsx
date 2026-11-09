@@ -4,7 +4,7 @@ import { GraduationCap, ImagePlus, LayoutTemplate, Megaphone, Plus, Save } from 
 import { enviarArquivo, get, patch, post } from '../nucleo/api';
 import { Link, useRota } from '../nucleo/roteador';
 import {
-  Abas, AreaTexto, Campo, Carregando, Celula, ErroCarga, Escolha, Etiqueta, Grupo, Marcar, Modal, Titulo, Vazio, useAcao, useCarregar, useSessao,
+  Abas, AreaTexto, Campo, Carregando, Celula, ErroCarga, Escolha, Etiqueta, Faixa, Grupo, Marcar, Modal, Titulo, Vazio, useAcao, useCarregar, useSessao,
 } from '../nucleo/ui';
 import { centavosDe, dinheiro, doCampoData, listaDeTexto, numero, paraCampoData, textoDeCentavos, textoDeLista } from '../nucleo/util';
 import { EtiquetaConteudo } from './comum';
@@ -12,18 +12,55 @@ import { EtiquetaConteudo } from './comum';
 export default function Cursos() {
   const { rota, ir } = useRota();
   const inicial = rota.busca.get('aba');
-  const [aba, setAba] = useState(inicial === 'landing-pages' || inicial === 'anuncios' ? inicial : 'produtos');
+  const [aba, setAba] = useState(['produtos', 'landing-pages', 'anuncios'].includes(inicial || '') ? inicial! : 'oferta');
   useEffect(() => { document.title = 'Cursos e anúncios | Painel Agência Setup'; }, []);
   const trocar = (a: string) => { setAba(a); ir(`/cursos?aba=${a}`, { trocar: true }); };
   return (
     <div className="tela">
       <Titulo titulo="Cursos e anúncios" sub="O que vendemos, onde vendemos e como aparece no site." />
-      <Abas abas={[{ id: 'produtos', t: 'Produtos' }, { id: 'landing-pages', t: 'Landing pages' }, { id: 'anuncios', t: 'Anúncios' }]} atual={aba} mudar={trocar} />
+      <Abas abas={[{ id: 'oferta', t: 'Oferta do funil' }, { id: 'produtos', t: 'Produtos' }, { id: 'landing-pages', t: 'Landing pages' }, { id: 'anuncios', t: 'Anúncios' }]} atual={aba} mudar={trocar} />
+      {aba === 'oferta' && <Oferta />}
       {aba === 'produtos' && <Produtos />}
       {aba === 'landing-pages' && <LandingPages />}
       {aba === 'anuncios' && <Anuncios />}
     </div>
   );
+}
+
+// ---------------------------------------------------------------- oferta do fim do funil (o mini curso)
+function Oferta() {
+  const { pode } = useSessao();
+  const { dados, setDados, erro, carregando, recarregar } = useCarregar(() => Promise.all([get('/oferta'), get('/landing-pages')]), []);
+  const [o, setO] = useState<any>(null);
+  const { ocupado, rodar } = useAcao();
+  useEffect(() => { if (dados) setO({ ...dados[0] }); }, [dados]);
+  const podeEditar = pode('cursos.editar');
+  const mudar = (k: string, v: any) => setO((x: any) => ({ ...x, [k]: v }));
+  const salvar = () => rodar('salvar', async () => {
+    const r = await patch('/oferta', { ativo: o.ativo, landing_slug: o.landing_slug || '', titulo: o.titulo, texto: o.texto, cta: o.cta, linha_dm: o.linha_dm });
+    setDados((d: any) => [r, d[1]]);
+  }, 'Oferta salva.');
+
+  if (erro) return <ErroCarga erro={erro} tentar={recarregar} />;
+  if (carregando && !dados) return <Carregando />;
+  if (!o) return null;
+  const lps = (dados?.[1] || []) as any[];
+  const lp = lps.find((l) => l.slug === o.landing_slug);
+  return <>
+    {o.no_ar ? <Faixa tipo="ok">No ar: aparece no fim de cada página de recurso e no fim da DM do Comenta X. <a href={o.link} target="_blank" rel="noopener noreferrer">Ver a landing page</a></Faixa>
+      : <Faixa tipo="aviso">Fora do ar. Para aparecer, precisa de: landing page publicada{lp && lp.status !== 'publicado' ? ' (a escolhida ainda é rascunho)' : ''}, produto ativo e "Oferta ligada" marcado.</Faixa>}
+    <Grupo titulo="O que fecha o funil" rodape="O caminho: post com Comenta X, DM com o material, página do recurso, e esta oferta no fim.">
+      <Marcar rotulo="Oferta ligada" valor={!!o.ativo} mudar={(v) => mudar('ativo', v)} desativado={!podeEditar} />
+      <Escolha rotulo="Landing page do mini curso" valor={o.landing_slug || ''} mudar={(v) => mudar('landing_slug', v)} desativado={!podeEditar}
+        opcoes={[{ v: '', t: 'Escolha a landing page' }, ...lps.map((l) => ({ v: l.slug, t: `${l.titulo}${l.status !== 'publicado' ? ' (rascunho)' : ''}` }))]} />
+      <Campo rotulo="Título no site" valor={o.titulo} mudar={(v) => mudar('titulo', v)} placeholder="Vazio: o nome do produto" desativado={!podeEditar} />
+      <AreaTexto rotulo="Texto no site" valor={o.texto} mudar={(v) => mudar('texto', v)} linhas={2} placeholder="Vazio: a chamada do produto" desativado={!podeEditar} />
+      <Campo rotulo="Botão" valor={o.cta} mudar={(v) => mudar('cta', v)} placeholder="Quero conhecer" desativado={!podeEditar} />
+      <AreaTexto rotulo="Frase no fim da DM" valor={o.linha_dm} mudar={(v) => mudar('linha_dm', v)} linhas={2} desativado={!podeEditar}
+        placeholder={'Quer aprender a criar isso com IA, do zero? É o que eu ensino no mini curso "{curso}": {link_curso}'} dica="Aceita {curso} (o título da landing page) e {link_curso}. Vazio: a DM não fala do curso." />
+      {podeEditar && <div className="barra-acoes barra-acoes-fim"><button className="bt bt-tinta" disabled={!!ocupado} onClick={salvar}><Save />Salvar oferta</button></div>}
+    </Grupo>
+  </>;
 }
 
 // ---------------------------------------------------------------- produtos
@@ -127,7 +164,7 @@ function LandingPages() {
       <Grupo>
         {dados.map((l: any) => (
           <Celula key={l.id} para={`/cursos/landing-pages/${l.id}`} icone={<LayoutTemplate />} cor={l.status === 'publicado' ? 'verde' : undefined}
-            titulo={l.titulo} sub={`/cursos/${l.slug}`} direita={<EtiquetaConteudo status={l.status} />} />
+            titulo={l.titulo} sub={`${l.na_lista ? '' : 'Fora da lista de cursos · '}/cursos/${l.slug}`} direita={<EtiquetaConteudo status={l.status} />} />
         ))}
       </Grupo>
     ) : <Vazio titulo="Nenhuma landing page ainda." texto="Monte a página de venda de um curso por blocos: chamada, o que aprende, depoimentos, preço e perguntas."
@@ -203,11 +240,11 @@ function Anuncios() {
         <Campo rotulo="Link (opcional)" valor={editando.link} mudar={(v) => mudar('link', v)} placeholder="https://" dica="Em branco, vai para a landing page do produto." />
         <CampoImagem rotulo="Imagem" valor={editando.imagem_url} mudar={(v) => mudar('imagem_url', v)} />
         <div className="campo"><label>Posições</label>
-          <div className="chips">{POSICOES.map((p) => <button type="button" key={p.v} className={`chip ${editando.posicoes.includes(p.v) ? 'ativo' : ''}`} onClick={() => alternar('posicoes', p.v)}>{p.t}</button>)}</div>
+          <div className="chips soltos">{POSICOES.map((p) => <button type="button" key={p.v} className={`chip ${editando.posicoes.includes(p.v) ? 'ativo' : ''}`} onClick={() => alternar('posicoes', p.v)}>{p.t}</button>)}</div>
         </div>
         <Campo rotulo="Tags do assunto" valor={editando.alvo_tags} mudar={(v) => mudar('alvo_tags', v)} dica="Separadas por vírgula. Páginas com essas tags preferem este anúncio." />
         <div className="campo"><label>Categorias</label>
-          <div className="chips">{(((cats.dados as any[]) || [])).map((c: any) => <button type="button" key={c.id} className={`chip ${editando.alvo_categorias.includes(c.id) ? 'ativo' : ''}`} onClick={() => alternar('alvo_categorias', c.id)}>{c.nome}</button>)}</div>
+          <div className="chips soltos">{(((cats.dados as any[]) || [])).map((c: any) => <button type="button" key={c.id} className={`chip ${editando.alvo_categorias.includes(c.id) ? 'ativo' : ''}`} onClick={() => alternar('alvo_categorias', c.id)}>{c.nome}</button>)}</div>
         </div>
         <div className="linha-campos">
           <Campo rotulo="Começa em" tipo="datetime-local" valor={editando.inicio} mudar={(v) => mudar('inicio', v)} />

@@ -1,0 +1,18 @@
+{
+  "id": "/admin/celular",
+  "name": "Vendas Setup",
+  "short_name": "Vendas",
+  "description": "As vendas, os pedidos e os reembolsos da Agência Setup no celular, com aviso na hora.",
+  "lang": "pt-BR",
+  "start_url": "/admin/celular",
+  "scope": "/admin/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#09090a",
+  "theme_color": "#09090a",
+  "icons": [
+    { "src": "/admin/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/admin/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/admin/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

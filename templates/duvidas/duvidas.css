@@ -1,0 +1,201 @@
+/* Dúvidas da Fé: leitor no celular (leitor.html) e livro em PDF (livro.html).
+   Mesma estética da Escola do Olhar de Fé (olhar-de-fe/web/fonte/portal.css, blocos "escola"): papel quente, blocos claros
+   com raio grande e sombra macia, títulos em serifa, texto na fonte do sistema, rótulos pequenos em maiúsculas, ouro na
+   Bíblia e na Igreja, verde na resposta e no progresso, "Para guardar" em tinta. Letra maior que a da Escola: quem lê
+   pode ter dificuldade. */
+:root{
+  --bg:#EDEBE6;--card:#FAF9F6;--poco:#F1EEE8;--tile:#E7E3DB;
+  --text:#232326;--text2:#4A4A4F;--text3:#7E7E84;
+  --line:rgba(28,28,32,.14);--line2:rgba(28,28,32,.08);
+  --yes:#248A3D;--yes-soft:rgba(36,138,61,.1);
+  --ouro:#A87B2D;--creme:#F3EDE2;--creme-linha:rgba(168,123,45,.22);
+  --tinta:#232326;--tinta-tx:#F2F2F4;--tinta-tx2:rgba(242,242,244,.72);
+  --zap:#1F7A3E;--zap-soft:rgba(37,165,85,.12);
+  --sombra:0 1px 2px rgba(30,25,15,.04),0 8px 28px rgba(30,25,15,.06);
+  --raio:22px;
+  --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",system-ui,sans-serif;
+  --serif:"Newsreader",ui-serif,"Iowan Old Style",Georgia,serif;
+  color-scheme:light;
+}
+/* Tema escuro só na tela (o PDF é sempre claro). */
+@media screen and (prefers-color-scheme:dark){:root{
+  --bg:#12110F;--card:#1D1B18;--poco:#171512;--tile:#2B2824;
+  --text:#E9E7E3;--text2:#C2BFB9;--text3:#8E8B85;
+  --line:rgba(255,255,255,.12);--line2:rgba(255,255,255,.07);
+  --yes:#30D158;--yes-soft:rgba(48,209,88,.14);
+  --ouro:#D8B26A;--creme:#1F1C18;--creme-linha:rgba(216,178,106,.18);
+  --tinta:#2A2622;--tinta-tx:#EFEAE2;--tinta-tx2:rgba(239,234,226,.7);
+  --zap:#4CD27A;--zap-soft:rgba(76,210,122,.12);
+  --sombra:none;color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html{font-size:100%;-webkit-text-size-adjust:100%}
+html.letra-1{font-size:115%}
+html.letra-2{font-size:130%}
+body{margin:0;background:var(--bg);color:var(--text);font:1.0625rem/1.55 var(--ui);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+p,figure,blockquote{margin:0}
+button{font:inherit;color:inherit}
+.icone{width:1.15em;height:1.15em;flex:none}
+.cruz{display:inline-block;width:.8em;height:1.1em;position:relative;flex:none}
+.cruz::before,.cruz::after{content:"";position:absolute;background:var(--ouro)}
+.cruz::before{left:50%;top:0;bottom:0;width:18%;transform:translateX(-50%)}
+.cruz::after{left:0;right:0;top:28%;height:13%}
+.olho{display:flex;align-items:center;gap:7px;font-size:.8125rem;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)}
+.olho.ouro{color:var(--ouro)}
+.olho.verde{color:var(--yes)}
+.olho .icone{width:1.05em;height:1.05em}
+.pilula{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border:0;border-radius:999px;background:var(--card);box-shadow:var(--sombra);font-weight:650;font-size:.9375rem;cursor:pointer}
+.botao{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;padding:0 22px;border:0;border-radius:999px;background:var(--tinta);color:var(--tinta-tx);font-weight:650;font-size:1.0625rem;cursor:pointer}
+
+/* ---------- Leitor ---------- */
+.leitor{max-width:520px;margin:0 auto;padding:14px 20px 44px}
+.topo{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;margin-bottom:14px}
+.marca{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-weight:600;font-size:1.3125rem;letter-spacing:-.01em}
+.voltar{display:inline-flex;align-items:center;gap:4px;min-height:46px;padding:0 16px 0 10px;border-radius:999px;background:var(--card);box-shadow:var(--sombra);font-weight:650;font-size:.9375rem}
+
+/* início */
+.capa-inicio{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:50% 70%;border-radius:24px;background:var(--tile)}
+.ola{font-family:var(--serif);font-weight:600;font-size:2.125rem;line-height:1.05;letter-spacing:-.02em;margin:22px 0 6px}
+.ola-sub{color:var(--text2);font-size:1.0625rem}
+.busca{display:flex;align-items:center;gap:12px;min-height:58px;margin-top:20px;padding:0 18px;border-radius:18px;background:var(--card);box-shadow:var(--sombra);color:var(--text3);font-size:1.125rem}
+.cartao{margin-top:14px;padding:20px;border-radius:var(--raio);background:var(--card);box-shadow:var(--sombra)}
+.cartao h2{font-family:var(--serif);font-weight:600;font-size:1.4375rem;line-height:1.15;letter-spacing:-.01em;margin:8px 0 16px;text-wrap:balance}
+.prog{display:flex;align-items:center;gap:12px}
+.prog span{flex:1;height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.prog i{display:block;height:100%;background:var(--yes);border-radius:99px}
+.prog b{font-size:.875rem;font-weight:650;color:var(--text2);white-space:nowrap}
+.cartao .botao{margin-top:18px}
+.rotulo{padding:30px 4px 10px}
+.lista{border-radius:var(--raio);background:var(--card);box-shadow:var(--sombra);overflow:hidden}
+.linha{display:flex;align-items:center;gap:14px;min-height:74px;padding:14px 16px}
+.linha+.linha{border-top:.5px solid var(--line)}
+.num{width:42px;height:42px;flex:none;display:grid;place-items:center;border-radius:13px;background:var(--tile);font-family:var(--serif);font-weight:600;font-size:1.25rem}
+.linha b{display:block;font-family:var(--serif);font-weight:600;font-size:1.1875rem;line-height:1.2}
+.linha small{display:block;margin-top:2px;color:var(--text3);font-size:.9375rem}
+.linha .seta{margin-left:auto;color:var(--text3)}
+.ajuda{display:flex;align-items:center;gap:14px;margin-top:24px;padding:16px 18px;border-radius:var(--raio);background:var(--zap-soft);font-size:1rem;line-height:1.35}
+.ajuda .icone{width:1.7em;height:1.7em;color:var(--zap)}
+.ajuda b{display:block}
+
+/* uma dúvida */
+.capa-duvida img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:24px;background:var(--tile)}
+.capa-duvida figcaption{margin:8px 4px 0;font-size:.8125rem;line-height:1.4;color:var(--text3)}
+.duvida>.olho{margin-top:22px}
+.duvida h1{font-family:var(--serif);font-weight:600;font-size:2.25rem;line-height:1.04;letter-spacing:-.02em;margin:8px 0 16px;text-wrap:balance}
+.ferramentas{display:flex;gap:10px;flex-wrap:wrap}
+.resposta,.ab,.guardar{margin-top:14px;padding:22px 22px 24px;border-radius:var(--raio)}
+.resposta,.ab{background:var(--card);box-shadow:var(--sombra)}
+.resposta-tx{margin-top:10px;font-size:1.25rem;font-weight:500;line-height:1.5;letter-spacing:-.01em;text-wrap:pretty}
+.prosa{margin-top:12px}
+.prosa p{font-size:1.1875rem;line-height:1.7}
+.prosa p+p{margin-top:16px}
+.verso{margin-top:14px;padding:16px 18px;border-left:3px solid var(--ouro);border-radius:0 16px 16px 0;background:var(--poco)}
+.verso p,.cita p{font-family:var(--serif);font-size:1.25rem;line-height:1.5}
+.verso p{font-style:italic}
+.verso p::before,.cita p::before{content:"“"}
+.verso p::after,.cita p::after{content:"”"}
+.verso cite,.cita figcaption{display:block;margin-top:10px;font-style:normal;font-size:.9375rem;color:var(--text3)}
+.verso cite b,.cita figcaption b{color:var(--text);font-weight:650}
+.cita{margin-top:14px;padding:18px;border-radius:16px;background:var(--poco)}
+.cita figcaption a{display:inline-block;margin-top:4px;text-decoration:underline;text-underline-offset:2px}
+.ab-diga{background:var(--creme);box-shadow:none;border:1px solid var(--creme-linha)}
+.diga-tx{margin-top:12px;font-family:var(--serif);font-size:1.3125rem;line-height:1.5;text-wrap:pretty}
+.ab-diga .ferramentas{margin-top:16px}
+.ab-diga .pilula{flex:1}
+.ese>div{padding:16px 0}
+.ese>div:first-child{padding-top:12px}
+.ese>div+div{border-top:.5px solid var(--line)}
+.ese b{display:block;font-size:1.0625rem;font-weight:650;line-height:1.45}
+.ese p{margin-top:6px;font-size:1.0625rem;line-height:1.6;color:var(--text2)}
+.guardar{background:var(--tinta);color:var(--tinta-tx)}
+.guardar .olho{color:var(--tinta-tx2)}
+.guardar-tx{margin-top:10px;font-family:var(--serif);font-size:1.5rem;line-height:1.35;text-wrap:pretty}
+.guardar .pilula{margin-top:18px;background:rgba(255,255,255,.14);color:inherit;box-shadow:none}
+.proxima{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:16px;align-items:center;margin-top:28px;padding:20px 22px;border-radius:var(--raio);background:var(--card);box-shadow:var(--sombra)}
+.proxima b{font-family:var(--serif);font-weight:600;font-size:1.375rem;line-height:1.15;letter-spacing:-.01em;margin-top:4px;text-wrap:balance}
+.proxima .roda{grid-row:1/3;grid-column:2;width:50px;height:50px;border-radius:50%;display:grid;place-items:center;background:var(--tinta);color:var(--tinta-tx)}
+.feita{margin-top:28px;text-align:center;font-size:.875rem;color:var(--text3)}
+
+/* ---------- Livro (PDF A5) ---------- */
+@page{size:148mm 210mm;margin:15mm 14mm 17mm;@bottom-center{content:counter(page);font:8.5pt Georgia,serif;color:#7E7E84}}
+@page capa{margin:0;@bottom-center{content:none}}
+.livro{font-size:11.5pt;line-height:1.5;background:#fff}
+.livro .pagina{break-after:page}
+.livro a{color:inherit}
+/* Capa: a pintura ocupa a página e o título fica na parede lisa do alto, que a pintura deixou livre para ele. */
+.livro .capa{page:capa;width:148mm;height:210mm;position:relative;overflow:hidden;background:var(--bg)}
+.livro .capa .fundo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 100%}
+.livro .capa-livro{background:linear-gradient(180deg,#142A52 0%,#0B1730 58%,#08122A 100%)}
+.livro .capa-livro .fundo{object-fit:contain;object-position:50% 50%}
+.livro .capa-livro .pe-amostra{position:absolute;left:0;right:0;bottom:6mm;margin:0;text-align:center;font-size:9pt;color:#F0D08A}
+.livro .capa .titulo{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;padding:18mm 16mm 0}
+.livro .capa .cruz{font-size:22pt;margin-bottom:5mm}
+.livro .capa .cruz::before,.livro .capa .cruz::after{background:#9C7633}
+.livro .capa h1{margin:0;font-family:var(--serif);font-weight:600;font-size:40pt;line-height:1;letter-spacing:-.02em;color:#241B16}
+.livro .capa .sub{font-family:var(--serif);font-size:13.5pt;line-height:1.35;color:#4A3D34;margin-top:4mm;max-width:84mm}
+.livro .capa .autores{margin-top:4mm;font-size:9.5pt;font-weight:650;color:#4A3D34}
+.livro .capa .pe{margin-top:2mm;font-size:8pt;font-weight:650;letter-spacing:.1em;text-transform:uppercase;color:#8A6526}
+.livro .titulo-pagina{font-family:var(--serif);font-weight:600;font-size:22pt;line-height:1.1;letter-spacing:-.015em;margin:0 0 5mm}
+.livro .passos{list-style:none;margin:5mm 0 0;padding:0}
+.livro .passos li{display:flex;align-items:center;gap:4mm;padding:2.6mm 0;border-top:.3mm solid var(--line2)}
+.livro .passos b{display:block;font-family:var(--serif);font-size:12.5pt}
+.livro .passos span:last-child{color:var(--text2);font-size:10.5pt}
+.livro .num{width:9mm;height:9mm;border-radius:2.6mm;font-size:12pt}
+.livro .aviso{margin-top:6mm;padding:4mm 5mm;border-radius:4mm;background:var(--creme);border:.3mm solid var(--creme-linha);font-size:10.5pt}
+.livro .dica{margin:-2mm 0 4mm;font-size:10pt;color:var(--text2)}
+.livro .sumario-cap{margin-top:4.5mm;break-inside:avoid}
+.livro .sumario-cap h3{display:flex;gap:2.5mm;align-items:baseline;margin:0 0 1.5mm;font-family:var(--serif);font-weight:600;font-size:12.5pt}
+.livro .sumario-cap h3 span{color:var(--ouro)}
+.livro .sumario-cap ol{list-style:none;margin:0;padding:0 0 0 6mm;font-size:10pt;line-height:1.5}
+.livro .sumario-cap li{color:#ABABB0}
+.livro .sumario-cap li a{display:flex;justify-content:space-between;gap:3mm;color:var(--text);font-weight:600}
+.livro .sumario-cap li a::after{content:"›";color:var(--ouro);font-weight:650}
+.livro .abre-cap{break-before:page;min-height:170mm;display:flex;flex-direction:column;justify-content:center}
+/* Altura de linha folgada: com .9, a ponta do "1" passava para a página de antes quando o capítulo enche a página. */
+.livro .abre-cap .grande{font-family:var(--serif);font-size:80pt;line-height:1.15;color:var(--ouro)}
+.livro .abre-cap .olho{margin-top:4mm;font-size:9pt}
+.livro .abre-cap h2{font-family:var(--serif);font-weight:600;font-size:28pt;line-height:1.05;letter-spacing:-.02em;margin:2mm 0 3mm}
+.livro .abre-cap>p:not(.olho){font-family:var(--serif);font-size:13pt;color:var(--text2)}
+.livro .abre-cap ol{list-style:none;margin:8mm 0 0;padding:0;border-top:.3mm solid var(--line2)}
+.livro .abre-cap li a{display:flex;justify-content:space-between;gap:3mm;padding:2.6mm 0;border-bottom:.3mm solid var(--line2);font-weight:600;font-size:11pt}
+.livro .abre-cap li a::after{content:"›";color:var(--ouro)}
+.livro .nav-livro{display:flex;align-items:center;justify-content:space-between;gap:3mm;margin-bottom:4mm}
+.livro .nav-livro a:first-child{font-size:9pt;font-weight:650;color:var(--text3)}
+.livro .pilula{min-height:0;height:8mm;padding:0 4mm;gap:1.5mm;font-size:9pt;background:var(--poco);box-shadow:none;border:.3mm solid var(--line2)}
+.livro .duvida{break-before:page}
+.livro .duvida>.olho{margin-top:4mm;font-size:8.5pt}
+.livro .duvida h1{font-size:22pt;margin:1.5mm 0 4mm}
+.livro .capa-duvida img{aspect-ratio:2/1;border-radius:4mm}
+.livro .capa-duvida figcaption{font-size:7.5pt;margin:1.5mm 1mm 0}
+.livro .resposta,.livro .ab,.livro .guardar{margin-top:4mm;padding:4.5mm 5mm;border-radius:4mm;box-shadow:none}
+.livro .resposta{background:var(--poco);break-inside:avoid}
+.livro .ab{background:none;padding:0;margin-top:6mm}
+.livro .ab .olho,.livro .resposta .olho,.livro .guardar .olho{font-size:8.5pt}
+.livro .ab>.olho{break-after:avoid}
+.livro .resposta-tx{font-size:13pt;margin-top:2mm}
+.livro .prosa{margin-top:2.5mm}
+.livro .prosa p{font-size:11.5pt;line-height:1.6}
+.livro .prosa p+p{margin-top:3mm}
+.livro .verso,.livro .cita{margin-top:2.5mm;padding:3.5mm 4.5mm;break-inside:avoid}
+.livro .verso{border-radius:0 3mm 3mm 0}
+.livro .cita{border-radius:3mm}
+.livro .verso p,.livro .cita p{font-size:12pt}
+.livro .verso cite,.livro .cita figcaption{font-size:9pt;margin-top:2mm}
+.livro .ab-diga{background:var(--creme);border:.3mm solid var(--creme-linha);padding:4.5mm 5mm;break-inside:avoid}
+.livro .diga-tx{font-size:12.5pt;margin-top:2mm}
+.livro .ese>div{padding:3mm 0;break-inside:avoid}
+.livro .ese b{font-size:11pt}
+.livro .ese p{font-size:10.5pt;margin-top:1mm}
+.livro .guardar{break-inside:avoid}
+.livro .guardar-tx{font-size:14pt;margin-top:2mm}
+.livro .fim-livro{display:flex;flex-direction:column;gap:3mm;margin-top:6mm;break-inside:avoid}
+.livro .proxima{margin:0;padding:4mm 5mm;border-radius:4mm;box-shadow:none;background:var(--poco)}
+.livro .proxima b{font-size:13pt}
+.livro .proxima .roda{width:10mm;height:10mm}
+.livro .fim-livro .pilula{align-self:flex-start}
+.livro .final{min-height:170mm;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+.livro .final h2{font-family:var(--serif);font-weight:600;font-size:20pt;margin:4mm 0}
+.livro .final p{font-size:11.5pt;color:var(--text2);margin-top:2mm;max-width:100mm}
+.livro .final b{color:var(--text)}
+.livro .final .pilula{margin-top:6mm}

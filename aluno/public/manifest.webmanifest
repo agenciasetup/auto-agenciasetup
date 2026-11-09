@@ -1,0 +1,16 @@
+{
+  "name": "Cursos da Setup",
+  "short_name": "Setup",
+  "description": "Os cursos da Agência Setup: aulas, materiais e o seu progresso.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#09090a",
+  "theme_color": "#09090a",
+  "icons": [
+    { "src": "/aluno/icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/aluno/icone-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/aluno/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

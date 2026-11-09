@@ -53,4 +53,4 @@ export function sprite(nomes) {
 }
 
 // A marca: o "S" da Agência Setup num ícone de app, laranja.
-export const MARCA = `<svg class="marca-icone" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="mg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb000"/><stop offset="1" stop-color="#ff6a00"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#mg)"/><path d="M20.5 10.2c-2.9-1.9-8.6-1.2-8.6 2.6 0 4.5 9 2.9 9 7.4 0 4-5.6 4.9-9.2 2.8" fill="none" stroke="#140800" stroke-width="3" stroke-linecap="round"/></svg>`;
+export const MARCA = `<img class="marca-icone" src="/img/logo-setup-128.png" alt="" width="30" height="30">`;

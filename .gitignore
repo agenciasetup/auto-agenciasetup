@@ -10,13 +10,42 @@ node_modules/
 dist/
 .wrangler/
 public/admin/
+public/aluno/
+public/aluno-en/
 
 # Backups e dados locais (só na raiz: admin/src/telas é código do painel)
 /_backup/
 /_local/
 /telas/
+# Listas de leads (nomes, e-mails e telefones de alunos): dado pessoal, nunca no repositório (que é público)
+/Leads Exportados/
+
+# Fotos pessoais do Filipe (referência de rosto para gerar imagens) e os retratos gerados a partir delas:
+# ficam só no computador e no Magnific (o repositório é público)
+/templates/carrossel/referencias/filipe/
+/templates/carrossel/imagens/filipe-*
 
 # Sistema
 .DS_Store
 Thumbs.db
 *.log
+
+# Mini curso "Posts automáticos com Claude": só local por enquanto
+/Curso/
+# Mini curso complemento "Vídeo com Claude": só local por enquanto
+/Curso-Videos/
+# Curso de leitura "Dúvidas da Fé" (conteúdo, imagens): só local por enquanto
+/Curso-Duvidas/
+
+# Imagens geradas das peças (fotos do Magnific, recortes, cenas e versões): passam de 300 MB e são refeitas a cada peça.
+# Ficam só no computador; o modelo, os conteúdos e as ferramentas vão para o Git.
+/templates/carrossel/imagens/*
+/templates/frase/imagens/*
+!/templates/frase/imagens/FONTES.md
+
+# Cache do Python
+__pycache__/
+
+# Fotos do vídeo padrão do Filipe
+templates/video-padrao/base/
+/templates/carrossel/referencias/inspiracao/

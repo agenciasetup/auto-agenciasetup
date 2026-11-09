@@ -6,21 +6,37 @@
   "scripts": {
     "painel": "vite build --config admin/vite.config.ts",
     "painel:dev": "vite --config admin/vite.config.ts",
-    "dev": "vite build --config admin/vite.config.ts --logLevel warn && wrangler dev --port 8787 --test-scheduled",
-    "deploy": "vite build --config admin/vite.config.ts --logLevel warn && wrangler deploy",
+    "aluno": "vite build --config aluno/vite.config.ts",
+    "aluno:en": "vite build --config aluno/vite.config.en.ts",
+    "dev:curso": "wrangler dev --port 8788 --inspector-port 9230 --var MODO:curso --persist-to .wrangler/state-curso",
+    "dev:duvidas": "wrangler dev --port 8789 --inspector-port 9231 --var MODO:curso --var MARCA_LOCAL:duvidasdafe.agenciasetup.com.br --persist-to .wrangler/state-duvidas",
+    "dev:en": "wrangler dev --port 8791 --inspector-port 9233 --var MODO:curso --var MARCA_LOCAL:agenciasetup.com --var MARCA_LOCAL_URL:http://localhost:8791 --persist-to .wrangler/state-en",
+    "dev": "vite build --config admin/vite.config.ts --logLevel warn && vite build --config aluno/vite.config.ts --logLevel warn && vite build --config aluno/vite.config.en.ts --logLevel warn && wrangler dev --port 8787 --test-scheduled",
+    "deploy": "vite build --config admin/vite.config.ts --logLevel warn && vite build --config aluno/vite.config.ts --logLevel warn && vite build --config aluno/vite.config.en.ts --logLevel warn && wrangler deploy",
     "migrar": "node scripts/migrar.mjs",
     "chave": "node scripts/nova-chave.mjs",
     "convidar": "node scripts/convidar.mjs",
+    "segredos": "node scripts/segredos.mjs",
     "estilo": "node scripts/estilo.mjs",
+    "skill": "node scripts/skill.mjs",
     "conferir": "node scripts/conferir.mjs"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.116.0",
     "@vitejs/plugin-react": "^6.1.1",
     "lucide-react": "^1.47.0",
+    "puppeteer-core": "^24.43.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "vite": "^8.3.0",
     "wrangler": "4.135.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.2.0",
+    "@jitl/quickjs-wasmfile-release-sync": "0.32.0",
+    "gsap": "^3.13.0",
+    "lenis": "^1.3.26",
+    "qrcode-generator": "^2.0.4",
+    "quickjs-emscripten-core": "0.32.0"
   }
 }

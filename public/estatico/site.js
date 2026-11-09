@@ -18,6 +18,20 @@
     alvos.forEach((el) => io.observe(el));
   } else alvos.forEach((el) => el.classList.add('visivel'));
 
+  // ------------------------------------------------------------ rolagem suave no mouse e no trackpad (no toque, a nativa)
+  if (window.Lenis && !semMovimento) {
+    const lenis = new window.Lenis({ lerp: 0.1, anchors: true });
+    const quadro = (t) => { lenis.raf(t); requestAnimationFrame(quadro); };
+    requestAnimationFrame(quadro);
+  }
+
+  // ------------------------------------------------------------ leque de posts da página inicial: abre quando aparece
+  $$('[data-leque]').forEach((lq) => {
+    if (!('IntersectionObserver' in window) || semMovimento) { lq.classList.add('aberto'); return; }
+    const io = new IntersectionObserver((itens) => { if (itens.some((it) => it.isIntersecting)) { lq.classList.add('aberto'); io.disconnect(); } }, { threshold: 0.15 });
+    io.observe(lq);
+  });
+
   // ------------------------------------------------------------ cabeçalho ganha borda ao rolar
   const topo = $('[data-topo]');
   if (topo) {
@@ -167,6 +181,12 @@
   const barra = $('[data-barra-acao]');
   if (principal && barra && 'IntersectionObserver' in window) {
     new IntersectionObserver(([it]) => barra.classList.toggle('visivel', !it.isIntersecting), { threshold: 0 }).observe(principal);
+  }
+
+  // ------------------------------------------------------------ de onde a pessoa veio (UTM, DM, anúncio): vira um "toque"
+  // para a venda saber qual post trouxe. Sem marca na URL e vindo do próprio site (ou direto), nada é enviado.
+  if (/[?&](utm_[a-z]+|fbclid|gclid|ttclid|de)=/.test(location.search) || (document.referrer && !/agenciasetup\.com/.test(document.referrer))) {
+    fetch('/api/toque', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: location.href, referrer: document.referrer }), keepalive: true }).catch(() => {});
   }
 
   // ------------------------------------------------------------ páginas prontas antes do toque

@@ -1,13 +1,16 @@
-// Painel da Agência Setup.
-// Computador: menu lateral (Conteúdo e Sistema). Celular: abas embaixo (Início, Fila, Conteúdo, Claude, Mais),
-// o resto fica no "Mais". Login pelo Supabase; os dados passam sempre pela API do Worker (docs/api-painel.md).
+// Painel da Agência Setup, no mesmo sistema de design do site (docs/design-system.md).
+// Computador: menu lateral com seções que recolhem, item ativo aceso, busca ⌘K (paleta para pular entre telas),
+// cartão da pessoa no rodapé e opção de menu fino (só ícones). Celular: topo de vidro com busca e abas embaixo
+// (Início, Em alta, Fila, Desempenho, Mais), o resto no "Mais". Login pelo Supabase; dados pela API do Worker.
 // Modelo: admin/src/main.tsx do olharondoniense.
-import { StrictMode, Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from 'react';
+import { StrictMode, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
-  Bot, Ellipsis, ExternalLink, FileText, GraduationCap, History, House, Lightbulb, ListChecks, LogOut, Moon, Settings, Share2, Sun, UserRound, Users, X,
+  BarChart3, Bot, CalendarDays, ChevronDown, ChevronRight, ChevronsUpDown, Ellipsis, ExternalLink, FileText, Flame, GraduationCap, Headset, History, House, ListChecks, LogOut,
+  MessageCircle, MessageCircleHeart, Megaphone, MessagesSquare, MonitorPlay, Plug, Moon, PanelLeftClose, PanelLeftOpen, Plus, Search, Send, Settings, Share2, ShoppingBag, Smartphone, Sparkles, Sun, TrendingUp, UserRound, Users, UsersRound, X,
 } from 'lucide-react';
 import './painel.css';
+import './posts.css';
 import { Roteador, casa, useRota, Link } from './nucleo/roteador';
 import { get, quandoSair } from './nucleo/api';
 import { sair, supabase } from './nucleo/auth';
@@ -16,31 +19,74 @@ import { iniciais } from './nucleo/util';
 import Entrar from './nucleo/Entrar';
 
 const Inicio = lazy(() => import('./telas/Inicio'));
+const Plano = lazy(() => import('./telas/Plano'));
+const Recuperar = lazy(() => import('./telas/Recuperar'));
+const Followup = lazy(() => import('./telas/Followup'));
 const Fila = lazy(() => import('./telas/Fila'));
 const Peca = lazy(() => import('./telas/Peca'));
 const Conteudo = lazy(() => import('./telas/Conteudo'));
+const Seo = lazy(() => import('./telas/Seo'));
 const Editor = lazy(() => import('./telas/Editor'));
 const Cursos = lazy(() => import('./telas/Cursos'));
 const LandingPage = lazy(() => import('./telas/LandingPage'));
 const Pautas = lazy(() => import('./telas/Pautas'));
+const Desempenho = lazy(() => import('./telas/Desempenho'));
+const Comenta = lazy(() => import('./telas/Comenta'));
 const Redes = lazy(() => import('./telas/Redes'));
 const Claude = lazy(() => import('./telas/Claude'));
 const Equipe = lazy(() => import('./telas/Equipe'));
 const Config = lazy(() => import('./telas/Config'));
 const Historico = lazy(() => import('./telas/Historico'));
 const Conectar = lazy(() => import('./telas/Conectar'));
+const Vendas = lazy(() => import('./telas/Vendas'));
+const Alunos = lazy(() => import('./telas/Alunos'));
+const Suporte = lazy(() => import('./telas/Suporte'));
+const Area = lazy(() => import('./telas/Area'));
+const Comunidade = lazy(() => import('./telas/Comunidade'));
+const Comunicacao = lazy(() => import('./telas/Comunicacao'));
+const Integracoes = lazy(() => import('./telas/Integracoes'));
+const Numeros = lazy(() => import('./telas/Numeros'));
+const Agenda = lazy(() => import('./telas/Agenda'));
+const NovoPost = lazy(() => import('./telas/NovoPost'));
+const Resultados = lazy(() => import('./telas/Resultados'));
+const PostDetalhe = lazy(() => import('./telas/PostDetalhe'));
+const Celular = lazy(() => import('./telas/Celular'));
+
+// O service worker do painel só cuida dos avisos no celular (Web Push); páginas e dados continuam vindo da rede.
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' }).catch(() => {});
 
 // exige: o cargo precisa disso para abrir a tela (quem não tem vê um aviso claro, não um erro).
 type Rota = { padrao: string; tela: any; aba: string; exige?: string };
 const ROTAS: Rota[] = [
   { padrao: '/', tela: Inicio, aba: 'inicio' },
-  { padrao: '/fila', tela: Fila, aba: 'fila', exige: 'pecas.ver' },
-  { padrao: '/fila/:id', tela: Peca, aba: 'fila', exige: 'pecas.ver' },
+  { padrao: '/plano', tela: Plano, aba: 'plano', exige: 'plano.ver' },
+  // Posts: agenda (calendário e lista), novo post e cada peça. /fila continua valendo (links antigos).
+  { padrao: '/posts', tela: Agenda, aba: 'posts', exige: 'pecas.ver' },
+  { padrao: '/posts/novo', tela: NovoPost, aba: 'posts', exige: 'pecas.editar' },
+  { padrao: '/posts/:id', tela: Peca, aba: 'posts', exige: 'pecas.ver' },
+  { padrao: '/fila', tela: Agenda, aba: 'posts', exige: 'pecas.ver' },
+  { padrao: '/fila/:id', tela: Peca, aba: 'posts', exige: 'pecas.ver' },
+  // Resultados: cada post com números, Comenta X e vendas; "O que funciona" é o antigo Desempenho.
+  { padrao: '/resultados', tela: Resultados, aba: 'resultados', exige: 'desempenho.ver' },
+  { padrao: '/resultados/:id', tela: PostDetalhe, aba: 'resultados', exige: 'desempenho.ver' },
   { padrao: '/conteudo', tela: Conteudo, aba: 'conteudo', exige: 'conteudo.ver' },
+  { padrao: '/seo', tela: Seo, aba: 'seo', exige: 'conteudo.ver' },
   { padrao: '/conteudo/:tipo/:id', tela: Editor, aba: 'conteudo', exige: 'conteudo.ver' },
   { padrao: '/cursos', tela: Cursos, aba: 'cursos', exige: 'cursos.ver' },
   { padrao: '/cursos/landing-pages/:id', tela: LandingPage, aba: 'cursos', exige: 'cursos.ver' },
   { padrao: '/pautas', tela: Pautas, aba: 'pautas', exige: 'pautas.ver' },
+  { padrao: '/desempenho', tela: Desempenho, aba: 'resultados', exige: 'desempenho.ver' },
+  { padrao: '/comenta', tela: Comenta, aba: 'comenta', exige: 'gatilhos.ver' },
+  { padrao: '/numeros', tela: Numeros, aba: 'numeros', exige: 'numeros.ver' },
+  { padrao: '/vendas', tela: Vendas, aba: 'vendas', exige: 'vendas.ver' },
+  { padrao: '/recuperar', tela: Recuperar, aba: 'recuperar', exige: 'recuperar.ver' },
+  { padrao: '/followup', tela: Followup, aba: 'followup', exige: 'followup.ver' },
+  { padrao: '/alunos', tela: Alunos, aba: 'alunos', exige: 'alunos.ver' },
+  { padrao: '/suporte', tela: Suporte, aba: 'suporte', exige: 'suporte.ver' },
+  { padrao: '/area', tela: Area, aba: 'area', exige: 'cursos.ver' },
+  { padrao: '/comunidade', tela: Comunidade, aba: 'comunidade', exige: 'comunidade.ver' },
+  { padrao: '/comunicacao', tela: Comunicacao, aba: 'comunicacao', exige: 'comunidade.ver' },
+  { padrao: '/integracoes', tela: Integracoes, aba: 'integracoes', exige: 'integracoes.configurar' },
   { padrao: '/redes', tela: Redes, aba: 'redes', exige: 'redes.ver' },
   { padrao: '/claude', tela: Claude, aba: 'claude' },
   { padrao: '/equipe', tela: Equipe, aba: 'equipe' },
@@ -48,17 +94,34 @@ const ROTAS: Rota[] = [
   { padrao: '/historico', tela: Historico, aba: 'historico', exige: 'historico.ver' },
 ];
 
-type Item = { id: string; para: string; t: string; i: ReactNode; n?: number; secao: string };
+type Item = { id: string; para: string; t: string; i: ReactNode; n?: number; secao: string; novo?: boolean };
 
 function itensDoMenu(pode: (a: string) => boolean, p: any): Item[] {
-  const fila = (p?.pecas_rascunho || 0) + (p?.pecas_erro || 0);
+  const posts = (p?.pecas_rascunho || 0) + (p?.pecas_erro || 0);
+  // Organizado pelo que a pessoa faz (pedido do dono em 24/10/2026: "ta muito confuso o painel"): redes (postar,
+  // agenda, resultados, automações), site, vendas, alunos e sistema. Sem selo "Novo" em tudo.
   return [
-    { id: 'inicio', para: '/', t: 'Início', i: <House />, secao: 'Conteúdo' },
-    ...(pode('pecas.ver') ? [{ id: 'fila', para: '/fila', t: 'Fila das redes', i: <ListChecks />, secao: 'Conteúdo', n: fila }] : []),
-    ...(pode('conteudo.ver') ? [{ id: 'conteudo', para: '/conteudo', t: 'Recursos e novidades', i: <FileText />, secao: 'Conteúdo', n: (p?.recursos_rascunho || 0) + (p?.artigos_rascunho || 0) }] : []),
-    ...(pode('pautas.ver') ? [{ id: 'pautas', para: '/pautas', t: 'Pautas', i: <Lightbulb />, secao: 'Conteúdo', n: p?.pautas_novas || 0 }] : []),
-    ...(pode('cursos.ver') ? [{ id: 'cursos', para: '/cursos', t: 'Cursos e anúncios', i: <GraduationCap />, secao: 'Conteúdo' }] : []),
-    ...(pode('redes.ver') ? [{ id: 'redes', para: '/redes', t: 'Redes', i: <Share2 />, secao: 'Sistema' }] : []),
+    { id: 'inicio', para: '/', t: 'Início', i: <House />, secao: 'Hoje' },
+    ...(pode('plano.ver') ? [{ id: 'plano', para: '/plano', t: 'Plano', i: <Sparkles />, secao: 'Hoje' }] : []),
+    ...(pode('pecas.ver') ? [{ id: 'posts', para: '/posts', t: 'Posts e agenda', i: <CalendarDays />, secao: 'Redes sociais', n: posts || undefined }] : []),
+    ...(pode('desempenho.ver') ? [{ id: 'resultados', para: '/resultados', t: 'Resultados', i: <BarChart3 />, secao: 'Redes sociais' }] : []),
+    ...(pode('gatilhos.ver') ? [{ id: 'comenta', para: '/comenta', t: 'Automações', i: <MessageCircleHeart />, secao: 'Redes sociais' }] : []),
+    ...(pode('pautas.ver') ? [{ id: 'pautas', para: '/pautas', t: 'Em alta', i: <Flame />, secao: 'Redes sociais' }] : []),
+    ...(pode('redes.ver') ? [{ id: 'redes', para: '/redes', t: 'Contas conectadas', i: <Share2 />, secao: 'Redes sociais' }] : []),
+    ...(pode('conteudo.ver') ? [{ id: 'conteudo', para: '/conteudo', t: 'Recursos e artigos', i: <FileText />, secao: 'Site', n: (p?.recursos_rascunho || 0) + (p?.artigos_rascunho || 0) }] : []),
+    ...(pode('conteudo.ver') ? [{ id: 'seo', para: '/seo', t: 'SEO e Google', i: <Search />, secao: 'Site' }] : []),
+    ...(pode('cursos.ver') ? [{ id: 'cursos', para: '/cursos', t: 'Cursos e páginas de venda', i: <GraduationCap />, secao: 'Site' }] : []),
+    ...(pode('vendas.ver') ? [{ id: 'vendas', para: '/vendas', t: 'Vendas', i: <ShoppingBag />, secao: 'Vendas' }] : []),
+    ...(pode('vendas.ver') ? [{ id: 'celular', para: '/celular', t: 'App de vendas e avisos', i: <Smartphone />, secao: 'Vendas' }] : []),
+    ...(pode('followup.ver') ? [{ id: 'followup', para: '/followup', t: 'Follow-up do direct', i: <Send />, secao: 'Vendas' }] : []),
+    ...(pode('recuperar.ver') ? [{ id: 'recuperar', para: '/recuperar', t: 'Recuperar vendas', i: <MessageCircle />, secao: 'Vendas' }] : []),
+    ...(pode('numeros.ver') ? [{ id: 'numeros', para: '/numeros', t: 'Números do curso', i: <TrendingUp />, secao: 'Vendas' }] : []),
+    ...(pode('suporte.ver') ? [{ id: 'suporte', para: '/suporte', t: 'Suporte', i: <Headset />, secao: 'Alunos' }] : []),
+    ...(pode('alunos.ver') ? [{ id: 'alunos', para: '/alunos', t: 'Alunos', i: <UsersRound />, secao: 'Alunos' }] : []),
+    ...(pode('cursos.ver') ? [{ id: 'area', para: '/area', t: 'Área de membros', i: <MonitorPlay />, secao: 'Alunos' }] : []),
+    ...(pode('comunidade.ver') ? [{ id: 'comunidade', para: '/comunidade', t: 'Comunidade', i: <MessagesSquare />, secao: 'Alunos', n: (p?.comunidade || 0) || undefined }] : []),
+    ...(pode('comunidade.ver') ? [{ id: 'comunicacao', para: '/comunicacao', t: 'Avisos e e-mails', i: <Megaphone />, secao: 'Alunos' }] : []),
+    ...(pode('integracoes.configurar') ? [{ id: 'integracoes', para: '/integracoes', t: 'Integrações', i: <Plug />, secao: 'Sistema' }] : []),
     { id: 'claude', para: '/claude', t: 'Claude', i: <Bot />, secao: 'Sistema' },
     { id: 'equipe', para: '/equipe', t: pode('equipe.ver') ? 'Equipe' : 'Minha conta', i: pode('equipe.ver') ? <Users /> : <UserRound />, secao: 'Sistema' },
     ...(pode('config.editar') ? [{ id: 'config', para: '/config', t: 'Configuração', i: <Settings />, secao: 'Sistema' }] : []),
@@ -66,11 +129,88 @@ function itensDoMenu(pode: (a: string) => boolean, p: any): Item[] {
   ];
 }
 
+// Preferências do menu guardadas no aparelho (sem quebrar quando o navegador não deixa guardar).
+function lerPref<T>(chave: string, padrao: T): T {
+  try { const v = localStorage.getItem(chave); return v === null ? padrao : JSON.parse(v); } catch { return padrao; }
+}
+function guardarPref(chave: string, v: any) {
+  try { localStorage.setItem(chave, JSON.stringify(v)); } catch {}
+}
+const ehMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const TECLA = ehMac ? '⌘K' : 'Ctrl K';
+
+// ---------------------------------------------------------------- paleta (⌘K): pular para qualquer tela ou ação
+type Acao = { id: string; t: string; i: ReactNode; grupo: string; para?: string; fazer?: () => void; busca?: string };
+
+function Paleta({ acoes, fechar }: { acoes: Acao[]; fechar: () => void }) {
+  const { ir } = useRota();
+  const [q, setQ] = useState('');
+  const [sel, setSel] = useState(0);
+  const campo = useRef<HTMLInputElement>(null);
+  const lista = useRef<HTMLDivElement>(null);
+  const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const achadas = useMemo(() => acoes.filter((a) => !q.trim() || norm(`${a.t} ${a.busca || ''} ${a.grupo}`).includes(norm(q.trim()))), [acoes, q]);
+  useEffect(() => { setSel(0); }, [q]);
+  useEffect(() => { campo.current?.focus(); }, []);
+  useEffect(() => {
+    const el = lista.current?.querySelector('[aria-selected="true"]') as HTMLElement | null;
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [sel]);
+  const executar = (a?: Acao) => {
+    if (!a) return;
+    fechar();
+    if (a.fazer) a.fazer();
+    else if (a.para) ir(a.para);
+  };
+  const teclas = (e: any) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setSel((s) => Math.min(achadas.length - 1, s + 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setSel((s) => Math.max(0, s - 1)); }
+    else if (e.key === 'Enter') { e.preventDefault(); executar(achadas[sel]); }
+    else if (e.key === 'Escape') { e.preventDefault(); fechar(); }
+  };
+  const grupos = [...new Set(achadas.map((a) => a.grupo))];
+  let n = -1;
+  return (
+    <div className="paleta-fundo" onMouseDown={(e) => { if (e.target === e.currentTarget) fechar(); }}>
+      <div className="paleta" role="dialog" aria-modal="true" aria-label="Ir para">
+        <div className="paleta-campo">
+          <Search />
+          <input ref={campo} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={teclas} placeholder="Ir para uma tela ou fazer algo…" aria-label="Buscar no painel" enterKeyHint="go" />
+          <button className="bt bt-texto bt-mini" onClick={fechar}>Fechar</button>
+        </div>
+        <div className="paleta-lista" ref={lista} role="listbox">
+          {!achadas.length && <div className="paleta-vazio">Nada com “{q}”.</div>}
+          {grupos.map((g) => (
+            <div key={g}>
+              <p className="paleta-grupo">{g}</p>
+              {achadas.filter((a) => a.grupo === g).map((a) => {
+                n += 1;
+                const i = n;
+                return (
+                  <button key={a.id} className="paleta-item" role="option" aria-selected={i === sel} onMouseEnter={() => setSel(i)} onClick={() => executar(a)}>
+                    <span className="celula-icone cor-laranja">{a.i}</span><b>{a.t}</b><ChevronRight className="seta" />
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        <div className="paleta-dica"><span><kbd>↑</kbd> <kbd>↓</kbd> para escolher</span><span><kbd>Enter</kbd> para abrir</span><span><kbd>Esc</kbd> para fechar</span></div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- moldura
 function Moldura({ eu, aoSair }: { eu: Eu; aoSair: () => void }) {
   const { rota } = useRota();
   const { tema, setTema } = useTema();
   const [p, setP] = useState<any>(null);
   const [mais, setMais] = useState(false);
+  const [paleta, setPaleta] = useState(false);
+  const [menuPessoa, setMenuPessoa] = useState(false);
+  const [fina, setFina] = useState<boolean>(() => lerPref('agenciasetup-painel-fino', false));
+  const [fechadas, setFechadas] = useState<string[]>(() => lerPref('agenciasetup-painel-secoes', []));
 
   // Contadores do menu: ao abrir, a cada minuto e quando a pessoa volta para a aba.
   useEffect(() => {
@@ -81,7 +221,17 @@ function Moldura({ eu, aoSair }: { eu: Eu; aoSair: () => void }) {
     document.addEventListener('visibilitychange', vis);
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', vis); };
   }, [rota.caminho]);
-  useEffect(() => { setMais(false); }, [rota.caminho]);
+  useEffect(() => { setMais(false); setMenuPessoa(false); }, [rota.caminho]);
+
+  // ⌘K / Ctrl K abre a paleta de qualquer lugar; "/" também, quando não está digitando.
+  useEffect(() => {
+    const f = (e: KeyboardEvent) => {
+      const digitando = /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement as HTMLElement)?.tagName || '') || (document.activeElement as HTMLElement)?.isContentEditable;
+      if ((e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !digitando)) { e.preventDefault(); setPaleta(true); }
+    };
+    addEventListener('keydown', f);
+    return () => removeEventListener('keydown', f);
+  }, []);
 
   let achada: { r: Rota; params: Record<string, string> } | null = null;
   for (const r of ROTAS) { const pr = casa(r.padrao, rota.caminho); if (pr) { achada = { r, params: pr }; break; } }
@@ -90,47 +240,84 @@ function Moldura({ eu, aoSair }: { eu: Eu; aoSair: () => void }) {
   const secoes = [...new Set(itens.map((i) => i.secao))];
   const aba = achada ? achada.r.aba : '';
   const Tela = achada ? achada.r.tela : null;
-  const baixo = ['inicio', 'fila', 'conteudo', 'claude'].filter((id) => itens.some((i) => i.id === id));
+  // Quem não vê as telas das redes (cargo Suporte) ganha Suporte e Alunos nas abas de baixo.
+  const baixo = ['inicio', 'posts', 'resultados', 'comenta', 'suporte', 'alunos'].filter((id) => itens.some((i) => i.id === id)).slice(0, 4);
   const noMais = itens.filter((i) => !baixo.includes(i.id));
 
-  const conta = (
-    <div className="conta">
-      <span className="avatar">{iniciais(eu.usuario.nome)}</span>
-      <span className="conta-texto"><b>{eu.usuario.nome}</b><span className="mudo">{eu.usuario.nome_papel}</span></span>
-    </div>
-  );
+  const alternarFina = () => { setFina((f) => { guardarPref('agenciasetup-painel-fino', !f); return !f; }); setMenuPessoa(false); };
+  const alternarSecao = (s: string) => setFechadas((l) => { const n = l.includes(s) ? l.filter((x) => x !== s) : [...l, s]; guardarPref('agenciasetup-painel-secoes', n); return n; });
+  const trocarTema = () => setTema(tema === 'escuro' ? 'claro' : 'escuro');
+
+  const acoes: Acao[] = [
+    ...itens.map((i) => ({ id: `ir-${i.id}`, t: i.t, i: i.i, grupo: 'Ir para', para: i.para })),
+    ...(pode('pecas.editar') ? [{ id: 'novo-post', t: 'Novo post', i: <Plus />, grupo: 'Criar', para: '/posts/novo', busca: 'postar agendar carrossel reels story publicar instagram' }] : []),
+    ...(pode('conteudo.editar') ? [
+      { id: 'novo-recurso', t: 'Novo recurso', i: <Plus />, grupo: 'Criar', para: '/conteudo/recursos/novo', busca: 'criar prompt template planilha' },
+      { id: 'novo-agente', t: 'Novo agente de IA', i: <Sparkles />, grupo: 'Criar', para: '/conteudo/recursos/novo?tipo=agente', busca: 'criar agente gpt' },
+      { id: 'nova-novidade', t: 'Novo artigo', i: <FileText />, grupo: 'Criar', para: '/conteudo/artigos/novo', busca: 'criar artigo' },
+    ] : []),
+    ...(pode('gatilhos.editar') ? [{ id: 'nova-palavra', t: 'Nova palavra do Comenta X', i: <MessageCircleHeart />, grupo: 'Criar', para: '/comenta', busca: 'comenta dm gatilho palavra' }] : []),
+    { id: 'site', t: 'Ver o site', i: <ExternalLink />, grupo: 'Geral', fazer: () => window.open('/', '_blank', 'noopener') },
+    { id: 'tema', t: tema === 'escuro' ? 'Usar tema claro' : 'Usar tema escuro', i: tema === 'escuro' ? <Sun /> : <Moon />, grupo: 'Geral', fazer: trocarTema },
+    { id: 'sair', t: 'Sair do painel', i: <LogOut />, grupo: 'Geral', fazer: aoSair },
+  ];
+
   const acoesConta = (
     <div className="conta-acoes">
       <a className="bt bt-texto" href="/" target="_blank" rel="noopener"><ExternalLink />Ver o site</a>
-      <button className="bt bt-texto" onClick={() => setTema(tema === 'escuro' ? 'claro' : 'escuro')}>{tema === 'escuro' ? <Sun /> : <Moon />}{tema === 'escuro' ? 'Tema claro' : 'Tema escuro'}</button>
-      <button className="bt bt-texto" onClick={aoSair}><LogOut />Sair</button>
+      <button className="bt bt-texto" onClick={trocarTema}>{tema === 'escuro' ? <Sun /> : <Moon />}{tema === 'escuro' ? 'Tema claro' : 'Tema escuro'}</button>
+      <button className="bt bt-texto bt-perigo" onClick={aoSair}><LogOut />Sair</button>
     </div>
+  );
+  const itemMenu = (i: Item) => (
+    <Link key={i.id} para={i.para} className={`menu-item ${aba === i.id ? 'ativo' : ''}`} aria-current={aba === i.id ? 'page' : undefined} title={fina ? i.t : undefined}>
+      {i.i}<span className="menu-item-t">{i.t}</span>
+      {i.n ? <span className="menu-n">{i.n}</span> : i.novo && !fina ? <span className="menu-novo">Novo</span> : null}
+    </Link>
   );
 
   return (
-    <div className="moldura">
+    <div className={`moldura ${fina ? 'fina' : ''}`}>
       <aside className="lateral">
-        <div className="lateral-topo"><Link para="/" className="lateral-logo"><Logo /></Link></div>
+        <div className="lateral-topo">
+          <Link para="/" className="lateral-logo"><Logo /></Link>
+          <button className="recolher" onClick={alternarFina} aria-label={fina ? 'Abrir o menu' : 'Recolher o menu'} title={fina ? 'Abrir o menu' : 'Recolher o menu'}>{fina ? <PanelLeftOpen /> : <PanelLeftClose />}</button>
+        </div>
+        <button className="gatilho-paleta" onClick={() => setPaleta(true)} title={`Buscar (${TECLA})`}><Search /><span>Buscar ou ir para…</span><kbd>{TECLA}</kbd></button>
+        {pode('pecas.editar') && <Link para="/posts/novo" className="bt bt-tinta novo-post-lateral" title={fina ? 'Novo post' : undefined}><Plus /><span>Novo post</span></Link>}
         <nav className="lateral-menu" aria-label="Menu">
-          {secoes.map((s) => (
-            <div key={s} className="menu-secao">
-              <p className="menu-secao-t">{s}</p>
-              {itens.filter((i) => i.secao === s).map((i) => (
-                <Link key={i.id} para={i.para} className={`menu-item ${aba === i.id ? 'ativo' : ''}`} aria-current={aba === i.id ? 'page' : undefined}>
-                  {i.i}<span>{i.t}</span>{i.n ? <span className="menu-n">{i.n}</span> : null}
-                </Link>
-              ))}
-            </div>
-          ))}
+          {secoes.map((s) => {
+            const fechada = fechadas.includes(s);
+            return (
+              <div key={s} className={`menu-secao ${fechada ? 'fechada' : ''}`}>
+                <button className="menu-secao-t" onClick={() => alternarSecao(s)} aria-expanded={!fechada}>{s}<ChevronDown /></button>
+                <div className="menu-itens">{itens.filter((i) => i.secao === s).map(itemMenu)}</div>
+              </div>
+            );
+          })}
         </nav>
-        <div className="lateral-pe">{conta}{acoesConta}</div>
+        <div className="lateral-pe">
+          <div className="pessoa">
+            {menuPessoa && <div className="pessoa-menu">{acoesConta}</div>}
+            <button className="pessoa-cartao" onClick={() => setMenuPessoa((m) => !m)} aria-expanded={menuPessoa} title={fina ? eu.usuario.nome : undefined}>
+              <span className="avatar">{iniciais(eu.usuario.nome)}</span>
+              <span className="conta-texto"><b>{eu.usuario.nome}</b><span>{eu.usuario.email || eu.usuario.nome_papel}</span></span>
+              <ChevronsUpDown />
+            </button>
+          </div>
+        </div>
       </aside>
 
+      <header className="topo-celular">
+        <Link para="/" className="lateral-logo"><Logo /></Link>
+        <button className="bt-icone" onClick={() => setPaleta(true)} aria-label="Buscar"><Search /></button>
+      </header>
+
       <main className="principal" id="conteudo">
-        <Suspense fallback={<Carregando />}>
+        <Suspense fallback={<div className="tela"><Carregando /></div>}>
           {!achada ? (
             <div className="tela"><Faixa tipo="aviso">Esta tela não existe. <Link para="/">Voltar ao início</Link></Faixa></div>
-          ) : achada.r.exige && !pode(achada.r.exige) ? <SemPermissao /> : <Tela params={achada.params} />}
+          ) : achada.r.exige && !pode(achada.r.exige) ? <SemPermissao /> : <Tela key={rota.caminho} params={achada.params} />}
         </Suspense>
       </main>
 
@@ -139,7 +326,7 @@ function Moldura({ eu, aoSair }: { eu: Eu; aoSair: () => void }) {
           const i = itens.find((x) => x.id === id)!;
           return (
             <Link key={id} para={i.para} className={aba === id && !mais ? 'ativo' : ''}>
-              {i.i}<span>{id === 'conteudo' ? 'Conteúdo' : id === 'fila' ? 'Fila' : i.t}</span>{i.n ? <span className="menu-n">{i.n}</span> : null}
+              {i.i}<span>{id === 'posts' ? 'Posts' : id === 'comenta' ? 'Automação' : i.t}</span>{i.n ? <span className="menu-n">{i.n}</span> : null}
             </Link>
           );
         })}
@@ -149,16 +336,20 @@ function Moldura({ eu, aoSair }: { eu: Eu; aoSair: () => void }) {
       {mais && (
         <div className="folha-fundo" onClick={() => setMais(false)}>
           <div className="folha" onClick={(e) => e.stopPropagation()}>
-            <div className="folha-topo">{conta}<button className="bt-icone" onClick={() => setMais(false)} aria-label="Fechar"><X /></button></div>
-            <div className="folha-lista">
-              {noMais.map((i) => (
-                <Link key={i.id} para={i.para} className={`menu-item ${aba === i.id ? 'ativo' : ''}`}>{i.i}<span>{i.t}</span>{i.n ? <span className="menu-n">{i.n}</span> : null}</Link>
-              ))}
+            <div className="folha-topo">
+              <div className="pessoa-cartao" style={{ cursor: 'default', flex: 1 }}>
+                <span className="avatar">{iniciais(eu.usuario.nome)}</span>
+                <span className="conta-texto"><b>{eu.usuario.nome}</b><span>{eu.usuario.nome_papel}</span></span>
+              </div>
+              <button className="bt-icone" onClick={() => setMais(false)} aria-label="Fechar"><X /></button>
             </div>
+            <div className="folha-lista">{noMais.map(itemMenu)}</div>
             {acoesConta}
           </div>
         </div>
       )}
+
+      {paleta && <Paleta acoes={acoes} fechar={() => setPaleta(false)} />}
     </div>
   );
 }
@@ -185,6 +376,19 @@ function App() {
     return () => data.subscription.unsubscribe();
   }, [carregarEu]);
 
+  // Toque num aviso com o painel já aberto: o service worker pede para abrir o pedido aqui mesmo.
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const f = (e: MessageEvent) => {
+      const alvo = e.data && e.data.abrir;
+      if (typeof alvo !== 'string') return;
+      const u = new URL(alvo, location.origin);
+      if (u.origin === location.origin && u.pathname.startsWith('/admin')) ir(`${u.pathname.slice('/admin'.length) || '/'}${u.search}`);
+    };
+    navigator.serviceWorker.addEventListener('message', f);
+    return () => navigator.serviceWorker.removeEventListener('message', f);
+  }, []);
+
   const aoSair = async () => {
     await sair().catch(() => {});
     setEu(null);
@@ -208,7 +412,11 @@ function App() {
 
   const ctx = { eu, pode: (a: string) => eu.permissoes.includes(a), recarregarEu: carregarEu };
   if (rota.caminho === '/conectar') {
-    return <SessaoCtx.Provider value={ctx}><Suspense fallback={<Carregando />}><Conectar /></Suspense></SessaoCtx.Provider>;
+    return <SessaoCtx.Provider value={ctx}><Suspense fallback={<div className="tela-cheia"><Carregando texto="Abrindo…" /></div>}><Conectar /></Suspense></SessaoCtx.Provider>;
+  }
+  // O app "Vendas" do celular: tela cheia, fora da moldura do painel.
+  if (rota.caminho === '/celular') {
+    return <SessaoCtx.Provider value={ctx}><Suspense fallback={<div className="tela-cheia"><Carregando texto="Abrindo as vendas…" /></div>}><Celular /></Suspense></SessaoCtx.Provider>;
   }
   return <SessaoCtx.Provider value={ctx}><Moldura eu={eu} aoSair={aoSair} /></SessaoCtx.Provider>;
 }

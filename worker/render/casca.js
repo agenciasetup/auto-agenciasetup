@@ -3,7 +3,7 @@
 import { esc, jsonScript } from '../nucleo/util.js';
 import { MARCA, icone, sprite } from './icones.js';
 
-const FONTES = 'https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Instrument+Serif:ital@1&display=swap';
+const FONTES = 'https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Inter+Tight:wght@600;700&family=Instrument+Serif:ital@1&display=swap';
 
 // Seções do site: o que aparece no menu do computador e nas abas do celular.
 const NAV = [
@@ -42,11 +42,12 @@ ${imagem ? `<meta property="og:image" content="${esc(imagem)}">` : ''}
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#09090a">
 <meta name="color-scheme" content="dark">
-<link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/img/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/logo-setup-128.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="${FONTES}">
-<link rel="stylesheet" href="/estatico/site.css?v=4">
+<link rel="stylesheet" href="/estatico/site.css?v=8">
 <script>document.documentElement.classList.add('js');setTimeout(function(){if(!document.documentElement.classList.contains('revelar-ok'))document.documentElement.classList.remove('js')},2500)</script>
 ${ad ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${esc(ad)}" crossorigin="anonymous"></script>` : ''}
 ${ldjson ? `<script type="application/ld+json">${jsonScript(ldjson)}</script>` : ''}
@@ -58,7 +59,8 @@ ${corpo}
 </main>
 ${semMolde ? '' : rodape(site) + abas(aba || caminho) + caixaBusca()}
 ${extraFim}
-<script src="/estatico/site.js?v=4" defer></script>
+<script src="/estatico/vendor/lenis.min.js?v=1.3.26" defer></script>
+<script src="/estatico/site.js?v=5" defer></script>
 </body>
 </html>`;
 }
@@ -78,18 +80,19 @@ function cabecalho(caminho) {
 }
 
 function abas(caminho) {
-  const item = (href, t, i) => `<a href="${href}"${ativo(caminho, href) ? ' aria-current="page"' : ''}>${icone(i)}<span>${t}</span></a>`;
+  const item = (href, t, i, classe = '') => `<a href="${href}"${classe ? ` class="${classe}"` : ''}${ativo(caminho, href) ? ' aria-current="page"' : ''}>${icone(i)}<span>${t}</span></a>`;
+  // Cursos no lugar de Novidades, sempre aceso (pedido do dono, 06/11/2026): a aba que leva ao mini curso.
   return `<nav class="abas" aria-label="Navegação">
   ${item('/', 'Início', 'inicio')}
   ${item('/recursos', 'Recursos', 'grade')}
   ${item('/agentes', 'Agentes', 'agente')}
-  ${item('/novidades', 'Novidades', 'novidades')}
+  ${item('/cursos', 'Cursos', 'curso', 'aba-curso')}
   <a href="/busca" data-abrir-busca${caminho.startsWith('/busca') ? ' aria-current="page"' : ''}>${icone('busca')}<span>Buscar</span></a>
 </nav>`;
 }
 
 function caixaBusca() {
-  return `<dialog class="busca-caixa" id="busca" aria-label="Buscar">
+  return `<dialog class="busca-caixa" id="busca" aria-label="Buscar" data-lenis-prevent>
   <form class="busca-campo" action="/busca" role="search">
     ${icone('busca')}
     <input type="search" name="q" placeholder="Buscar prompts, agentes, planilhas…" autocomplete="off" enterkeyhint="search" aria-label="O que você procura?" data-busca-campo>

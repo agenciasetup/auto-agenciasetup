@@ -1,0 +1,41 @@
+/* Checkout de curso com marca (tema "leitura", ex.: Dúvidas da Fé): a mesma página do checkout.css, com a cara da capa do
+   livro (templates/duvidas/capa.html): creme claro, azul de Nossa Senhora e ouro nos detalhes, títulos em Playfair, a capa
+   no resumo e o botão de pagar verde, como na página de venda. Só troca as cores e o que dependia do fundo escuro. */
+body.tema-leitura {
+  --bg: #FBF7EF; --bg-2: #FFFFFF; --bg-3: #F3ECDD; --bg-4: #E9E0CC;
+  --linha: rgba(28,28,32,.08); --linha-2: rgba(28,28,32,.16);
+  --texto: #182033; --texto-2: #4A5266; --texto-3: #7B8296;
+  --marca: #1F9F57; --marca-2: #25B866; --marca-texto: #9A7329; --marca-suave: rgba(217,174,87,.14); --marca-borda: rgba(217,174,87,.45); --sobre-marca: #FFFFFF;
+  --degrade: #1F9F57;
+  --verde: #248A3D; --vermelho: #D70015;
+  --fonte: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+  --serifa: 'Playfair Display', Georgia, serif;
+  color-scheme: light;
+  font-size: 16px;
+}
+.tema-leitura .logo { font-family: var(--serifa); font-weight: 700; font-size: 19px; letter-spacing: -.01em; color: var(--texto); }
+.tema-leitura .logo .cruz { width: 15px; height: 21px; fill: #D9AE57; flex: none; }
+.tema-leitura .ck-topo { border-bottom-color: var(--linha-2); }
+.tema-leitura .bt-marca { background: #1F9F57; color: #fff; box-shadow: 0 12px 28px rgba(31,159,87,.3); }
+.tema-leitura .bt-marca:hover { background: #25B866; filter: none; }
+.tema-leitura .bt-marca[disabled] { filter: none; opacity: .6; }
+.tema-leitura h1, .tema-leitura h2 { font-family: var(--serifa); font-weight: 700; letter-spacing: -.01em; }
+.tema-leitura .ck-resumo, .tema-leitura .ck-bloco, .tema-leitura .ck-pix, .tema-leitura .ok-tela, .tema-leitura .fechada { box-shadow: 0 1px 2px rgba(30,25,15,.04), 0 8px 28px rgba(30,25,15,.06); }
+.tema-leitura input, .tema-leitura select { background: #fff; color: var(--texto); border-color: var(--linha-2); font-size: 17px; }
+.tema-leitura .poster { background: #12213E; color: #F4EFE4; }
+.tema-leitura .poster .nome, .tema-leitura .poster .pe { color: #F4EFE4; }
+.tema-leitura .ck-capa { width: 76px; flex: none; aspect-ratio: 2/3; object-fit: cover; border-radius: 3px 6px 6px 3px; box-shadow: 0 10px 22px rgba(10,20,41,.28); }
+.tema-leitura .metodo[aria-pressed="true"] { border-color: #12213E; background: var(--bg-2); box-shadow: inset 0 0 0 1px #12213E; }
+.tema-leitura .bump { background: var(--bg-3); border-color: var(--marca-borda); }
+.tema-leitura .etiqueta { color: #1B6B33; }
+/* Avisos e erros: no checkout escuro o texto é claro; aqui, escuro na cor do aviso, para ler bem. */
+.tema-leitura .aviso-metodo { color: #1B5E2E; font-size: 15px; }
+.tema-leitura .aviso-cartao { color: var(--texto-2); background: var(--bg-3); }
+.tema-leitura .erro-geral { color: #9B1C1C; font-size: 15px; }
+.tema-leitura .bump.tingido .preco-b, .tema-leitura .preco-b { color: #8A6526; }
+.tema-leitura .qr { background: #fff; }
+/* Obrigado: botões grandes, um embaixo do outro, e a ajuda no WhatsApp. */
+.tema-leitura .ok-tela h2 { font-size: 28px; }
+.tema-leitura .ok-tela .bt { width: 100%; max-width: 360px; justify-content: center; }
+.tema-leitura .ok-tela .bt + .bt { margin-top: 10px; }
+.tema-leitura .ajuda-zap { display: inline-block; margin-top: 18px; color: #1B6B33; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }

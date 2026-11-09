@@ -1,0 +1,114 @@
+/* Post de frase da Agência Setup (Instagram 4:5, 1080 x 1350): uma frase forte, em minúsculas, num bloco só.
+   O que é da agência e não muda (pedido do dono, 29/10/2026: "um pouquinho que tiver da agência já salva"):
+   o fundo preto em volta, a janela de cantos redondos, o cabeçalho "— @agenciasetup | Calango ×", a palavra de
+   destaque em serifa itálica laranja e, na série, o trilho com o ponto laranja embaixo.
+   Camadas: 0 fundo da janela (cor ou foto com véu), 1 a frase (rótulo, frase, apoio), 2 rabisco (etapa 3),
+   3 cabeçalho, trilho e grão (etapa 5). Temas (o de dentro da janela): .tema-branco, .tema-preto, .tema-foto.
+   Regras de uso em LEIA.md e na skill frase-agenciasetup. */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1350px; background: #0b0b0c; overflow: hidden; }
+
+.post { position: relative; width: 1080px; height: 1350px; overflow: hidden; background: #0b0b0c; -webkit-font-smoothing: antialiased; }
+.janela {
+  position: absolute; inset: 40px; border-radius: 46px; overflow: hidden; isolation: isolate;
+  background: var(--fundo); color: var(--tinta); font-family: 'Inter Tight', system-ui, sans-serif;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 40px 120px rgba(0, 0, 0, 0.6);
+}
+
+/* ---------------------------------------------------------------- temas (dentro da janela) */
+/* Textura (etapa 5), igual aos carrosséis da agência: --grao (ruído), --meio-tom (pontos no fundo) e --pontos (dentro
+   da letra). Mais forte desde 29/10/2026 ("senti falta do ruído, halftone"). */
+.tema-branco {
+  --fundo: radial-gradient(120% 90% at 50% 30%, #f6f5f2 30%, #e2dfd8 100%);
+  --tinta: #1c1c1c; --fraca: rgba(28, 28, 28, 0.55); --acento: #f06000; --trilho: rgba(28, 28, 28, 0.14);
+  --grao: multiply; --grao-forca: 0.36; --poeira: #2a2a2a;
+  --ponto: #000; --meio-tom-modo: multiply; --meio-tom: 0.075; --pontos: 0.16;
+}
+.tema-preto {
+  --fundo: radial-gradient(120% 90% at 50% 28%, #24201b 0%, #121110 55%, #070707 100%);
+  --tinta: #f5f1ea; --fraca: rgba(245, 241, 234, 0.55); --acento: #ff8a1f; --trilho: rgba(245, 241, 234, 0.16);
+  --grao: soft-light; --grao-forca: 0.72; --poeira: #f5f1ea;
+  --ponto: #fff; --meio-tom-modo: screen; --meio-tom: 0.09; --pontos: 0.12;
+}
+.tema-foto {
+  --fundo: #141210;
+  --tinta: #fff6e8; --fraca: rgba(255, 246, 232, 0.75); --acento: #ffb000; --trilho: rgba(255, 246, 232, 0.25);
+  --grao: overlay; --grao-forca: 0.46; --poeira: #fff6e8;
+  --ponto: #fff; --meio-tom-modo: screen; --meio-tom: 0.075; --pontos: 0.1;
+}
+
+/* ---------------------------------------------------------------- 0 fundo */
+.foto { position: absolute; inset: 0; background-size: cover; background-position: center; }
+.veu { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.1) 40%, rgba(0, 0, 0, 0.6) 100%); }
+
+/* ---------------------------------------------------------------- 0,5 a imagem do espaço vazio (atrás da frase) */
+.imagem { position: absolute; }
+.imagem img { display: block; width: 100%; height: auto; }
+/* Em camadas: a foto de fundo preto no modo tela (o preto some; fica a fumaça e a luz, sem borda) e a xícara
+   recortada por cima, com a sombra para baixo e para a direita (a luz da foto vem do alto à esquerda).
+   Sem transform nem opacidade no .imagem: o modo tela precisa enxergar o fundo da janela. */
+.camadas .luz { mix-blend-mode: screen; }
+.camadas .xicara { position: absolute; inset: 0; filter: drop-shadow(20px 34px 30px rgba(0, 0, 0, 0.8)) drop-shadow(3px 7px 5px rgba(0, 0, 0, 0.65)); }
+/* Sem recorte (reserva): a foto com a borda sumindo no fundo. Só para foto já escura e lisa; confira se não parece recorte. */
+.esfumada img { -webkit-mask-image: radial-gradient(closest-side, #000 62%, transparent 100%); mask-image: radial-gradient(closest-side, #000 62%, transparent 100%); }
+/* O mockup do curso: a tela num notebook escuro, com sombra laranja de leve. */
+.notebook .tela { padding: 12px 12px 14px; border-radius: 22px 22px 6px 6px; background: #0c0c0d; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.09), 0 40px 90px -20px rgba(255, 122, 0, 0.35), 0 30px 60px rgba(0, 0, 0, 0.55); }
+.notebook .tela img { border-radius: 10px; }
+.notebook .base { height: 18px; margin: 0 -7%; border-radius: 2px 2px 16px 16px; background: linear-gradient(180deg, #3a3a3e, #1c1c1f); box-shadow: 0 16px 30px rgba(0, 0, 0, 0.5); }
+
+/* ---------------------------------------------------------------- 1 a frase (coordenadas da janela: 1000 x 1270) */
+.bloco { position: absolute; left: 92px; right: 92px; display: flex; flex-direction: column; gap: 20px; }
+.pos-meio .bloco { top: 50%; transform: translateY(-50%); }
+.pos-baixo .bloco { bottom: 150px; }
+.pos-cima .bloco { top: 190px; }
+.alinha-centro .bloco { align-items: center; text-align: center; }
+
+/* As quebras são do texto (\n): o modelo mede a linha mais comprida e acha o tamanho que enche a largura. */
+.frase { display: inline-block; align-self: flex-start; white-space: pre; font-weight: 800; line-height: 0.95; letter-spacing: -0.045em; word-spacing: 0.1em; }
+.alinha-centro .frase { align-self: center; }
+/* O rótulo ("em Claude:") e a palavra de destaque vão na serifa itálica laranja, como o "Calango," dos carrosséis. */
+.rotulo { align-self: flex-start; font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; line-height: 1; letter-spacing: -0.01em; white-space: pre; color: var(--acento); }
+.alinha-centro .rotulo { align-self: center; }
+.destaque { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; font-size: 1.12em; letter-spacing: -0.015em; color: var(--acento); }
+.asterisco { color: var(--acento); margin-right: 0.02em; }
+.apoio { font: 400 30px/1.4 'Outfit', sans-serif; color: var(--fraca); white-space: pre-line; max-width: 760px; }
+/* O card de oferta (o último de todo post, regra do dono em 29/10/2026): a chamada para comentar, num botão laranja. */
+.cta { align-self: flex-start; display: inline-flex; align-items: center; gap: 0.32em; margin-top: 14px; padding: 0.5em 0.9em 0.52em; border-radius: 999px; background: var(--acento); color: #170900; font: 500 40px/1 'Outfit', sans-serif; letter-spacing: -0.01em; box-shadow: 0 18px 40px -18px var(--acento); }
+.cta b { font-weight: 700; letter-spacing: 0.02em; }
+.alinha-centro .cta { align-self: center; }
+
+/* ---------------------------------------------------------------- 2 rabisco (etapa 3) */
+.rabisco { position: absolute; color: var(--acento); }
+.rabisco svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+/* ---------------------------------------------------------------- 3 acabamento */
+.cabecalho { position: absolute; left: 50px; right: 50px; top: 34px; height: 42px; display: flex; align-items: center; justify-content: center; font: 300 31px 'Outfit', sans-serif; color: var(--tinta); }
+.cabecalho b { font-weight: 700; }
+.cabecalho .min, .cabecalho .fechar { position: absolute; top: 50%; transform: translateY(-50%); }
+.cabecalho .min { left: 0; width: 28px; height: 3px; border-radius: 2px; background: var(--tinta); }
+.cabecalho .fechar { right: 0; width: 26px; height: 26px; }
+.cabecalho .fechar::before, .cabecalho .fechar::after { content: ''; position: absolute; left: 50%; top: 50%; width: 32px; height: 3px; border-radius: 2px; background: var(--tinta); }
+.cabecalho .fechar::before { transform: translate(-50%, -50%) rotate(45deg); }
+.cabecalho .fechar::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.trilho { position: absolute; left: 140px; right: 140px; bottom: 56px; height: 2px; background: var(--trilho); }
+.trilho i { position: absolute; top: -6px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--acento); }
+/* Pontinhos dentro da letra da frase (textura de impressão), por cima da cor. O destaque laranja fica liso. */
+.etapa-5 .frase {
+  padding-right: 0.06em; /* o espaçamento negativo cortava a curva da última letra da linha mais larga */
+  padding-bottom: 0.14em; margin-bottom: -0.14em; /* a entrelinha curta cortava a perna do g na última linha */
+  color: transparent; -webkit-background-clip: text; background-clip: text;
+  background-image: radial-gradient(rgba(0, 0, 0, var(--pontos)) 30%, transparent 34%), linear-gradient(var(--tinta), var(--tinta));
+  background-size: 4.5px 4.5px, 100% 100%;
+}
+/* Meio-tom no fundo: pontos pequenos e juntos (a cada 3 px), como nos carrosséis. */
+.meio-tom {
+  position: absolute; inset: 0; pointer-events: none; mix-blend-mode: var(--meio-tom-modo); opacity: var(--meio-tom);
+  background: radial-gradient(circle, var(--ponto) 0.6px, transparent 0.95px) 0 0 / 3px 3px;
+}
+/* Poeirinhas: poucas, de tamanhos diferentes, fora do miolo da janela (pedido do dono, 30/10/2026). */
+.poeira { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; color: var(--poeira); }
+.grao {
+  position: absolute; inset: 0; pointer-events: none; mix-blend-mode: var(--grao); opacity: var(--grao-forca);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='360' height='360'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}

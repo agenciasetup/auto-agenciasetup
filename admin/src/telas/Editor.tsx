@@ -1,6 +1,12 @@
-// Editor de recurso ou novidade. Corpo em Markdown; arquivo e capa vão para o Storage pelo /arquivos.
+// Editor de recurso ou artigo. Corpo em Markdown; arquivo e capa vão para o Storage pelo /arquivos.
+// Artigo (fase B de SEO, docs/seo-geo.md): busca-alvo, resposta rápida, perguntas, autor, blocos e a nota do analisador
+// ao vivo. O analisador e os assuntos são os mesmos arquivos do site (worker/lib), sem cópia.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Archive, ExternalLink, FileUp, ImagePlus, Plus, Save, Send, Trash2 } from 'lucide-react';
+// @ts-ignore: JavaScript puro do Worker, o mesmo que confere na publicação e no conector.
+import { analisar } from '../../../worker/lib/analisador-seo.js';
+// @ts-ignore
+import { ASSUNTOS, INTENCOES, TIPOS_ARTIGO, caminhoArtigo } from '../../../worker/lib/assuntos.js';
 import { enviarArquivo, get, patch, post } from '../nucleo/api';
 import { guardarSaida, useRota } from '../nucleo/roteador';
 import { AreaTexto, Campo, Carregando, ErroCarga, Escolha, Faixa, Grupo, Marcar, Titulo, useAcao, useCarregar, useSessao } from '../nucleo/ui';
@@ -9,9 +15,23 @@ import { EtiquetaConteudo } from './comum';
 
 const VAZIO_RECURSO = {
   titulo: '', slug: '', resumo: '', corpo_md: '', tipo: 'guia', categoria_id: '', capa_url: '', arquivo_url: '', arquivo_nome: '', arquivo_bytes: null, link_externo: '', tags: '', destaque: false,
-  ferramentas: '', link_uso: '', itens: '', formato: '', nivel: '', video_url: '', galeria: [] as { url: string; alt: string }[],
+  ferramentas: '', link_uso: '', itens: '', formato: '', nivel: '', video_url: '', galeria: [] as { url: string; alt: string }[], perfil: 'br',
 };
-const VAZIO_ARTIGO = { titulo: '', slug: '', resumo: '', corpo_md: '', categoria_id: '', capa_url: '', tags: '', fontes: [], recurso_id: '', destaque: false };
+// O recurso do Brasil fica no site em português; o do perfil em inglês, em agenciasetup.com/free (o material da DM em inglês).
+const PERFIS_RECURSO = [{ v: 'br', t: 'Brasil (site em português)' }, { v: 'en', t: 'Inglês (agenciasetup.com/free)' }];
+const VAZIO_ARTIGO = {
+  titulo: '', slug: '', resumo: '', corpo_md: '', categoria_id: '', capa_url: '', tags: '', fontes: [], recurso_id: '', destaque: false,
+  tipo: 'noticia', assunto: 'novidades', consulta_alvo: '', intencao: '', resposta: '', faqs: [] as { pergunta: string; resposta: string }[], autor_id: '', revisor_id: '', conferido_em: '', afiliado: false,
+};
+
+// Os blocos do texto (worker/nucleo/util.js): o botão põe o modelo no fim do corpo, para preencher.
+const BLOCOS: { t: string; md: string }[] = [
+  { t: 'Tabela', md: '| Opção | Para quem | Preço |\n|---|---|---|\n| | | |\n| | | |' },
+  { t: 'Prós e contras', md: '```pros-contras\n+ \n+ \n- \n- \n```' },
+  { t: 'Produto', md: '```produto\nnome: \nimagem: \nalt: \npara: \npreco: \nlink: \nloja: \n```' },
+  { t: 'Chamada do curso', md: '```curso\n```' },
+];
+const contarPalavras = (s: string) => (String(s || '').match(/\S+/g) || []).length;
 
 function paraForm(tipo: string, d: any) {
   const base: any = tipo === 'recursos' ? { ...VAZIO_RECURSO } : { ...VAZIO_ARTIGO };
@@ -19,7 +39,11 @@ function paraForm(tipo: string, d: any) {
   for (const k of Object.keys(base)) if (d[k] !== undefined && d[k] !== null) base[k] = d[k];
   base.tags = textoDeLista(d.tags);
   base.categoria_id = d.categoria_id ? String(d.categoria_id) : '';
-  if (tipo === 'artigos') base.fontes = Array.isArray(d.fontes) ? d.fontes.map((f: any) => (typeof f === 'string' ? { nome: '', url: f } : { nome: f.nome || '', url: f.url || '' })) : [];
+  if (tipo === 'artigos') {
+    base.fontes = Array.isArray(d.fontes) ? d.fontes.map((f: any) => (typeof f === 'string' ? { nome: '', url: f } : { nome: f.nome || '', url: f.url || '' })) : [];
+    base.faqs = Array.isArray(d.faqs) ? d.faqs.map((f: any) => ({ pergunta: f.pergunta || '', resposta: f.resposta || '' })) : [];
+    base.conferido_em = d.conferido_em ? String(d.conferido_em).slice(0, 10) : '';
+  }
   if (tipo === 'recursos') {
     base.ferramentas = textoDeLista(d.ferramentas);
     base.itens = Array.isArray(d.itens) ? d.itens.join('\n') : '';
@@ -34,6 +58,8 @@ function paraCorpo(tipo: string, f: any) {
   if (tipo === 'artigos') {
     c.fontes = (f.fontes || []).filter((x: any) => x.url).map((x: any) => ({ nome: x.nome || x.url, url: x.url }));
     c.recurso_id = f.recurso_id || null;
+    c.faqs = (f.faqs || []).filter((x: any) => x.pergunta.trim() && x.resposta.trim());
+    for (const k of ['autor_id', 'revisor_id', 'intencao', 'conferido_em', 'consulta_alvo', 'resposta']) c[k] = f[k] || null;
   } else {
     c.arquivo_bytes = f.arquivo_bytes ? Number(f.arquivo_bytes) : null;
     c.ferramentas = listaDeTexto(f.ferramentas).map((x: string) => x.toLowerCase());
@@ -46,20 +72,28 @@ function paraCorpo(tipo: string, f: any) {
 
 export default function Editor({ params }: { params: { tipo: string; id: string } }) {
   const { pode } = useSessao();
-  const { ir } = useRota();
+  const { ir, rota } = useRota();
   const tipo = params.tipo === 'artigos' ? 'artigos' : 'recursos';
   const novo = params.id === 'novo';
   const ehRecurso = tipo === 'recursos';
   const { dados, setDados, erro, carregando, recarregar } = useCarregar(() => (novo ? Promise.resolve(null) : get(`/conteudo/${tipo}/${params.id}`)), [tipo, params.id]);
   const cats = useCarregar(() => get('/categorias'), []);
   const recursos = useCarregar(() => (ehRecurso ? Promise.resolve({ itens: [] }) : get('/conteudo/recursos?pagina=1')), [ehRecurso]);
+  const autores = useCarregar(() => (ehRecurso ? Promise.resolve([]) : get('/autores')), [ehRecurso]);
+  const consultas = useCarregar(() => (ehRecurso ? Promise.resolve([]) : get('/conteudo/consultas')), [ehRecurso]);
   const [form, setForm] = useState<any>(null);
   const { ocupado, rodar } = useAcao();
+  // A nota de SEO e GEO, refeita a cada letra (sem IA, no próprio navegador).
+  const analise = useMemo(() => (!form || ehRecurso ? null : analisar({ ...form, id: dados?.id, outros: (consultas.dados as any[]) || [] })), [form, ehRecurso, consultas.dados, dados?.id]);
 
   useEffect(() => {
     if (!novo && !dados) return;
-    setForm(paraForm(tipo, dados));
-    document.title = `${novo ? (ehRecurso ? 'Novo recurso' : 'Nova novidade') : dados?.titulo || 'Editar'} | Painel Agência Setup`;
+    const inicial = paraForm(tipo, dados);
+    // Atalho "Novo agente": /conteudo/recursos/novo?tipo=agente já abre com o tipo escolhido.
+    const tipoPedido = rota.busca.get('tipo') || '';
+    if (novo && ehRecurso && TIPOS_RECURSO[tipoPedido]) inicial.tipo = tipoPedido;
+    setForm(inicial);
+    document.title = `${novo ? (ehRecurso ? (form && form.tipo === 'agente' ? 'Novo agente' : 'Novo recurso') : 'Novo artigo') : dados?.titulo || 'Editar'} | Painel Agência Setup`;
   }, [dados, novo, tipo, ehRecurso]);
 
   const original = useMemo(() => JSON.stringify(paraForm(tipo, dados)), [dados, tipo]);
@@ -109,13 +143,13 @@ export default function Editor({ params }: { params: { tipo: string; id: string 
   const endereco = dados?.endereco;
   return (
     <div className="tela tela-estreita">
-      <Titulo voltar={{ para: `/conteudo?aba=${tipo}`, t: 'Recursos e novidades' }}
-        titulo={novo ? (ehRecurso ? 'Novo recurso' : 'Nova novidade') : dados.titulo}
+      <Titulo voltar={{ para: `/conteudo?aba=${tipo}`, t: 'Recursos e artigos' }}
+        titulo={novo ? (ehRecurso ? (form && form.tipo === 'agente' ? 'Novo agente' : 'Novo recurso') : 'Novo artigo') : dados.titulo}
         sub={!novo ? <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}><EtiquetaConteudo status={status} />{dados.publicado_em && <span>publicado {dataHora(dados.publicado_em)}</span>}</span> : 'Fica como rascunho até publicar.'}
         acoes={<>
           {endereco && status === 'publicado' && <a className="bt bt-texto" href={endereco} target="_blank" rel="noopener"><ExternalLink />Ver no site</a>}
           {podeEditar && <button className="bt" disabled={!!ocupado || (!mudou && !novo)} onClick={salvar}><Save />{ocupado === 'salvar' ? 'Salvando…' : 'Salvar'}</button>}
-          {!novo && podePublicar && status !== 'publicado' && <button className="bt bt-tinta" disabled={!!ocupado} onClick={() => { if (confirm('Publicar no site agora?')) mudarSituacao('publicar'); }}><Send />Publicar</button>}
+          {!novo && podePublicar && status !== 'publicado' && <button className="bt bt-tinta" disabled={!!ocupado || !!(analise && analise.bloqueios.length)} title={analise && analise.bloqueios.length ? `Antes de publicar: ${analise.bloqueios.map((b: any) => b.titulo).join('; ')}` : undefined} onClick={() => { if (confirm('Publicar no site agora?')) mudarSituacao('publicar'); }}><Send />Publicar</button>}
           {!novo && podePublicar && status === 'publicado' && <button className="bt bt-texto bt-perigo" disabled={!!ocupado} onClick={() => { if (confirm('Tirar do ar? Dá para publicar de novo depois.')) mudarSituacao('arquivar'); }}><Archive />Tirar do ar</button>}
         </>} />
 
@@ -125,7 +159,9 @@ export default function Editor({ params }: { params: { tipo: string; id: string 
       <Grupo titulo="Principal">
         <Campo rotulo="Título" valor={form.titulo} mudar={(v) => mudar('titulo', v)} desativado={!podeEditar} autoFocus={novo} />
         <Campo rotulo="Endereço (slug)" valor={form.slug} mudar={(v) => mudar('slug', v)} desativado={!podeEditar} mono
-          dica={form.slug ? `${ehRecurso ? '/recursos/' : '/novidades/'}${form.slug}` : 'Em branco, sai do título.'} />
+          dica={form.slug ? (ehRecurso ? `${form.perfil === 'en' ? 'agenciasetup.com/free/' : '/recursos/'}${form.slug}` : caminhoArtigo({ assunto: form.assunto, slug: form.slug })) : 'Em branco, sai do título.'} />
+        {ehRecurso && <Escolha rotulo="Perfil" valor={form.perfil} mudar={(v) => mudar('perfil', v)} desativado={!podeEditar} opcoes={PERFIS_RECURSO}
+          dica={form.perfil === 'en' ? 'Em inglês: não aparece no site em português. É o material que a DM do perfil em inglês manda.' : 'Aparece no site em português.'} />}
         <AreaTexto rotulo="Resumo" valor={form.resumo} mudar={(v) => mudar('resumo', v)} linhas={2} desativado={!podeEditar} dica="Uma ou duas frases. Aparece nas listas e no Google." />
         <div className="linha-campos">
           {ehRecurso && <Escolha rotulo="Tipo" valor={form.tipo} mudar={(v) => mudar('tipo', v)} desativado={!podeEditar} opcoes={Object.entries(TIPOS_RECURSO).map(([v, t]) => ({ v, t }))} />}
@@ -135,6 +171,45 @@ export default function Editor({ params }: { params: { tipo: string; id: string 
         <Campo rotulo="Tags" valor={form.tags} mudar={(v) => mudar('tags', v)} desativado={!podeEditar} dica="Separadas por vírgula. Ajudam a escolher o anúncio certo para a página." />
         <Marcar rotulo="Destaque" valor={form.destaque} mudar={(v) => mudar('destaque', v)} desativado={!podeEditar} dica={ehRecurso ? 'Aparece primeiro na lista de recursos.' : 'Aparece primeiro nas novidades.'} />
       </Grupo>
+
+      {!ehRecurso && analise && (
+        <Grupo titulo={`Nota de SEO e GEO: ${analise.nota}`} rodape="Sem IA: confere enquanto você escreve. Só o que está em vermelho impede de publicar; o resto é conselho.">
+          <div className="seo-notas">
+            <span><b>{analise.notaSeo}</b>Google</span><span><b>{analise.notaGeo}</b>IAs</span><span><b>{analise.notaVoz}</b>Voz</span><span><b>{analise.palavras}</b>palavras</span>
+          </div>
+          <ul className="seo-checks">
+            {analise.checks.filter((c: any) => c.nivel !== 'ok').sort((a: any, b: any) => (a.nivel === 'erro' ? -1 : 0) - (b.nivel === 'erro' ? -1 : 0)).map((c: any) => (
+              <li key={c.id} className={`seo-${c.nivel}`}><b>{c.titulo}</b>{c.dica && <span>{c.dica}</span>}</li>
+            ))}
+          </ul>
+          {analise.checks.some((c: any) => c.nivel === 'ok') && <details className="seo-ok"><summary>{analise.checks.filter((c: any) => c.nivel === 'ok').length} itens certos</summary><ul>{analise.checks.filter((c: any) => c.nivel === 'ok').map((c: any) => <li key={c.id}>{c.titulo}</li>)}</ul></details>}
+        </Grupo>
+      )}
+
+      {!ehRecurso && (
+        <Grupo titulo="Busca e resposta" rodape="A busca-alvo é o que a pessoa digita no Google. A resposta rápida aparece no topo da página: é o trecho que o Google destaca e que o ChatGPT e o Gemini citam.">
+          <div className="linha-campos">
+            <Escolha rotulo="Tipo" valor={form.tipo} mudar={(v) => mudar('tipo', v)} desativado={!podeEditar} opcoes={Object.entries(TIPOS_ARTIGO).map(([v, t]) => ({ v, t: String(t) }))} />
+            <Escolha rotulo="Assunto (vira o endereço)" valor={form.assunto} mudar={(v) => mudar('assunto', v)} desativado={!podeEditar} opcoes={Object.entries(ASSUNTOS).map(([v, s]: [string, any]) => ({ v, t: `${s.nome} (/${v})` }))} />
+          </div>
+          <div className="linha-campos">
+            <Campo rotulo="Busca-alvo" valor={form.consulta_alvo} mudar={(v) => mudar('consulta_alvo', v)} desativado={!podeEditar} placeholder="melhor notebook para designer" />
+            <Escolha rotulo="Intenção de quem busca" valor={form.intencao} mudar={(v) => mudar('intencao', v)} desativado={!podeEditar} opcoes={[{ v: '', t: 'Não sei' }, ...Object.entries(INTENCOES).map(([v, t]) => ({ v, t: String(t) }))]} />
+          </div>
+          <AreaTexto rotulo={`Resposta rápida (${contarPalavras(form.resposta)} palavras)`} valor={form.resposta} mudar={(v) => mudar('resposta', v)} linhas={3} desativado={!podeEditar}
+            dica="De 40 a 60 palavras que respondem a busca sozinhas, sem enrolar." />
+          <div className="linha-campos">
+            <Escolha rotulo="Quem assina" valor={form.autor_id} mudar={(v) => mudar('autor_id', v)} desativado={!podeEditar}
+              opcoes={[{ v: '', t: autores.carregando ? 'Carregando…' : 'Agência Setup (sem autor)' }, ...(((autores.dados as any[]) || []).filter((a: any) => a.ativo).map((a: any) => ({ v: a.id, t: a.nome })))]} />
+            <Escolha rotulo="Quem revisou (opcional)" valor={form.revisor_id} mudar={(v) => mudar('revisor_id', v)} desativado={!podeEditar}
+              opcoes={[{ v: '', t: 'Ninguém' }, ...(((autores.dados as any[]) || []).filter((a: any) => a.ativo).map((a: any) => ({ v: a.id, t: a.nome })))]} />
+          </div>
+          <div className="linha-campos">
+            <Marcar rotulo="Tem link de afiliado" valor={form.afiliado} mudar={(v) => mudar('afiliado', v)} desativado={!podeEditar} dica="A página mostra o aviso de comissão e o link vai marcado para o Google." />
+            <Campo rotulo="Preços conferidos em" tipo="date" valor={form.conferido_em} mudar={(v) => mudar('conferido_em', v)} desativado={!podeEditar} dica="Em comparativo e review. Aparece no fim da página." />
+          </div>
+        </Grupo>
+      )}
 
       {ehRecurso && (
         <Grupo titulo="Onde se usa" rodape={form.tipo === 'agente' ? 'Agente: o botão principal da página abre o link do agente (GPT, Projeto do Claude, Gem). O arquivo, se houver, vira um botão extra.' : 'Aparece na página do recurso e nos filtros do site.'}>
@@ -203,10 +278,29 @@ export default function Editor({ params }: { params: { tipo: string; id: string 
         <Campo rotulo="Endereço da capa" valor={form.capa_url} mudar={(v) => mudar('capa_url', v)} desativado={!podeEditar} mono />
       </Grupo>
 
-      <Grupo titulo="Texto">
+      <Grupo titulo="Texto" acoes={!ehRecurso && podeEditar ? <div className="barra-acoes">{BLOCOS.map((b) => (
+        <button key={b.t} className="bt bt-mini" onClick={() => mudar('corpo_md', `${String(form.corpo_md || '').replace(/\s+$/, '')}\n\n${b.md}\n`)}><Plus />{b.t}</button>
+      ))}</div> : undefined}>
         <AreaTexto rotulo="Corpo (Markdown)" valor={form.corpo_md} mudar={(v) => mudar('corpo_md', v)} linhas={18} mono desativado={!podeEditar}
-          dica="## para intertítulo, **negrito**, *itálico*, - para lista, [texto](link), ![descrição](imagem). Sem travessão." />
+          dica={ehRecurso ? '## para intertítulo, **negrito**, *itálico*, - para lista, [texto](link), ![descrição](imagem). Sem travessão.'
+            : '## para intertítulo (nunca #), - para lista, [texto](link), ![descrição](imagem). Os botões acima põem tabela, prós e contras, caixa de produto e a chamada do curso no fim do texto. Sem travessão.'} />
       </Grupo>
+
+      {!ehRecurso && (
+        <Grupo titulo="Perguntas frequentes" rodape="De 3 a 6 perguntas que as pessoas fazem de verdade, com resposta curta. Viram o bloco de perguntas da página e aparecem para o Google e as IAs."
+          acoes={podeEditar ? <button className="bt bt-mini" onClick={() => mudar('faqs', [...form.faqs, { pergunta: '', resposta: '' }])}><Plus />Pergunta</button> : undefined}>
+          {form.faqs.length === 0 && <p className="mudo" style={{ marginTop: 0 }}>Nenhuma pergunta.</p>}
+          {form.faqs.map((f: any, i: number) => (
+            <div className="item-lista" key={i}>
+              <div style={{ flex: 1 }}>
+                <Campo rotulo={`Pergunta ${i + 1}`} valor={f.pergunta} mudar={(v) => mudar('faqs', form.faqs.map((x: any, j: number) => (j === i ? { ...x, pergunta: v } : x)))} desativado={!podeEditar} />
+                <AreaTexto rotulo="Resposta" valor={f.resposta} mudar={(v) => mudar('faqs', form.faqs.map((x: any, j: number) => (j === i ? { ...x, resposta: v } : x)))} linhas={2} desativado={!podeEditar} />
+              </div>
+              {podeEditar && <button className="bt-icone" style={{ marginTop: 24 }} aria-label="Remover pergunta" onClick={() => mudar('faqs', form.faqs.filter((_: any, j: number) => j !== i))}><Trash2 /></button>}
+            </div>
+          ))}
+        </Grupo>
+      )}
 
       {!ehRecurso && (
         <Grupo titulo="Fontes e recurso ligado" acoes={podeEditar ? <button className="bt bt-mini" onClick={() => mudar('fontes', [...form.fontes, { nome: '', url: '' }])}><Plus />Fonte</button> : undefined}>

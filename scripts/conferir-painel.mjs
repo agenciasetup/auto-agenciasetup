@@ -16,7 +16,7 @@ const ts = Date.now();
 const email = `conferir-${ts}@example.com`;
 const senha = `Cf${randomBytes(12).toString('hex')}9`;
 let authId = null, membroId = null;
-const criados = { recursos: [], pecas: [] };
+const criados = { recursos: [], pecas: [], gatilhos: [] };
 
 async function supa(caminho, opcoes = {}, chave = env.SUPABASE_SECRET_KEY) {
   const r = await fetch(`${env.SUPABASE_URL}/auth/v1${caminho}`, { ...opcoes, headers: { apikey: chave, 'content-type': 'application/json', ...(opcoes.headers || {}) } });
@@ -63,7 +63,8 @@ try {
     ok(r.status === 200, `GET ${c}`, r.status !== 200 ? `${r.status} ${r.dados && r.dados.erro}` : '');
   }
   const redes = (await api('GET', '/redes')).dados;
-  ok(Array.isArray(redes) && redes.length === 8 && redes.every((r) => r.situacao === 'em_breve'), 'redes: 8 módulos, todos "em breve"');
+  const ig = Array.isArray(redes) && redes.find((r) => r.id === 'instagram');
+  ok(Array.isArray(redes) && redes.length === 8 && ig && ig.disponivel && ['falta_configurar', 'pronta', 'conectada'].includes(ig.situacao), 'redes: 8 módulos, Instagram pronto para ligar', ig && ig.situacao);
 
   // ------------------------------------------------------------ conteúdo
   const rec = await api('POST', '/conteudo/recursos', { titulo: `Recurso conferência ${ts}`, tipo: 'prompt', resumo: 'Teste.', corpo_md: '## Oi', tags: ['teste'] });
@@ -82,13 +83,13 @@ try {
 
   // ------------------------------------------------------------ fila
   const tokenCasa = env.MCP_CHAVE;
-  const pecasR = await fetch(`${base}/mcp`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${tokenCasa}` }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'criar_pecas', arguments: { origem_tipo: 'recurso', origem_id: rec.dados.id, pecas: [{ rede: 'instagram', formato: 'carrossel', titulo: 'Teste', legenda: 'Teste', slides: [{ titulo: 'Capa' }] }] } } }) }).then((r) => r.json());
+  const pecasR = await fetch(`${base}/mcp/ferramentas`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${tokenCasa}` }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'criar_pecas', arguments: { origem_tipo: 'recurso', origem_id: rec.dados.id, pecas: [{ rede: 'x', formato: 'thread', titulo: 'Teste', legenda: 'Teste' }] } } }) }).then((r) => r.json());
   const pecaId = pecasR.result && pecasR.result.structuredContent && pecasR.result.structuredContent.pecas[0].id;
   ok(!!pecaId, 'Claude cria peça na fila (chave colada)');
   if (pecaId) {
     criados.pecas.push(pecaId);
     const det = await api('GET', `/pecas/${pecaId}`);
-    ok(det.status === 200 && det.dados.origem && det.dados.rede && det.dados.rede.id === 'instagram', 'peça mostra origem e rede');
+    ok(det.status === 200 && det.dados.origem && det.dados.rede && det.dados.rede.id === 'x', 'peça mostra origem e rede');
     ok((await api('PATCH', `/pecas/${pecaId}`, { legenda: 'Legenda nova' })).dados.legenda === 'Legenda nova', 'editar peça');
     ok((await api('POST', `/pecas/${pecaId}/aprovar`)).dados.status === 'aprovado', 'aprovar peça');
     const agora = await api('POST', `/pecas/${pecaId}/publicar-agora`);
@@ -103,12 +104,38 @@ try {
     }
   }
 
+  // ------------------------------------------------------------ motor de engajamento
+  for (const c of ['/desempenho?dias=365', '/desempenho/posts?ordem=nota', '/em-alta?horas=48', '/comenta', '/oferta']) {
+    const r = await api('GET', c);
+    ok(r.status === 200, `GET ${c}`, r.status !== 200 ? `${r.status} ${r.dados && r.dados.erro}` : '');
+  }
+  const desemp = (await api('GET', '/desempenho?dias=3650')).dados;
+  ok(desemp && typeof desemp.posts === 'number' && Array.isArray(desemp.contas), 'desempenho traz posts e a situação da conta', desemp && `${desemp.posts} posts`);
+  const alta = (await api('GET', '/em-alta?horas=168')).dados;
+  ok(alta && Array.isArray(alta.pautas) && Array.isArray(alta.fontes) && alta.fontes.length >= 20, 'em alta traz pautas e as fontes do radar', alta && `${alta.pautas.length} pautas, ${alta.fontes.length} fontes`);
+  const gat = await api('POST', '/comenta', { palavra: '"conferencia"', recurso_id: rec.dados.id });
+  ok(gat.status === 200 && gat.dados.palavra === 'CONFERENCIA' && gat.dados.ativo === false, 'Comenta X: palavra nasce desligada, em maiúsculas');
+  if (gat.status === 200) {
+    criados.gatilhos.push(gat.dados.id);
+    ok((await api('POST', `/comenta/${gat.dados.id}/ligar`)).dados.ativo === true, 'Comenta X: liga com o material publicado');
+    const lista = (await api('GET', '/comenta')).dados;
+    const meu = lista.gatilhos.find((g) => g.id === gat.dados.id);
+    ok(meu && meu.link_dm && meu.link_dm.includes('?de=dm-conferencia'), 'Comenta X: a DM leva o link do recurso com a marca do clique');
+    ok((await api('POST', `/comenta/${gat.dados.id}/desligar`)).dados.ativo === false, 'Comenta X: desliga');
+  }
+  const semMaterial = await api('POST', '/comenta', { palavra: 'nada' });
+  ok(semMaterial.status === 400, 'Comenta X: recusa palavra sem material');
+  const pecaComenta = await fetch(`${base}/mcp/ferramentas`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${tokenCasa}` }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'criar_pecas', arguments: { origem_tipo: 'recurso', origem_id: rec.dados.id, pecas: [{ rede: 'instagram', formato: 'carrossel', legenda: 'Sem a palavra', comenta: { palavra: 'conferenciapeca' } }] } } }) }).then((r) => r.json());
+  const pc = pecaComenta.result && pecaComenta.result.structuredContent;
+  ok(pc && pc.pecas[0].comenta && pc.pecas[0].comenta.palavra === 'CONFERENCIAPECA' && pc.avisos && pc.avisos.length === 1, 'Claude cria peça já com o Comenta X (e avisa que a legenda não pede a palavra)');
+  if (pc) { criados.pecas.push(pc.pecas[0].id); criados.gatilhos.push(pc.pecas[0].comenta.gatilho_id); }
+
   // ------------------------------------------------------------ chaves do Claude
   const ch = await api('POST', '/claude/chaves', { nome: 'Conferência', papel: 'redator' });
   ok(ch.status === 200 && /^as_/.test(ch.dados.chave), 'criar chave do conector');
-  const ini = await fetch(`${base}/mcp`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${ch.dados.chave}` }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }) }).then((r) => r.json());
+  const ini = await fetch(`${base}/mcp/ferramentas`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${ch.dados.chave}` }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }) }).then((r) => r.json());
   const nomes = (ini.result && ini.result.tools || []).map((t) => t.name);
-  ok(nomes.includes('criar_pecas') && !nomes.includes('publicar') && !nomes.includes('publicar_peca_agora'), 'chave de Redator não vê ferramentas de publicar', `${nomes.length} ferramentas`);
+  ok(nomes.includes('criar_pecas') && !nomes.includes('publicar') && !nomes.includes('publicar_peca_agora') && !nomes.includes('ligar_comenta'), 'chave de Redator não vê ferramentas de publicar nem de ligar DM', `${nomes.length} ferramentas`);
   ok((await api('POST', `/claude/chaves/${ch.dados.id}/revogar`)).dados.ok === true, 'revogar chave');
 
   // ------------------------------------------------------------ login do app do Claude (OAuth)
@@ -122,7 +149,7 @@ try {
   const volta = 'https://claude.ai/api/mcp/auth_callback';
   const reg = await fetch(servidor.registration_endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ client_name: 'Conferência', redirect_uris: [volta] }) }).then((r) => r.json());
   ok(/^asc_/.test(reg.client_id || ''), 'registro do app (DCR)');
-  const mcp = (chave, metodo = 'tools/list', params) => fetch(`${base}/mcp`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${chave}` }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: metodo, params }) });
+  const mcp = (chave, metodo = 'tools/list', params) => fetch(`${base}/mcp/ferramentas`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${chave}` }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: metodo, params }) });
   const trocar = (corpo) => fetch(servidor.token_endpoint, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: reg.client_id, ...corpo }) });
   // O caminho do app do Claude: authorize -> Permitir no painel -> código -> chave.
   async function conectarApp(primeira) {
@@ -160,6 +187,7 @@ try {
   console.log('FALHA', e.message);
 } finally {
   // ------------------------------------------------------------ limpeza
+  for (const id of criados.gatilhos || []) await sql(`delete from auditoria where alvo = 'gatilhos:${id}'; delete from respostas_gatilho where gatilho_id = '${id}'; delete from gatilhos where id = '${id}'`).catch(() => {});
   for (const id of criados.pecas) await sql(`delete from auditoria where alvo like '%${id}%'; delete from pecas where id = '${id}'`).catch(() => {});
   for (const id of criados.recursos) await sql(`delete from auditoria where alvo like '%${id}%'; delete from pecas where origem_id = '${id}'; delete from downloads where recurso_id = '${id}'; delete from recursos where id = '${id}'`).catch(() => {});
   // A peça criada pelo Claude com a chave da casa fica registrada sem dono: sai também.

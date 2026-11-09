@@ -3,6 +3,7 @@
 import { dataLonga, esc, markdown, tamanho, urlSegura } from '../nucleo/util.js';
 import { htmlAdsense, htmlAnuncio } from '../lib/anuncios.js';
 import { icone } from './icones.js';
+import { ASSUNTOS, TIPOS_ARTIGO, caminhoArtigo } from '../lib/assuntos.js';
 
 // ---------------------------------------------------------------- vocabulário
 export const TIPOS = {
@@ -84,10 +85,10 @@ export function cartaoRecurso(r, i = 0) {
 }
 
 function cartaoNovidade(a, i = 0) {
-  return `<a class="painel novidade" href="/novidades/${esc(a.slug)}" style="--i:${i}" data-revelar>
+  return `<a class="painel novidade" href="${esc(caminhoArtigo(a))}" style="--i:${i}" data-revelar>
   ${a.capa_url ? `<div class="capa"><img src="${esc(urlSegura(a.capa_url))}" alt="" loading="lazy" decoding="async"></div>` : ''}
   <div class="corpo">
-    <span class="quando">${esc(dataLonga(a.publicado_em))}</span>
+    <span class="quando">${a.tipo && a.tipo !== 'noticia' && TIPOS_ARTIGO[a.tipo] ? `${esc(TIPOS_ARTIGO[a.tipo])} · ` : ''}${esc(dataLonga(a.publicado_em))}</span>
     <h3>${esc(a.titulo)}</h3>
     ${a.resumo ? `<p>${esc(a.resumo)}</p>` : ''}
   </div>
@@ -102,23 +103,37 @@ function secaoTopo(titulo, sub, mais) {
   return `<div class="secao-topo" data-revelar><div><h2 class="t-titulo">${titulo}</h2>${sub ? `<p class="t-lead">${sub}</p>` : ''}</div>${mais ? `<a class="mais" href="${mais.href}">${esc(mais.t)}${icone('seta')}</a>` : ''}</div>`;
 }
 
-export function receberNovidades(origem = 'site') {
+// "Receber novidades". Na página de um recurso, o e-mail fica ligado ao material (recurso) e, com oferta no ar,
+// a coluna da esquerda vira o próximo passo do funil: o mini curso.
+export function receberNovidades(origem = 'site', { recurso, oferta, voltar } = {}) {
+  const id = esc(origem.replace(/[^a-z0-9-]/gi, '-'));
+  const esquerda = oferta
+    ? `<div>
+      <p class="olho">${icone('curso')}Próximo passo</p>
+      <h2 class="t-titulo">${esc(oferta.titulo)}</h2>
+      ${oferta.texto ? `<p class="t-lead" style="margin-top:10px">${esc(oferta.texto)}</p>` : ''}
+      <a class="bt bt-marca" style="margin-top:18px" href="${esc(urlSegura(oferta.link))}">${esc(oferta.cta || 'Quero conhecer')}${icone('seta')}</a>
+    </div>`
+    : `<div>
+      <p class="olho">${icone('email')}${recurso ? 'Sempre atualizado' : 'Toda semana'}</p>
+      <h2 class="t-titulo">${recurso ? 'Receba a versão nova <span class="serifa marca-texto">deste material</span>' : 'Receba os recursos novos <span class="serifa marca-texto">primeiro</span>'}</h2>
+      <p class="t-lead" style="margin-top:10px">${recurso ? 'A IA muda toda semana. Quando este material for atualizado, ou sair um parecido, você recebe por e-mail.' : 'Um e-mail por semana com os agentes, prompts e modelos que saíram. Sem spam, sai quando quiser.'}</p>
+    </div>`;
   return `<section class="faixa secao">
   <div class="painel receber" data-revelar data-receber>
+    ${esquerda}
     <div>
-      <p class="olho">${icone('email')}Toda semana</p>
-      <h2 class="t-titulo">Receba os recursos novos <span class="serifa marca-texto">primeiro</span></h2>
-      <p class="t-lead" style="margin-top:10px">Um e-mail por semana com os agentes, prompts e modelos que saíram. Sem spam, sai quando quiser.</p>
-    </div>
-    <div>
+      ${oferta ? `<p class="t-mudo" style="margin:0 0 12px 6px">${recurso ? 'Ou receba a versão nova deste material quando sair:' : 'Ou receba os recursos novos por e-mail:'}</p>` : ''}
       <form class="form-email" action="/api/lead" method="post" data-form-lead>
-        <label class="sr" for="email-${esc(origem)}">Seu e-mail</label>
-        <input id="email-${esc(origem)}" type="email" name="email" required placeholder="seu@email.com" autocomplete="email" inputmode="email">
+        <label class="sr" for="email-${id}">Seu e-mail</label>
+        <input id="email-${id}" type="email" name="email" required placeholder="seu@email.com" autocomplete="email" inputmode="email">
         <input class="armadilha" type="text" name="site" tabindex="-1" autocomplete="off" aria-hidden="true">
         <input type="hidden" name="origem" value="${esc(origem)}">
-        <button class="bt bt-marca" type="submit">Quero receber</button>
+        ${recurso ? `<input type="hidden" name="recurso" value="${esc(recurso)}">` : ''}
+        ${voltar ? `<input type="hidden" name="voltar" value="${esc(voltar)}">` : ''}
+        <button class="bt ${oferta ? '' : 'bt-marca'}" type="submit">Quero receber</button>
       </form>
-      <p class="form-ok" role="status">${icone('ok')}Pronto! Você vai receber os próximos recursos.</p>
+      <p class="form-ok" role="status">${icone('ok')}Pronto! Você vai receber ${recurso ? 'as atualizações' : 'os próximos recursos'}.</p>
       <p class="t-fraco t-peq" style="margin:10px 0 0 6px">Usamos seu e-mail só para isso. <a href="/privacidade" style="text-decoration:underline">Privacidade</a>.</p>
     </div>
   </div>
@@ -126,6 +141,24 @@ export function receberNovidades(origem = 'site') {
 }
 
 // ---------------------------------------------------------------- início
+// Embaixo do herói: um leque com posts feitos pelo Claude (os exemplos de estilo do mini curso), levando ao curso,
+// e uma faixa com as ferramentas de IA correndo, dividindo o herói do resto (o mesmo desenho da página de venda).
+const POSTS_LEQUE = [
+  ['Religioso', '/img/estilos/religioso-1.webp'], ['Advocacia', '/img/estilos/advogado-1.webp'], ['Padrão Setup', '/img/estilos/setup-1.webp'],
+  ['Elegante', '/img/estilos/elegante-1.webp?v=2'],
+];
+const FERRAMENTAS_FAIXA = ['ChatGPT', 'Claude', 'Gemini', 'Midjourney', 'Magnific', 'Nano Banana', 'n8n', 'Notion', 'Canva', 'CapCut', 'Perplexity'];
+function lequePosts() {
+  const cartas = [...POSTS_LEQUE.map(([nome, img]) => `<span class="lq-carta-in"><span class="lq-cab">${esc(nome)}</span><img src="${esc(img)}" alt="Post de exemplo no estilo ${esc(nome)}" loading="lazy" decoding="async" width="864" height="1080"></span>`),
+    '<span class="lq-carta-in lq-sua"><span class="lq-cab">O seu estilo</span><span class="lq-sua-miolo"><em>seu</em><b>estilo</b></span></span>'];
+  const linha = FERRAMENTAS_FAIXA.map((t) => `<span>${esc(t)}</span><i>✦</i>`).join('');
+  return `<section class="leque-secao" aria-label="Posts feitos pelo Claude">
+  <a class="leque-chamada" href="/cursos/posts-automaticos">${icone('brilho')}Posts feitos pelo Claude, sem cara de IA<span class="seta">Ver como${icone('seta')}</span></a>
+  <div class="lq" data-leque>${cartas.map((c, i) => `<a class="lq-carta" href="/cursos/posts-automaticos" style="--i:${i - 2}" tabindex="-1">${c}</a>`).join('')}</div>
+</section>
+<div class="fita-ferramentas" aria-hidden="true"><div class="fita-trilho"><div>${linha}</div><div>${linha}</div></div></div>`;
+}
+
 export function home({ destaques, agentes, novidades, cats, cont, anuncios, cfg }) {
   const nTipo = (t) => (cont.tipos && cont.tipos[t]) || 0;
   const atalhos = ['agente', 'prompt', 'template', 'planilha', 'automacao', 'guia']
@@ -163,6 +196,7 @@ export function home({ destaques, agentes, novidades, cats, cont, anuncios, cfg 
     </div>
   </div>
 </section>
+${lequePosts()}
 
 <section class="faixa" style="padding-bottom:8px">
   <div class="passos">
@@ -304,7 +338,7 @@ function videoEmbed(url) {
   return `<a class="bt" href="${esc(u)}" target="_blank" rel="noopener">${icone('video')}Ver vídeo de como usar</a>`;
 }
 
-export function paginaRecurso({ r, cats, relacionados, anuncios, cfg }) {
+export function paginaRecurso({ r, cats, relacionados, anuncios, cfg, oferta }) {
   const x = tipo(r.tipo);
   const agente = ehAgente(r);
   const arquivo = r.arquivo_url || r.link_externo;
@@ -357,6 +391,7 @@ export function paginaRecurso({ r, cats, relacionados, anuncios, cfg }) {
   ${htmlAdsense(cfg)}
   ${relacionados.length ? `<section class="secao" style="padding-top:24px">${secaoTopo('Você também vai gostar', null, { href: r.tipo === 'agente' ? '/agentes' : '/recursos', t: 'Ver mais' })}<div class="grade">${relacionados.map((x2, i) => cartaoRecurso(x2, i)).join('')}</div></section>` : ''}
 </div>
+${receberNovidades(`recurso:${r.slug}`, { recurso: r.id, oferta, voltar: `/recursos/${r.slug}` })}
 <div class="barra-acao" data-barra-acao>
   <div><b>${esc(r.titulo)}</b><small>Grátis</small></div>
   ${agente ? `<a class="bt bt-marca" href="/usar/${esc(r.slug)}" target="_blank" rel="noopener nofollow">${icone('brilho')}Abrir</a>`
@@ -388,35 +423,89 @@ export function paginaBusca({ q, res }) {
 }
 
 // ---------------------------------------------------------------- novidades
-export function listaNovidades({ itens, total, pagina, porPagina, cfg }) {
+// A lista de um assunto (/novidades, /ia, /equipamentos, /tutoriais, /guias). hubs: os outros assuntos com conteúdo,
+// como atalhos no topo (assunto sem artigo publicado não aparece: página vazia não ajuda ninguém).
+export function listaNovidades({ assunto = 'novidades', itens, total, pagina, porPagina, cfg, hubs = [] }) {
+  const s = ASSUNTOS[assunto] || ASSUNTOS.novidades;
+  const rota = `/${assunto}`;
   const paginas = Math.ceil(total / porPagina);
+  const atalhos = hubs.filter((h) => h !== assunto);
   return `
 <section class="faixa cabeca">
-  <p class="olho">${icone('novidades')}Novidades</p>
-  <h1 class="t-titulo">O que mudou na IA <span class="serifa marca-texto">esta semana</span></h1>
-  <p class="t-lead">Lançamentos e mudanças nas ferramentas de IA, explicados pelo que importa no seu trabalho.</p>
+  <p class="olho">${icone(s.icone)}${esc(s.nome)}</p>
+  <h1 class="t-titulo">${esc(s.titulo)} <span class="serifa marca-texto">${esc(s.destaque)}</span></h1>
+  <p class="t-lead">${esc(s.lead)}</p>
+  ${atalhos.length ? `<nav class="chips" aria-label="Outros assuntos" style="margin-top:18px">${atalhos.map((h) => `<a class="chip" href="/${h}">${esc(ASSUNTOS[h].nome)}</a>`).join('')}</nav>` : ''}
 </section>
 <section class="faixa secao" style="padding-top:24px">
-  ${itens.length ? `<div class="lista-novidades">${itens.map((a, i) => cartaoNovidade(a, i)).join('')}</div>` : vazio('novidades', 'Nenhuma novidade publicada ainda', 'Assim que sair a primeira, ela aparece aqui.')}
-  ${paginas > 1 ? `<nav class="paginas">${pagina > 1 ? `<a class="bt" href="/novidades?p=${pagina - 1}">${icone('esquerda')}Anterior</a>` : ''}<span>Página ${pagina} de ${paginas}</span>${pagina < paginas ? `<a class="bt" href="/novidades?p=${pagina + 1}">Próxima${icone('direita')}</a>` : ''}</nav>` : ''}
+  ${itens.length ? `<div class="lista-novidades">${itens.map((a, i) => cartaoNovidade(a, i)).join('')}</div>` : vazio(s.icone, 'Nada publicado aqui ainda', 'Assim que sair o primeiro, ele aparece aqui.')}
+  ${paginas > 1 ? `<nav class="paginas">${pagina > 1 ? `<a class="bt" href="${rota}?p=${pagina - 1}">${icone('esquerda')}Anterior</a>` : ''}<span>Página ${pagina} de ${paginas}</span>${pagina < paginas ? `<a class="bt" href="${rota}?p=${pagina + 1}">Próxima${icone('direita')}</a>` : ''}</nav>` : ''}
   ${htmlAdsense(cfg)}
 </section>
-${receberNovidades('novidades')}`;
+${receberNovidades(assunto)}`;
 }
 
-export function paginaNovidade({ a, recurso, anuncios, cfg }) {
+const minutosDeLeitura = (md) => Math.max(1, Math.round((String(md || '').match(/\S+/g) || []).length / 200));
+
+// A chamada do mini curso no meio do texto (bloco ```curso) e no fim do artigo.
+function chamadaCurso(oferta) {
+  if (!oferta) return '';
+  return `<aside class="painel chamada-curso"><p class="olho">${icone('curso')}Próximo passo</p><h3>${esc(oferta.titulo)}</h3>${oferta.texto ? `<p>${esc(oferta.texto)}</p>` : ''}<a class="bt bt-marca" href="${esc(urlSegura(oferta.link))}">${esc(oferta.cta || 'Quero conhecer')}${icone('seta')}</a></aside>`;
+}
+
+// O artigo (notícia, guia, tutorial, comparativo, review): migalhas, título, quem assina e quando, a resposta rápida,
+// o índice, o texto com os blocos, as perguntas, o recurso ligado, a chamada do curso e as fontes.
+export function paginaNovidade({ a, recurso, anuncios, cfg, oferta }) {
   const fontes = Array.isArray(a.fontes) ? a.fontes : [];
+  const faqs = (Array.isArray(a.faqs) ? a.faqs : []).filter((f) => f && f.pergunta && f.resposta);
+  const s = ASSUNTOS[a.assunto] || ASSUNTOS.novidades;
+  let corpo = markdown(a.corpo_md || '');
+  const comCurso = corpo.includes('data-bloco-curso');
+  corpo = corpo.replace(/<div class="bloco-curso" data-bloco-curso><\/div>/g, chamadaCurso(oferta));
+  // Índice quando o texto tem 3 intertítulos ou mais.
+  const h2 = [...corpo.matchAll(/<h2 id="([^"]+)">([\s\S]*?)<\/h2>/g)];
+  const indice = h2.length >= 3 ? `<nav class="indice" aria-label="Neste artigo"><b>Neste artigo</b><ol>${h2.map((m) => `<li><a href="#${m[1]}">${m[2].replace(/<[^>]+>/g, '')}</a></li>`).join('')}</ol></nav>` : '';
+  const autor = a.autor || null;
+  const atualizado = a.atualizado_em && a.publicado_em && new Date(a.atualizado_em) - new Date(a.publicado_em) > 86400000;
   return `
 <article class="leitura">
-  <nav class="migalhas" aria-label="Você está em" style="padding-top:0"><a href="/novidades">Novidades</a>${icone('direita')}<span>${esc(dataLonga(a.publicado_em))}</span></nav>
+  <nav class="migalhas" aria-label="Você está em" style="padding-top:0"><a href="/">Início</a>${icone('direita')}<a href="/${a.assunto && ASSUNTOS[a.assunto] ? a.assunto : 'novidades'}">${esc(s.nome)}</a></nav>
   <h1 class="t-titulo">${esc(a.titulo)}</h1>
   ${a.resumo ? `<p class="t-lead">${esc(a.resumo)}</p>` : ''}
-  ${a.capa_url ? `<div class="capa"><img src="${esc(urlSegura(a.capa_url))}" alt="" decoding="async"></div>` : '<div style="height:28px"></div>'}
-  <div class="texto">${markdown(a.corpo_md || '')}</div>
-  ${recurso ? `<div style="margin:32px 0"><p class="olho">${icone('presente')}Recurso desta novidade</p><div class="grade">${cartaoRecurso(recurso)}</div></div>` : ''}
+  <div class="assina">
+    ${autor ? `<a href="/autor/${esc(autor.slug)}" class="assina-autor">${autor.foto_url ? `<img src="${esc(urlSegura(autor.foto_url))}" alt="" width="36" height="36" loading="lazy">` : ''}<span><b>${esc(autor.nome)}</b>${autor.cargo ? `<small>${esc(autor.cargo)}</small>` : ''}</span></a>` : '<span class="assina-autor"><span><b>Agência Setup</b></span></span>'}
+    <span class="assina-data">${atualizado ? `Atualizado em ${esc(dataLonga(a.atualizado_em))}` : esc(dataLonga(a.publicado_em))} · ${minutosDeLeitura(a.corpo_md)} min de leitura${a.revisor ? ` · Revisado por <a href="/autor/${esc(a.revisor.slug)}">${esc(a.revisor.nome)}</a>` : ''}</span>
+  </div>
+  ${a.afiliado ? '<p class="aviso-afiliado">Alguns links desta página são de afiliado: se você comprar por eles, a Agência Setup ganha uma comissão, sem custo a mais para você. Isso não muda o que recomendamos.</p>' : ''}
+  ${a.resposta ? `<section class="resposta-rapida" aria-label="Resposta rápida"><p class="olho">Resposta rápida</p><p>${esc(a.resposta)}</p></section>` : ''}
+  ${a.capa_url ? `<div class="capa"><img src="${esc(urlSegura(a.capa_url))}" alt="" decoding="async"></div>` : '<div style="height:12px"></div>'}
+  ${indice}
+  <div class="texto">${corpo}</div>
+  ${a.conferido_em ? `<p class="t-mudo conferido">Preços e disponibilidade conferidos em ${esc(dataLonga(`${String(a.conferido_em).slice(0, 10)}T12:00:00-03:00`))}. Podem ter mudado desde então.</p>` : ''}
+  ${faqs.length ? `<section class="faq"><h2 class="t-titulo" style="font-size:1.5rem">Perguntas frequentes</h2>${faqs.map((f) => `<details><summary>${esc(f.pergunta)}</summary><p>${esc(f.resposta)}</p></details>`).join('')}</section>` : ''}
+  ${recurso ? `<div style="margin:32px 0"><p class="olho">${icone('presente')}Material grátis deste artigo</p><div class="grade">${cartaoRecurso(recurso)}</div></div>` : ''}
+  ${comCurso ? '' : chamadaCurso(oferta)}
   ${htmlAnuncio(anuncios.meio, 'meio')}
   ${fontes.length ? `<section class="fontes"><h4>Fontes</h4><ul>${fontes.map((f) => `<li><a href="${esc(urlSegura(f.url || f))}" target="_blank" rel="noopener">${esc(f.nome || f.url || f)}</a></li>`).join('')}</ul></section>` : ''}
   ${htmlAdsense(cfg)}
+</article>`;
+}
+
+// A página de quem assina: quem é, onde encontrar e o que escreveu. O Google pergunta "quem escreveu e por que confiar".
+export function paginaAutor({ autor, itens }) {
+  const perfis = Array.isArray(autor.perfis) ? autor.perfis : [];
+  const nomeDoPerfil = (u) => { const m = String(u).match(/instagram\.com\/([^/?#]+)/); return m ? `@${m[1]} no Instagram` : String(u).replace(/^https?:\/\//, ''); };
+  return `
+<article class="leitura">
+  <nav class="migalhas" aria-label="Você está em" style="padding-top:0"><a href="/">Início</a>${icone('direita')}<span>Autor</span></nav>
+  <div class="autor-cabeca">
+    ${autor.foto_url ? `<img src="${esc(urlSegura(autor.foto_url))}" alt="${esc(autor.nome)}" width="96" height="96">` : ''}
+    <div><h1 class="t-titulo">${esc(autor.nome)}</h1>${autor.cargo ? `<p class="t-lead">${esc(autor.cargo)}</p>` : ''}</div>
+  </div>
+  ${autor.bio ? `<div class="texto"><p>${esc(autor.bio)}</p></div>` : ''}
+  ${perfis.length ? `<ul class="autor-perfis">${perfis.map((u) => `<li><a href="${esc(urlSegura(u))}" target="_blank" rel="noopener me">${esc(nomeDoPerfil(u))}</a></li>`).join('')}</ul>` : ''}
+  <h2 class="t-titulo" style="font-size:1.5rem;margin-top:36px">O que ${esc(autor.nome.split(' ')[0])} escreveu</h2>
+  ${itens.length ? `<div class="lista-novidades" style="margin-top:16px">${itens.map((a, i) => cartaoNovidade(a, i)).join('')}</div>` : '<p class="t-mudo">Nenhum artigo publicado ainda.</p>'}
 </article>`;
 }
 
@@ -429,33 +518,11 @@ export function listaCursos({ lps }) {
   <p class="t-lead">IA no Social Media e no Design, do jeito que a gente usa no dia a dia da agência.</p>
 </section>
 <section class="faixa secao" style="padding-top:24px">
-  ${lps.length ? `<div class="grade grade-2">${lps.map((l, i) => `<a class="cartao" href="/cursos/${esc(l.slug)}" style="--i:${i}" data-revelar>
-    <div class="capa capa-auto" style="--c:var(--marca)"><span class="capa-titulo">${esc(l.titulo)}</span>${icone('curso', 'i-grande')}</div>
-    <div class="cartao-corpo"><h3>${esc(l.titulo)}</h3><div class="cartao-pe"><span>Curso</span><span class="acao">Conhecer${icone('seta')}</span></div></div></a>`).join('')}</div>`
+  ${lps.length ? `<div class="grade grade-2">${lps.map((l, i) => { const p = l.produto || {}; const img = (l.seo && l.seo.imagem) || p.imagem_url; return `<a class="cartao" href="/cursos/${esc(l.slug)}" style="--i:${i}" data-revelar>
+    ${img ? `<div class="capa"><img src="${esc(urlSegura(img))}" alt="" loading="lazy" decoding="async"></div>` : `<div class="capa capa-auto" style="--c:var(--marca)"><span class="capa-titulo">${esc(l.titulo)}</span>${icone('curso', 'i-grande')}</div>`}
+    <div class="cartao-corpo"><h3>${esc(l.titulo)}</h3>${p.chamada ? `<p>${esc(p.chamada)}</p>` : ''}<div class="cartao-pe"><span>Mini curso</span><span class="acao">Conhecer${icone('seta')}</span></div></div></a>`; }).join('')}</div>`
     : vazio('curso', 'As inscrições abrem em breve', 'Siga o @agenciasetup para saber primeiro.', '<a class="bt" href="https://instagram.com/agenciasetup" target="_blank" rel="noopener">Seguir no Instagram</a>')}
 </section>`;
-}
-
-const preco = (c) => (c == null ? '' : (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
-
-// Landing page por blocos. Cada bloco: { tipo, ... }. Tipos: heroi, lista, texto, depoimentos, preco, faq, chamada.
-export function landingPage({ lp }) {
-  const p = lp.produto || {};
-  const checkout = esc(urlSegura(p.link_checkout || '#'));
-  const bloco = (b) => {
-    switch (b.tipo) {
-      case 'heroi': return `<section class="heroi lp-heroi"><div class="faixa">${b.selo ? `<span class="anuncio-pilula" style="margin:0 auto"><span class="novo">${esc(b.selo)}</span></span>` : ''}<h1 class="t-display">${esc(b.titulo || lp.titulo)}</h1>${b.subtitulo ? `<p class="t-lead">${esc(b.subtitulo)}</p>` : ''}<a class="bt bt-marca bt-g" href="${checkout}">${esc(b.cta || 'Quero entrar')}${icone('seta')}</a></div></section>`;
-      case 'lista': return `<section class="faixa secao">${b.titulo ? `<h2 class="t-titulo" style="margin-bottom:22px" data-revelar>${esc(b.titulo)}</h2>` : ''}<ul class="lp-lista">${(b.itens || []).map((i, n) => `<li style="--i:${n % 6}" data-revelar>${icone('ok')}<span>${esc(i)}</span></li>`).join('')}</ul></section>`;
-      case 'texto': return `<section class="faixa secao"><div class="leitura" style="padding:0">${b.titulo ? `<h2 class="t-titulo" style="margin-bottom:18px">${esc(b.titulo)}</h2>` : ''}<div class="texto">${markdown(b.md || '')}</div></div></section>`;
-      case 'depoimentos': return `<section class="faixa secao"><h2 class="t-titulo" style="margin-bottom:22px" data-revelar>${esc(b.titulo || 'Quem já fez')}</h2><div class="grade grade-2">${(b.itens || []).map((d, n) => `<blockquote class="painel depoimento" style="--i:${n % 4}" data-revelar><p>${esc(d.texto)}</p><cite>${esc(d.nome)}</cite></blockquote>`).join('')}</div></section>`;
-      case 'preco': return `<section class="faixa secao"><div class="painel lp-preco" data-revelar>${p.preco_de_centavos ? `<s>${preco(p.preco_de_centavos)}</s>` : ''}<p class="t-display" style="font-size:clamp(2.5rem,2rem + 3vw,4rem)">${preco(p.preco_centavos)}</p>${b.texto ? `<p class="t-mudo">${esc(b.texto)}</p>` : ''}<a class="bt bt-marca bt-g" href="${checkout}">${esc(b.cta || 'Garantir minha vaga')}</a></div></section>`;
-      case 'faq': return `<section class="faixa secao"><div class="leitura" style="padding:0"><h2 class="t-titulo" style="margin-bottom:12px">${esc(b.titulo || 'Perguntas frequentes')}</h2><div class="faq">${(b.itens || []).map((f) => `<details><summary>${esc(f.p)}</summary><p>${esc(f.r)}</p></details>`).join('')}</div></div></section>`;
-      case 'chamada': return `<section class="faixa secao" style="text-align:center"><h2 class="t-titulo" style="margin:0 auto 22px;max-width:20ch" data-revelar>${esc(b.titulo || '')}</h2><a class="bt bt-marca bt-g" href="${checkout}">${esc(b.cta || 'Quero entrar')}</a></section>`;
-      default: return '';
-    }
-  };
-  const blocos = Array.isArray(lp.blocos) && lp.blocos.length ? lp.blocos : [{ tipo: 'heroi' }];
-  return blocos.map(bloco).join('\n');
 }
 
 // ---------------------------------------------------------------- institucionais e 404

@@ -129,7 +129,7 @@ function ondeVolta(r) {
 }
 
 function recursoAceito(url, r) {
-  return [`${url.origin}/mcp`, `${url.origin}/mcp/`, url.origin, `${url.origin}/`].includes(r);
+  return [`${url.origin}/mcp`, `${url.origin}/mcp/`, `${url.origin}/mcp/ferramentas`, url.origin, `${url.origin}/`].includes(r);
 }
 
 // ---------------------------------------------------------------- quem é a IA (client_id)
@@ -193,8 +193,10 @@ async function cliente(env, url, clientId) {
 }
 
 // ---------------------------------------------------------------- fichas (descoberta)
+// /mcp é o conector em modo código; /mcp/ferramentas, o mesmo com uma ferramenta por operação. O login é um só.
 function fichaRecurso(url) {
-  return { resource: `${url.origin}/mcp`, authorization_servers: [url.origin], scopes_supported: [ESCOPO], bearer_methods_supported: ['header'], resource_name: 'Agência Setup' };
+  const resource = url.pathname.replace(/\/+$/, '').endsWith('/mcp/ferramentas') ? `${url.origin}/mcp/ferramentas` : `${url.origin}/mcp`;
+  return { resource, authorization_servers: [url.origin], scopes_supported: [ESCOPO], bearer_methods_supported: ['header'], resource_name: 'Agência Setup' };
 }
 function fichaServidor(url) {
   const b = url.origin;
@@ -219,7 +221,8 @@ function fichaServidor(url) {
 // O 401 do /mcp diz à IA onde está a ficha (sem ele, o app do Claude não acha o login).
 export function desafio(env, url, invalido) {
   if (!oauthLigado(env)) return 'Bearer realm="agencia-setup"';
-  return `Bearer ${invalido ? 'error="invalid_token", ' : ''}resource_metadata="${url.origin}/.well-known/oauth-protected-resource/mcp", scope="${ESCOPO}"`;
+  const ficha = url.pathname.replace(/\/+$/, '') === '/mcp/ferramentas' ? 'mcp/ferramentas' : 'mcp';
+  return `Bearer ${invalido ? 'error="invalid_token", ' : ''}resource_metadata="${url.origin}/.well-known/oauth-protected-resource/${ficha}", scope="${ESCOPO}"`;
 }
 
 // ---------------------------------------------------------------- respostas
@@ -257,7 +260,7 @@ export const ehRotaOauth = (caminho) => caminho.startsWith('/.well-known/oauth-'
 
 export async function rotasOauth(request, env, url) {
   const caminho = url.pathname.replace(/\/+$/, '');
-  const conhecido = ['/.well-known/oauth-protected-resource', '/.well-known/oauth-protected-resource/mcp', '/.well-known/oauth-authorization-server',
+  const conhecido = ['/.well-known/oauth-protected-resource', '/.well-known/oauth-protected-resource/mcp', '/.well-known/oauth-protected-resource/mcp/ferramentas', '/.well-known/oauth-authorization-server',
     '/oauth/authorize', '/oauth/token', '/oauth/register', '/oauth/revoke'].includes(caminho);
   if (!conhecido || !oauthLigado(env)) return json({ error: 'not_found' }, 404, CORS);
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });

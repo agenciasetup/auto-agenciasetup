@@ -1,0 +1,110 @@
+<!doctype html>
+<!-- Exemplo de estilo para a página de venda: elegante (foto em tom quente, monograma dourado atrás da pessoa,
+     nome em serifa itálica e etiqueta verde). Foto real do Filipe (referencias/, fora do Git) e o recorte dela.
+     ?s=1|2|3 escolhe o slide; ?etapa=1|3|5 segue a regra das 5 etapas. -->
+<html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Montserrat:wght@300;400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+<style>
+:root { --marfim: #f3e8d2; --ouro: #d9bd84; --ouro-2: #a8834a; --verde: #1e3a2b; --fundo: #1a120c; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1350px; overflow: hidden; background: var(--fundo); color: var(--marfim); font-family: 'Montserrat', sans-serif; -webkit-font-smoothing: antialiased; }
+.slide { position: absolute; inset: 0; display: none; overflow: hidden; isolation: isolate; }
+.slide.ativo { display: block; }
+.foto, .recorte { position: absolute; left: 0; top: 0; width: 1080px; height: 1350px; object-fit: cover; object-position: 50% 30%; }
+.foto { z-index: 0; filter: brightness(.82) saturate(.92); }
+.foto-desfocada { display: none; }
+.e3 .foto-plana { display: none; }
+.e3 .foto-desfocada { display: block; }
+.tom { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(40,24,12,.35), rgba(22,13,7,.2) 40%, rgba(16,10,6,.82)); }
+.e3 .tom { background: radial-gradient(70% 55% at 50% 30%, rgba(214,160,92,.22), transparent 70%), linear-gradient(180deg, rgba(40,24,12,.35), rgba(22,13,7,.2) 40%, rgba(16,10,6,.85)); }
+.monograma { position: absolute; z-index: 2; left: 0; right: 0; top: -40px; text-align: center; font-family: 'Great Vibes', cursive; font-size: 960px; line-height: 1; color: var(--ouro); opacity: .4; }
+.e3 .monograma { background: linear-gradient(160deg, #f6e6bd 10%, #cfa863 45%, #8d6a32 85%); -webkit-background-clip: text; background-clip: text; color: transparent; opacity: .5; }
+/* o F fica entre o fundo (desfocado) e o Filipe (nítido): um desfoque leve diz em que distância ele está */
+.e3 .monograma.m1 { filter: blur(2.5px); }
+.recorte { z-index: 3; }
+.e3 .recorte { filter: drop-shadow(18px 24px 40px rgba(0,0,0,.28)); }
+.base { position: absolute; inset: 0; z-index: 4; background: linear-gradient(180deg, transparent 44%, rgba(14,9,5,.5) 60%, rgba(12,8,4,.92)); }
+.canto { position: absolute; z-index: 6; font-size: 21px; line-height: 1.25; letter-spacing: .06em; text-transform: uppercase; font-weight: 300; }
+.canto b { font-weight: 700; display: block; }
+.canto.d { text-align: right; }
+.centro { position: absolute; z-index: 6; left: 96px; right: 96px; text-align: center; }
+.chapeu { font-size: 24px; letter-spacing: .22em; text-transform: uppercase; font-weight: 300; }
+.chapeu b { display: block; font-weight: 700; }
+.chapeu, .canto { text-shadow: 0 2px 14px rgba(10,6,3,.7); }
+.nome { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 400; color: var(--marfim); letter-spacing: -.01em; }
+.e3 .nome { background: linear-gradient(180deg, #fbf3e2 20%, #e3cb98 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 6px 24px rgba(0,0,0,.45)); }
+.etiqueta { display: inline-block; padding: 14px 28px; background: var(--verde); color: var(--marfim); font-size: 26px; font-weight: 500; line-height: 1.35; }
+.fio { width: 120px; height: 1px; background: var(--ouro); margin: 0 auto; opacity: .8; }
+.grao { position: absolute; inset: 0; z-index: 50; pointer-events: none; display: none; opacity: .16; mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"); }
+.e5 .grao { display: block; }
+/* slides 2 e 3: parede quente lisa com uma luz de cima */
+.parede { position: absolute; inset: 0; z-index: 0; background: #20160f; }
+.e3 .parede { background: radial-gradient(60% 45% at 50% 18%, rgba(205,150,90,.28), transparent 70%), radial-gradient(120% 80% at 50% 50%, #2a1c12, #140d08 85%); }
+.lista { margin: 40px auto 0; width: 640px; text-align: left; }
+.lista div { display: flex; justify-content: space-between; align-items: baseline; padding: 22px 0; border-top: 1px solid rgba(217,189,132,.35); font-size: 28px; font-weight: 400; }
+.lista div:last-child { border-bottom: 1px solid rgba(217,189,132,.35); }
+.lista span { font-family: 'Playfair Display', serif; font-style: italic; color: var(--ouro); font-size: 30px; }
+</style></head>
+<body>
+<!-- 1. capa: o anúncio -->
+<section class="slide" data-s="1">
+  <img class="foto foto-plana" src="../../_local/estilos/terno-b.png" alt=""><img class="foto foto-desfocada" src="../../_local/estilos/terno-b-fundo.jpg" alt="">
+  <div class="tom"></div>
+  <div class="monograma m1">F</div>
+  <img class="recorte" src="../../_local/estilos/terno-b-recorte.png" alt="">
+  <div class="base"></div>
+  <div class="canto" style="left:96px;top:150px"><b>Agência</b>Setup</div>
+  <div class="canto d" style="right:96px;top:150px">Mini curso<b>2026</b></div>
+  <div class="canto" style="left:96px;top:1140px">Mini curso<b>2026</b></div>
+  <div class="canto d" style="right:96px;top:1140px"><b>Agência</b>Setup</div>
+  <div class="centro" style="top:772px">
+    <p class="chapeu">Professor<b>confirmado:</b></p>
+    <p class="nome" style="font-size:132px;line-height:.98;margin-top:18px">Filipe<br>Lourenço</p>
+    <p style="margin-top:28px"><span class="etiqueta">Posts automáticos com Claude</span></p>
+  </div>
+  <div class="grao"></div>
+</section>
+
+<!-- 2. a frase -->
+<section class="slide" data-s="2">
+  <div class="parede"></div>
+  <div class="monograma" style="opacity:.16">F</div>
+  <div class="canto" style="left:96px;top:96px"><b>Agência</b>Setup</div>
+  <div class="canto d" style="right:96px;top:96px">Mini curso<b>2026</b></div>
+  <div class="centro" style="top:470px">
+    <p class="chapeu">A regra das <b style="display:inline">5 etapas</b></p>
+    <p class="nome" style="font-size:84px;line-height:1.12;margin-top:56px">Primeiro, o mínimo<br>bem feito. Depois,<br>efeito com motivo.</p>
+    <div class="fio" style="margin-top:60px"></div>
+    <p class="chapeu" style="font-size:20px;margin-top:28px">Filipe Lourenço</p>
+  </div>
+  <div class="grao"></div>
+</section>
+
+<!-- 3. o convite -->
+<section class="slide" data-s="3">
+  <div class="parede"></div>
+  <div class="monograma" style="opacity:.16">F</div>
+  <div class="canto" style="left:96px;top:96px"><b>Agência</b>Setup</div>
+  <div class="canto d" style="right:96px;top:96px">Mini curso<b>2026</b></div>
+  <div class="centro" style="top:330px">
+    <p class="chapeu">No mini curso</p>
+    <p class="nome" style="font-size:92px;line-height:1.05;margin-top:30px">Posts automáticos<br>com Claude</p>
+    <div class="lista">
+      <div>Aulas curtas<span>18</span></div>
+      <div>Receitas, skills e modelo de arte<span>kit</span></div>
+      <div>Certificado ao concluir<span>70%</span></div>
+      <div>Acesso na hora<span>1 ano</span></div>
+    </div>
+    <p style="margin-top:56px"><span class="etiqueta">Link na bio</span></p>
+  </div>
+  <div class="grao"></div>
+</section>
+<script>
+  const q = new URLSearchParams(location.search);
+  const s = q.get('s') || '1', etapa = +(q.get('etapa') || 5);
+  document.querySelector(`.slide[data-s="${s}"]`).classList.add('ativo');
+  if (etapa >= 3) document.body.classList.add('e3');
+  if (etapa >= 5) document.body.classList.add('e5');
+</script>
+</body></html>

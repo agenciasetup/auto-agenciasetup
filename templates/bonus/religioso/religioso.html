@@ -1,0 +1,110 @@
+<!doctype html>
+<!-- Modelo pronto: RELIGIOSO (3 slides, 1080 x 1350). Pintura escura no fundo, texto em Poppins com uma palavra em letra
+     manuscrita, cabeçalho e rodapé numerado. As pinturas são de exemplo, feitas com IA: troque pelas suas.
+     Abra no navegador com ?s=1, ?s=2 ou ?s=3. ?etapa=1|3|5 segue a regra das 5 etapas (1: o mínimo; 3: detalhes e
+     sombra; 5: grão). Para virar imagem: node exportar.mjs (nesta pasta). -->
+<html lang="pt-BR"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,600&display=block" rel="stylesheet">
+<style>
+/* A MARCA: troque aqui as cores e, mais embaixo, o @ e o nome do cabeçalho. */
+:root { --marfim: #f3ece0; --bege: #d6bd94; --carvao: #0d0b09; --tinta-balao: #1e170f; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1350px; overflow: hidden; background: var(--carvao); color: var(--marfim); font-family: 'Poppins', sans-serif; -webkit-font-smoothing: antialiased; }
+.slide { position: absolute; inset: 0; display: none; overflow: hidden; isolation: isolate; }
+.slide.ativo { display: block; }
+.cam { position: absolute; left: 0; top: 0; width: 1080px; height: 1350px; }
+img.cam { object-fit: cover; }
+/* textos */
+.pilha { position: absolute; z-index: 5; left: 96px; width: 888px; }
+.bloco { position: relative; isolation: isolate; line-height: 1.22; }
+.e3 .bloco { text-shadow: 0 2px 22px rgba(10,8,6,.55), 0 1px 3px rgba(10,8,6,.33); }
+.c { text-align: center; }
+.ms { font-family: 'Pinyon Script', cursive; font-weight: 400; font-style: normal; font-size: calc(var(--esc, 1.6) * 1em); line-height: var(--lh, .72); color: var(--bege); padding: 0 .04em; }
+.atras .ms { position: relative; z-index: -1; }
+.ni { font-weight: 600; font-style: italic; }
+.ref { white-space: nowrap; font-size: .8em; font-weight: 300; opacity: .66; }
+.sel { position: relative; background: rgba(214,189,148,.38); padding: .06em .16em; border-radius: 1px; }
+.sel i { position: absolute; top: -.14em; bottom: -.14em; width: 2px; background: var(--bege); }
+.sel i:first-child { left: -2px; } .sel i:last-child { right: -2px; }
+.sel i::before { content: ""; position: absolute; left: 50%; width: .42em; height: .42em; margin-left: -.21em; border-radius: 50%; background: var(--bege); }
+.sel i:first-child::before { top: -.34em; } .sel i:last-child::before { bottom: -.34em; }
+.bal { display: inline-block; position: relative; background: var(--bege); color: var(--tinta-balao); padding: .6em .95em .66em; border-radius: 1.05em; text-shadow: none; }
+.e3 .bal { box-shadow: 0 8px 26px rgba(8,6,4,.45); }
+.bal .ref { opacity: .6; }
+.bal::after { content: ""; position: absolute; bottom: -.52em; left: 1.1em; border-top: .62em solid var(--bege); border-right: .72em solid transparent; }
+/* moldura: cabeçalho e rodapé */
+.cab, .rod { position: absolute; z-index: 6; left: 72px; right: 72px; display: flex; font-size: 15px; line-height: 1; opacity: .82; }
+.cab { top: 72px; justify-content: space-between; letter-spacing: .08em; }
+.rod { bottom: 72px; align-items: center; gap: 18px; letter-spacing: .14em; }
+.rod i { flex: 1; height: 1px; background: currentColor; opacity: .6; }
+/* etapa 3: o texto em latim atrás das figuras e o detalhe ampliado da pintura */
+.decor { position: absolute; z-index: 2; display: none; overflow: hidden; text-align: justify; font-weight: 300; letter-spacing: .02em; word-break: break-all; color: var(--marfim); }
+.e3 .decor { display: block; }
+.det { position: absolute; z-index: 4; overflow: hidden; border: 1.5px solid rgba(243,236,224,.85); background-repeat: no-repeat; }
+.e3 .det { box-shadow: 0 10px 34px rgba(8,6,4,.55); }
+/* etapa 5: grão de filme */
+.grao { position: absolute; inset: 0; z-index: 50; pointer-events: none; display: none; opacity: .2; mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"); }
+.e5 .grao { display: block; }
+</style></head>
+<body>
+<!-- 1. capa: a pergunta, com a palavra que dói em manuscrita, e a promessa do que vem -->
+<section class="slide" data-s="1">
+  <img class="cam" src="imagens/pintura-a.webp" style="z-index:0;object-position:50% 40%" alt="">
+  <div class="cam" style="z-index:1;background:radial-gradient(ellipse at 50% 45%, rgba(13,11,9,0) 35%, rgba(13,11,9,.33) 75%, rgba(13,11,9,.55) 100%)"></div>
+  <div class="cam" style="z-index:1;background:linear-gradient(to bottom, rgba(13,11,9,.45) 0%, rgba(13,11,9,.369) 11.2%, rgba(13,11,9,.171) 22.4%, rgba(13,11,9,0) 32%)"></div>
+  <div class="decor" style="left:72px;top:420px;width:936px;height:400px;font-size:12px;opacity:.065;line-height:1.25" data-repetir="Martha, Martha, sollicita es, et turbaris erga plurima. Porro unum est necessarium."></div>
+  <img class="cam" src="imagens/personagem-a.webp" style="z-index:3;object-position:50% 40%" alt="">
+  <div class="cam" style="z-index:4;background:linear-gradient(to top, rgba(13,11,9,.8) 0%, rgba(13,11,9,.656) 7.7%, rgba(13,11,9,.304) 15.4%, rgba(13,11,9,0) 22%)"></div>
+  <div class="pilha" style="top:140px">
+    <p class="bloco c atras" style="font-size:54px;line-height:1.1;--esc:2.5;--lh:.44">Muita coisa pra fazer,<br>pouco tempo pra<br><span class="ms">rezar?</span></p>
+    <p class="bloco c" style="font-size:23px;margin-top:26px"><span class="sel"><i></i>O que Jesus disse a Marta.<i></i></span></p>
+  </div>
+  <div class="cab"><span>@seuperfil&nbsp;&nbsp;|&nbsp;&nbsp;Seu Nome</span><span>Me segue aí, vai</span></div>
+  <div class="rod"><i></i><span>01/03</span></div>
+  <div class="grao"></div>
+</section>
+
+<!-- 2. o ensino: texto à esquerda, na parte escura; o detalhe ampliado da pintura à direita -->
+<section class="slide" data-s="2">
+  <img class="cam" src="imagens/pintura-b.webp" style="z-index:0;object-position:50% 50%" alt="">
+  <div class="cam" style="z-index:1;background:linear-gradient(to bottom, rgba(13,11,9,.55) 0%, rgba(13,11,9,.451) 17.5%, rgba(13,11,9,.209) 35%, rgba(13,11,9,0) 50%)"></div>
+  <div class="cam" style="z-index:1;background:linear-gradient(to right, rgba(13,11,9,.7) 0%, rgba(13,11,9,.574) 21.7%, rgba(13,11,9,.266) 43.4%, rgba(13,11,9,0) 62%)"></div>
+  <!-- o detalhe: um pedaço da própria pintura, 2,1 vezes maior (mude background-position para escolher o pedaço) -->
+  <div class="det" style="left:740px;top:168px;width:236px;height:280px;background-image:url(imagens/pintura-b.webp);background-size:2285px 2835px;background-position:-845px -2090px"></div>
+  <div class="pilha" style="top:168px;width:470px">
+    <p class="bloco" style="font-size:38px;line-height:1.15">Uma só coisa é <span class="ms">necessária</span></p>
+    <p class="bloco" style="font-size:26px;font-weight:300;line-height:1.45;margin-top:30px">Marta corria para servir. Maria <b class="ni">parou para ouvir</b>. Jesus não condenou o trabalho: lembrou o que vem <b class="ni">primeiro</b> <span class="ref">(Lc 10,41-42)</span>.</p>
+    <p class="bloco" style="font-size:21px;line-height:1.4;margin-top:30px;width:400px"><span class="bal">A oração é a elevação da alma a Deus. <span class="ref">(Catecismo, 2559)</span></span></p>
+    <p class="bloco" style="font-size:34px;font-weight:500;line-height:1.2;margin-top:40px">Antes da agenda,<br>a <span class="ms">oração</span>.</p>
+  </div>
+  <div class="cab"><span>@seuperfil&nbsp;&nbsp;|&nbsp;&nbsp;Seu Nome</span><span>Me segue aí, vai</span></div>
+  <div class="rod"><i></i><span>02/03</span></div>
+  <div class="grao"></div>
+</section>
+
+<!-- 3. o fecho: a frase, a citação marcada e o convite para seguir -->
+<section class="slide" data-s="3">
+  <img class="cam" src="imagens/parede.webp" style="z-index:0" alt="">
+  <div class="cam" style="z-index:1;background:radial-gradient(ellipse at 50% 45%, rgba(13,11,9,0) 35%, rgba(13,11,9,.42) 75%, rgba(13,11,9,.7) 100%)"></div>
+  <div class="cam" style="z-index:1;background:rgba(13,11,9,.12)"></div>
+  <div class="pilha" style="top:440px">
+    <p class="bloco c" style="font-size:36px;line-height:1.25">Cinco minutos com Deus<br>mudam o <span class="ms">dia</span>.</p>
+    <p class="bloco c" style="font-size:23px;margin-top:30px"><span class="sel"><i></i>Entra no teu quarto e reza ao Pai <span class="ref">(Mt 6,6)</span>.<i></i></span></p>
+    <p class="bloco c" style="font-size:44px;font-weight:300;margin-top:150px">Quer mais conteúdos assim?</p>
+    <p class="bloco c" style="font-size:78px;font-weight:600;line-height:1.1;margin-top:6px">Me <span class="ms">segue</span>.</p>
+  </div>
+  <div class="cab"><span>@seuperfil&nbsp;&nbsp;|&nbsp;&nbsp;Seu Nome</span><span>Me segue aí, vai</span></div>
+  <div class="rod"><i></i><span>03/03</span></div>
+  <div class="grao"></div>
+</section>
+<script>
+  const q = new URLSearchParams(location.search);
+  const s = q.get('s') || '1', etapa = +(q.get('etapa') || 5);
+  document.querySelector(`.slide[data-s="${s}"]`).classList.add('ativo');
+  if (etapa >= 3) document.body.classList.add('e3');
+  if (etapa >= 5) document.body.classList.add('e5');
+  // o texto em latim repete até encher a caixa
+  document.querySelectorAll('[data-repetir]').forEach((d) => { d.textContent = Array(40).fill(d.dataset.repetir).join(' '); });
+</script>
+</body></html>

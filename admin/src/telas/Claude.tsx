@@ -1,8 +1,9 @@
-// Claude: como ligar o app do Claude (login) e o Claude Code (chave), e as conexões que estão valendo.
+// Claude: como ligar o app do Claude (login) e o Claude Code (chave), as conexões que estão valendo e as skills
+// (o processo completo de cada tarefa, que o Claude conectado lê sozinho).
 import { useEffect, useState } from 'react';
-import { Bot, KeyRound, Plus, Trash2 } from 'lucide-react';
+import { BookOpen, Bot, Download, Eye, KeyRound, Plus, Trash2 } from 'lucide-react';
 import { get, post } from '../nucleo/api';
-import { BotaoCopiar, Campo, Carregando, Celula, ErroCarga, Escolha, Etiqueta, Faixa, Grupo, Modal, Segredo, Titulo, Vazio, useAcao, useCarregar, useSessao } from '../nucleo/ui';
+import { Abas, BotaoCopiar, Campo, Carregando, Celula, ErroCarga, Escolha, Etiqueta, Faixa, Grupo, Modal, Segredo, Titulo, Vazio, useAcao, useCarregar, useSessao } from '../nucleo/ui';
 import { DESCRICAO_PAPEL, NOME_PAPEL, dataHora, haQuanto } from '../nucleo/util';
 
 const NIVEL: Record<string, number> = { administrador: 3, editor: 2, redator: 1 };
@@ -78,6 +79,8 @@ export default function Claude() {
         </Grupo>
       </>}
 
+      <Skills />
+
       <Modal titulo="Nova chave" aberto={!!nova} fechar={() => setNova(null)}
         rodape={<><button className="bt bt-texto" onClick={() => setNova(null)}>Cancelar</button><button className="bt bt-tinta" disabled={!!ocupado} onClick={criar}><KeyRound />Criar chave</button></>}>
         {nova && <>
@@ -96,5 +99,51 @@ export default function Claude() {
         </>}
       </Modal>
     </div>
+  );
+}
+
+// Skills: o processo completo de cada tarefa (gravadas com npm run skill). O Claude conectado lê sozinho (ver_skill);
+// o arquivo .skill serve para instalar no app do Claude de quem não usa o conector.
+function Skills() {
+  const { dados, erro, carregando, recarregar } = useCarregar(() => get('/skills'), []);
+  const [aberta, setAberta] = useState<any>(null);
+  const [arquivo, setArquivo] = useState('SKILL.md');
+  const { ocupado, rodar } = useAcao();
+
+  const ver = (s: any) => rodar(`ver-${s.nome}`, async () => { setAberta(await get(`/skills/${s.nome}`)); setArquivo('SKILL.md'); });
+  const baixar = (s: any) => rodar(`baixar-${s.nome}`, async () => {
+    const r = await get(`/skills/${s.nome}`);
+    const bytes = Uint8Array.from(atob(r.pacote_b64), (c) => c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/zip' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = `${s.nome}.skill`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }, 'Baixado. No app do Claude: Configurações > Capacidades > Skills > enviar.');
+
+  // Aba de cada arquivo: o fluxo primeiro, depois as referências em ordem, com o título do próprio arquivo ("# Foto do Filipe").
+  const nomeAba = (f: string) => (f === 'SKILL.md' ? 'Fluxo' : ((aberta.conteudo[f] || '').match(/^#\s+(.+)$/m)?.[1] || f).split(/[:(]/)[0].trim());
+  const ordem = (lista: string[]) => [...lista].sort((a, b) => (a === 'SKILL.md' ? -1 : b === 'SKILL.md' ? 1 : a.localeCompare(b)));
+  return (
+    <Grupo titulo="Skills" rodape="O Claude conectado lê a skill sozinho (ver_skill) antes de criar carrossel, capa ou foto. Para usar no app do Claude sem o conector, baixe e envie em Configurações > Capacidades > Skills.">
+      {erro && <ErroCarga erro={erro} tentar={recarregar} />}
+      {carregando && !dados && <Carregando />}
+      {dados && (dados.length ? dados.map((s: any) => (
+        <Celula key={s.nome} icone={<BookOpen />} cor="laranja" titulo={s.nome}
+          sub={`${s.arquivos.length} arquivos · atualizada em ${s.atualizado.split('-').reverse().join('/')}`}
+          direita={<>
+            <button className="bt bt-mini" disabled={!!ocupado} onClick={() => ver(s)}><Eye />Ver</button>
+            <button className="bt bt-mini" disabled={!!ocupado} onClick={() => baixar(s)}><Download />Baixar</button>
+          </>} />
+      )) : <Vazio titulo="Nenhuma skill gravada." texto="No computador, rode npm run skill." />)}
+
+      <Modal titulo={aberta ? aberta.nome : 'Skill'} aberto={!!aberta} fechar={() => setAberta(null)}
+        rodape={aberta && <><BotaoCopiar texto={aberta.conteudo[arquivo] || ''} rotulo="Copiar este arquivo" /><button className="bt bt-tinta" onClick={() => setAberta(null)}>Fechar</button></>}>
+        {aberta && <>
+          <p className="campo-dica" style={{ marginBottom: 12 }}>{aberta.descricao}</p>
+          <Abas abas={ordem(aberta.arquivos).map((f) => ({ id: f, t: nomeAba(f) }))} atual={arquivo} mudar={setArquivo} />
+          <pre className="texto-skill">{aberta.conteudo[arquivo]}</pre>
+        </>}
+      </Modal>
+    </Grupo>
   );
 }

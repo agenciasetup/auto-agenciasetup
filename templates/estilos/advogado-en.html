@@ -1,0 +1,129 @@
+<!doctype html>
+<!-- English version of advogado.html (curso em inglês, "Posts on Autopilot with Claude"): consumer law, iOS look
+     (dark, glass, lime green), U.S. flight-delay rules. Same layout as the Portuguese one.
+     ?s=1|2|3 picks the slide; ?etapa=1|3|5 follows the 5-step rule (1: minimum; 3: light and glass; 5: grain). -->
+<html lang="en"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root { --fundo: #070908; --lima: #c6ef52; --lima-2: #93b828; --texto: #f2f4ee; --mudo: #9da393; --fraco: #646a5c; --vidro: rgba(255,255,255,.045); --borda: rgba(255,255,255,.1); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1350px; overflow: hidden; background: var(--fundo); color: var(--texto); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+.slide { position: absolute; inset: 0; display: none; overflow: hidden; isolation: isolate; }
+.slide.ativo { display: block; }
+/* fundo: grade fina, como uma mesa de trabalho; a luz verde só a partir da etapa 3 */
+.grade { position: absolute; inset: 0; z-index: -2; background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 90px 90px; mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 40%, transparent 90%); }
+.luz { position: absolute; z-index: -1; border-radius: 50%; pointer-events: none; display: none; }
+.e3 .luz { display: block; }
+.topo { position: absolute; left: 96px; right: 96px; top: 80px; display: flex; justify-content: space-between; align-items: center; font-size: 18px; color: var(--mudo); letter-spacing: .01em; }
+.marca { display: flex; align-items: center; gap: 12px; color: var(--texto); font-weight: 600; }
+.marca i { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--lima); color: #10140a; font-style: normal; font-weight: 800; font-size: 20px; }
+.num { font-family: 'JetBrains Mono', monospace; font-size: 16px; color: var(--fraco); }
+.pilula { display: inline-flex; align-items: center; gap: 10px; padding: 9px 16px; border-radius: 10px; border: 1px solid rgba(198,239,82,.35); background: rgba(198,239,82,.08); color: var(--lima); font-size: 15px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+.pilula b { width: 7px; height: 7px; border-radius: 50%; background: var(--lima); }
+.vidro { position: absolute; background: var(--vidro); border: 1px solid var(--borda); border-radius: 30px; box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
+.e3 .vidro { background: linear-gradient(160deg, rgba(255,255,255,.085), rgba(255,255,255,.025) 60%); box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 40px 80px -30px rgba(0,0,0,.9); backdrop-filter: blur(18px); }
+h1, h2 { font-weight: 500; letter-spacing: -.035em; line-height: 1.04; }
+.cinza { color: var(--mudo); }
+.lima { color: var(--lima); }
+/* grão de filme (etapa 5) */
+.grao { position: absolute; inset: 0; z-index: 50; pointer-events: none; display: none; opacity: .14; mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"); }
+.e5 .grao { display: block; }
+
+/* ---------- 1. cover: the flight card, the thresholds and the title */
+.voo { left: 150px; right: 150px; top: 230px; height: 372px; padding: 40px 44px; }
+.voo .cab { display: flex; justify-content: space-between; align-items: center; color: var(--mudo); font-size: 19px; }
+.voo .cab .status { padding: 8px 14px; border-radius: 9px; background: rgba(255,186,73,.12); color: #ffc65c; font-weight: 700; font-size: 15px; letter-spacing: .12em; }
+.voo .rota { margin-top: 34px; display: flex; align-items: center; gap: 26px; font-size: 64px; font-weight: 600; letter-spacing: -.04em; }
+.voo .rota svg { width: 54px; height: 54px; stroke: var(--lima); fill: none; stroke-width: 1.8; }
+.voo .rota small { display: block; font-size: 18px; font-weight: 400; color: var(--mudo); letter-spacing: 0; margin-top: 2px; }
+.voo .linha { margin-top: 30px; padding-top: 24px; border-top: 1px solid var(--borda); display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 18px; color: var(--mudo); }
+.voo .linha b { display: block; margin-top: 6px; font-size: 34px; color: var(--texto); font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.voo .linha s { color: var(--fraco); }
+.horas { position: absolute; left: 150px; right: 150px; top: 630px; display: flex; justify-content: space-between; gap: 12px; }
+.horas div { display: flex; align-items: center; gap: 10px; padding: 12px 16px 12px 14px; border-radius: 14px; background: #121611; border: 1px solid var(--borda); font-size: 18px; color: var(--texto); box-shadow: 0 18px 40px -16px rgba(0,0,0,.9); white-space: nowrap; }
+.horas b { width: 10px; height: 10px; border-radius: 50%; background: var(--lima); box-shadow: 0 0 0 4px rgba(198,239,82,.15); }
+.horas span { color: var(--mudo); }
+.capa-texto { position: absolute; left: 96px; right: 96px; top: 800px; text-align: center; }
+.capa-texto h1 { margin-top: 30px; font-size: 78px; white-space: nowrap; }
+.capa-texto p { margin: 26px auto 0; max-width: 720px; font-size: 27px; line-height: 1.45; color: var(--mudo); text-wrap: balance; }
+
+/* ---------- 2. the ladder of hours, tied together by a rail */
+.s2-cab { position: absolute; left: 100px; right: 100px; top: 200px; text-align: center; }
+.s2-cab h2 { margin-top: 26px; font-size: 64px; }
+.trilho { position: absolute; left: 206px; top: 528px; width: 2px; height: 460px; background: linear-gradient(var(--lima), rgba(198,239,82,.1)); }
+.passo { left: 150px; right: 150px; height: 208px; padding: 32px 36px 0 110px; }
+.passo .no { position: absolute; left: 32px; top: 34px; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: #0d110b; border: 2px solid var(--lima); color: var(--lima); font-weight: 700; font-size: 15px; }
+.passo .no svg { width: 22px; height: 22px; stroke: var(--lima); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.passo .h { font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--lima); letter-spacing: .04em; }
+.passo b { display: block; margin-top: 8px; font-size: 36px; font-weight: 600; letter-spacing: -.025em; }
+.passo p { margin-top: 6px; font-size: 22px; color: var(--mudo); line-height: 1.35; }
+.fonte { position: absolute; left: 150px; right: 150px; bottom: 96px; text-align: center; font-size: 18px; color: var(--fraco); }
+
+/* ---------- 3. call to action: the glass coin with the section sign, the keyword and the checklist */
+.moeda { position: absolute; left: 50%; top: 170px; width: 300px; height: 300px; margin-left: -150px; border-radius: 50%; display: grid; place-items: center; background: #b7dd3e; color: rgba(16,20,10,.85); font-size: 170px; font-weight: 300; }
+.e3 .moeda { background: radial-gradient(circle at 34% 28%, #f4ffc9 0%, #d3f56a 22%, #a9d12e 52%, #6f8f12 82%, #4b640a 100%); box-shadow: inset -18px -24px 40px rgba(40,55,0,.55), inset 14px 16px 30px rgba(255,255,255,.35), 0 50px 90px -30px rgba(160,210,40,.55); text-shadow: 0 2px 0 rgba(255,255,255,.35), 0 -2px 6px rgba(40,55,0,.4); }
+.s3-texto { position: absolute; left: 100px; right: 100px; top: 530px; text-align: center; }
+.s3-texto h2 { font-size: 86px; }
+.s3-texto h2 .tag { display: inline-block; padding: 0 22px 6px; border-radius: 22px; background: var(--lima); color: #10140a; font-weight: 700; letter-spacing: -.02em; }
+.s3-texto p { margin-top: 22px; font-size: 28px; color: var(--mudo); line-height: 1.4; }
+.lista { left: 190px; right: 190px; top: 850px; padding: 14px 36px; }
+.lista div { display: flex; align-items: center; gap: 18px; padding: 20px 0; border-top: 1px solid var(--borda); font-size: 26px; }
+.lista div:first-child { border-top: 0; }
+.lista i { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: rgba(198,239,82,.14); color: var(--lima); font-style: normal; font-weight: 700; font-size: 18px; flex: none; }
+.aviso { position: absolute; left: 150px; right: 150px; bottom: 96px; text-align: center; font-size: 17px; color: var(--fraco); line-height: 1.4; }
+</style></head>
+<body>
+<!-- 1. cover -->
+<section class="slide" data-s="1">
+  <div class="grade"></div>
+  <div class="luz" style="left:140px;top:120px;width:800px;height:600px;background:radial-gradient(closest-side,rgba(198,239,82,.16),transparent)"></div>
+  <div class="luz" style="left:-200px;top:900px;width:700px;height:600px;background:radial-gradient(closest-side,rgba(198,239,82,.07),transparent)"></div>
+  <div class="topo"><span class="marca"><i>§</i>Your Law Firm</span><span class="num">@yourprofile</span></div>
+  <div class="vidro voo">
+    <div class="cab"><span>Flight 4012 · today</span><span class="status">DELAYED</span></div>
+    <div class="rota"><div>JFK<small>New York</small></div><svg viewBox="0 0 24 24"><path d="M3 12h15"/><path d="m13 6 6 6-6 6"/></svg><div>LAX<small>Los Angeles</small></div></div>
+    <div class="linha"><div>Scheduled<b><s>2:30 PM</s></b></div><div>Now estimated<b>6:40 PM</b></div></div>
+  </div>
+  <div class="horas"><div><b></b>2 hrs on tarmac <span>· food</span></div><div><b></b>3+ hrs late <span>· refund</span></div><div><b></b>Overnight <span>· hotel</span></div></div>
+  <div class="capa-texto">
+    <span class="pilula"><b></b>Passenger rights</span>
+    <h1>Flight delayed?<br><span class="cinza">Here's what you're owed.</span></h1>
+    <p>What the airline has to give you, and when.</p>
+  </div>
+  <div class="grao"></div>
+</section>
+
+<!-- 2. the ladder -->
+<section class="slide" data-s="2">
+  <div class="grade"></div>
+  <div class="luz" style="left:-120px;top:420px;width:700px;height:800px;background:radial-gradient(closest-side,rgba(198,239,82,.12),transparent)"></div>
+  <div class="topo"><span class="marca"><i>§</i>Your Law Firm</span><span class="num">02/03</span></div>
+  <div class="s2-cab"><span class="pilula"><b></b>As the hours add up</span><h2>The longer you wait,<br>the more you're <span class="lima">owed</span>.</h2></div>
+  <div class="trilho"></div>
+  <div class="vidro passo" style="top:470px"><span class="no">2h</span><span class="h">2 HOURS ON THE TARMAC</span><b>Food and water</b><p>Plus working restrooms. At 3 hours, a domestic flight has to let you deplane.</p></div>
+  <div class="vidro passo" style="top:700px"><span class="no">3h</span><span class="h">DELAYED 3+ HOURS</span><b>Your money back</b><p>Skip the trip and get a refund, even on a nonrefundable fare. (International: 6+ hours.)</p></div>
+  <div class="vidro passo" style="top:930px"><span class="no"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span><span class="h">OVERNIGHT, AIRLINE'S FAULT</span><b>Hotel and meals</b><p>Many airlines promise both. Ask at the desk, and check their customer service plan.</p></div>
+  <div class="fonte">Source: U.S. DOT tarmac delay rule and 2024 refund rule.</div>
+  <div class="grao"></div>
+</section>
+
+<!-- 3. call to action -->
+<section class="slide" data-s="3">
+  <div class="grade"></div>
+  <div class="luz" style="left:240px;top:60px;width:600px;height:560px;background:radial-gradient(closest-side,rgba(198,239,82,.22),transparent)"></div>
+  <div class="topo"><span class="marca"><i>§</i>Your Law Firm</span><span class="num">03/03</span></div>
+  <div class="moeda">§</div>
+  <div class="s3-texto"><h2>Comment <span class="tag">FLIGHT</span></h2><p>and I'll send you the checklist of what to<br>keep to claim what you're owed.</p></div>
+  <div class="vidro lista"><div><i>✓</i>Boarding pass</div><div><i>✓</i>Screenshot of the delay alert</div><div><i>✓</i>Receipts for what you spent</div></div>
+  <div class="aviso">General information, not legal advice. Every case is different, so talk to a lawyer if you're unsure.</div>
+  <div class="grao"></div>
+</section>
+<script>
+  const q = new URLSearchParams(location.search);
+  const s = q.get('s') || '1', etapa = +(q.get('etapa') || 5);
+  document.querySelector(`.slide[data-s="${s}"]`).classList.add('ativo');
+  if (etapa >= 3) document.body.classList.add('e3');
+  if (etapa >= 5) document.body.classList.add('e5');
+</script>
+</body></html>

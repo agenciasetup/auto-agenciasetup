@@ -46,6 +46,7 @@ export async function api<T = any>(caminho: string, opcoes: { metodo?: string; c
 export const get = <T = any>(c: string) => api<T>(c);
 export const post = <T = any>(c: string, corpo: any = {}) => api<T>(c, { metodo: 'POST', corpo });
 export const patch = <T = any>(c: string, corpo: any) => api<T>(c, { metodo: 'PATCH', corpo });
+export const put = <T = any>(c: string, corpo: any) => api<T>(c, { metodo: 'PUT', corpo });
 
 // Envia um arquivo para o Storage (bucket recursos ou midia). Devolve { url, bytes, nome, tipo }.
 export function enviarArquivo(arquivo: File, bucket: 'recursos' | 'midia') {

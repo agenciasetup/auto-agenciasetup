@@ -18,7 +18,7 @@ async function pagina(caminho, status = 200, contem) {
 
 let n = 0;
 async function mcp(method, params = {}, chave = env.MCP_CHAVE) {
-  const r = await fetch(`${base}/mcp`, {
+  const r = await fetch(`${base}/mcp/ferramentas`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream', ...(chave ? { authorization: `Bearer ${chave}` } : {}) },
     body: JSON.stringify({ jsonrpc: '2.0', id: ++n, method, params }),
@@ -36,6 +36,10 @@ console.log(`conferindo ${base}\n`);
 const saude = await (await fetch(`${base}/api/saude`)).json();
 ok(saude.banco === 'ok', 'banco responde pelo Worker');
 
+// O /mcp é o modo código (buscar, consultar, executar); o resto desta conferência usa /mcp/ferramentas.
+const codigo = await (await fetch(`${base}/mcp`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${env.MCP_CHAVE}` }, body: JSON.stringify({ jsonrpc: '2.0', id: 0, method: 'tools/list' }) })).json().catch(() => null);
+ok(((codigo && codigo.result && codigo.result.tools) || []).map((t) => t.name).join(',') === 'buscar,consultar,executar', '/mcp em modo código (buscar, consultar, executar)');
+
 await pagina('/', 200, 'Agência Setup');
 await pagina('/recursos', 200);
 await pagina('/recursos?c=automacao', 200, 'Automação');
@@ -45,7 +49,10 @@ await pagina('/privacidade', 200, 'LGPD');
 await pagina('/termos', 200);
 await pagina('/essa-pagina-nao-existe', 404);
 await pagina('/robots.txt', 200, 'Sitemap');
-await pagina('/sitemap.xml', 200, '<urlset');
+// /sitemap.xml é o índice (lib/seo.js); cada tipo tem o seu.
+await pagina('/sitemap.xml', 200, '<sitemapindex');
+for (const p of ['paginas', 'recursos', 'novidades', 'cursos']) await pagina(`/sitemap-${p}.xml`, 200, '<urlset');
+await pagina('/llms.txt', 200, '# Agência Setup');
 await pagina('/estatico/site.css', 200, '--marca');
 await pagina('/agentes', 200, 'Agentes de IA');
 await pagina('/busca', 200, 'O que você quer fazer hoje?');
@@ -62,6 +69,10 @@ const lista = await mcp('tools/list');
 ok((lista.corpo?.result?.tools || []).length >= 15, 'conector lista as ferramentas', `${(lista.corpo?.result?.tools || []).length}`);
 const estilo = await ferramenta('ver_estilo', {});
 ok(String(estilo.guia_md || '').includes('Calango'), 'ver_estilo devolve o guia da marca');
+const skills = await ferramenta('listar_skills', {});
+ok((skills.itens || []).some((s) => s.nome === 'carrossel-agenciasetup'), 'listar_skills mostra a skill do carrossel');
+const skill = await ferramenta('ver_skill', {});
+ok(String(skill.conteudo || '').includes('5 etapas') && skill.arquivos.includes('references/voz.md'), 'ver_skill devolve o fluxo do carrossel e as referências');
 
 const slug = `teste-conferir-${Date.now()}`;
 let id;

@@ -1,0 +1,92 @@
+/* A conquista dos 7 dias (telas/Conquista.tsx). Escuro, vidro leve e o laranja só no que enche e no que chama.
+   A barra enche parte por parte ao abrir; o dia de hoje brilha devagar; quem pede menos movimento vê tudo parado. */
+.cq { position: relative; isolation: isolate; overflow: hidden; display: grid; gap: 16px; padding: 20px; border-radius: var(--raio-l); background: linear-gradient(160deg, #19140f 0%, var(--bg-2) 46%, var(--bg-2) 100%); box-shadow: inset 0 0 0 1px var(--linha-2), 0 30px 60px -40px rgba(0,0,0,.9); }
+.cq-luz { position: absolute; z-index: -1; right: -120px; top: -160px; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255,122,0,.2), transparent); pointer-events: none; }
+.cq.livre .cq-luz { background: radial-gradient(closest-side, rgba(255,176,0,.3), transparent); }
+@media (min-width: 980px) { .cq { padding: 26px 28px; gap: 18px; } }
+
+.cq-topo { display: flex; gap: 14px; align-items: flex-start; }
+.cq-selo { flex: none; width: 48px; height: 48px; border-radius: 15px; display: grid; place-items: center; background: var(--marca-suave); color: var(--marca-texto); box-shadow: inset 0 0 0 1px var(--marca-borda); }
+.cq-selo .i { width: 24px; height: 24px; }
+.cq.livre .cq-selo { background: var(--degrade); color: var(--sobre-marca); box-shadow: 0 10px 30px -10px rgba(255,122,0,.7); animation: cq-abre 900ms var(--suave) both; }
+.cq-txt { display: grid; gap: 4px; min-width: 0; }
+.cq-olho { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--texto-3); font-weight: 600; }
+.cq-olho b { color: var(--marca-texto); font-weight: 700; }
+.cq h2 { margin: 0; font-size: clamp(22px, 5.6vw, 30px); line-height: 1.08; letter-spacing: -.03em; font-weight: 700; }
+.cq h2 .serifa { color: var(--marca-texto); font-size: 1.12em; }
+.cq-txt p { margin: 0; color: var(--texto-2); font-size: 14px; }
+
+/* a barra: N partes com folga entre elas; enche uma por uma ao abrir */
+.cq-barra { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+.cq-barra li { position: relative; height: 14px; border-radius: 999px; background: var(--bg-4); overflow: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+.cq-barra li i { position: absolute; inset: 0; border-radius: inherit; transform-origin: left center; transform: scaleX(0); }
+.cq-barra li.feito i, .cq-barra li.hoje i { background: var(--degrade); animation: cq-enche 520ms var(--suave) calc(120ms + var(--k) * 90ms) both; }
+.cq-barra li.hoje { box-shadow: 0 0 0 2px rgba(255,176,0,.35), 0 0 22px -2px rgba(255,122,0,.65); }
+.cq-barra li.hoje i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.55) 50%, transparent 80%); background-size: 220% 100%; animation: cq-brilho 2.4s ease-in-out 1.1s infinite; }
+.cq-barra li:last-child:not(.feito):not(.hoje)::after { content: ""; position: absolute; inset: 3px; border-radius: inherit; border: 1px dashed rgba(255,176,0,.45); }
+.cq-barra.completa li i { animation-duration: 380ms; }
+.cq-barra.completa { filter: drop-shadow(0 0 12px rgba(255,122,0,.35)); }
+.cq-dias { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; margin-top: -8px; font-size: 11.5px; color: var(--texto-3); text-align: center; font-variant-numeric: tabular-nums; }
+.cq-dias span { display: grid; place-items: center; min-height: 18px; }
+.cq-dias .hoje { color: var(--marca-texto); font-weight: 700; }
+.cq-dias .i { width: 15px; height: 15px; color: var(--marca-2); }
+
+/* os prêmios: bônus (com as prévias) e certificado */
+.cq-premios { display: grid; gap: 10px; align-items: start; }
+@media (min-width: 760px) { .cq-premios { grid-template-columns: 1.5fr 1fr; } }
+.cq-premio { display: grid; gap: 12px; align-content: start; padding: 14px; border-radius: var(--raio); background: rgba(255,255,255,.035); box-shadow: inset 0 0 0 1px var(--linha); }
+.cq-premio .bt { justify-self: start; }
+.cq-premio-txt { display: grid; gap: 3px; }
+.cq-premio-txt b { font-size: 15.5px; letter-spacing: -.01em; }
+.cq-premio-txt small { color: var(--texto-2); font-size: 13px; line-height: 1.4; }
+.cq-quando { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--texto-3); }
+.cq-quando .i { width: 15px; height: 15px; }
+.cq-cert { grid-template-columns: auto 1fr; align-items: start; }
+.cq-cert .bt, .cq-cert > a { grid-column: 1 / -1; }
+.cq-ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--bg-4); color: var(--texto-2); }
+.cq.livre .cq-cert .cq-ic { background: var(--marca-suave); color: var(--marca-texto); }
+
+.cq-previas { position: relative; width: 100%; max-width: 560px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 0; border-radius: 12px; overflow: hidden; text-align: left; }
+.cq-previas img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 9px; background: var(--bg-4); animation: cq-sobe 600ms var(--suave) calc(200ms + var(--k) * 70ms) both; transition: filter 300ms; }
+.fechado .cq-previas img { filter: blur(7px) saturate(.8) brightness(.7); transform: scale(1.02); }
+.cq-cadeado { position: absolute; inset: 0; display: grid; place-items: center; }
+.cq-cadeado .i { width: 40px; height: 40px; padding: 9px; border-radius: 50%; background: rgba(9,9,10,.6); color: var(--texto); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 0 0 1px var(--linha-2); }
+
+/* a galeria: os 3 slides de cada modelo */
+.cq-galeria { display: grid; gap: 14px; }
+@media (min-width: 760px) { .cq-galeria { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1180px) { .cq-galeria { grid-template-columns: repeat(4, 1fr); } }
+.cq-galeria figure { margin: 0; display: grid; gap: 8px; }
+.cq-slides { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; border-radius: 12px; overflow: hidden; }
+.cq-slides img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 8px; background: var(--bg-4); }
+.cq-galeria figure.fechado .cq-slides img { filter: blur(9px) saturate(.7) brightness(.62); }
+.cq-galeria figcaption { display: grid; gap: 1px; font-size: 13px; color: var(--texto-2); }
+.cq-galeria figcaption b { color: var(--texto); font-size: 14px; }
+
+/* a faixa fina da aula */
+.cq-faixa { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 12px 8px 14px; border-radius: 14px; background: linear-gradient(100deg, rgba(255,122,0,.1), rgba(255,255,255,.03) 60%); box-shadow: inset 0 0 0 1px var(--marca-borda); font-size: 13.5px; color: var(--texto-2); }
+.cq-faixa > .i { width: 18px; height: 18px; color: var(--marca-texto); flex: none; }
+.cq-faixa > .i:last-child { color: var(--texto-3); width: 16px; height: 16px; }
+.cq-faixa-txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cq-faixa-txt b { color: var(--texto); }
+.cq-barra.fina { width: 98px; flex: none; gap: 3px; }
+.cq-barra.fina li { height: 6px; }
+.cq-barra.fina li.hoje { box-shadow: 0 0 10px -1px rgba(255,122,0,.8); }
+.cq-barra.fina li:last-child::after { display: none; }
+.cq-faixa.livre { background: linear-gradient(100deg, rgba(255,176,0,.16), rgba(255,122,0,.06) 60%); }
+@media (min-width: 980px) { .cq-barra.fina { width: 140px; } }
+
+@keyframes cq-enche { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes cq-brilho { 0% { background-position: 120% 0; } 60%, 100% { background-position: -120% 0; } }
+@keyframes cq-sobe { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes cq-abre { 0% { transform: scale(.7) rotate(-10deg); } 60% { transform: scale(1.08) rotate(3deg); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .cq-barra li i, .cq-previas img, .cq.livre .cq-selo { animation: none !important; transform: none; }
+  .cq-barra li.hoje i::after { animation: none; display: none; }
+}
+
+/* onde ela mora: no início, logo abaixo do destaque; no curso, entre a capa e as abas; na aula, no topo do cabeçalho */
+.ini-conquista { padding-top: 20px; }
+@media (min-width: 980px) { .ini-conquista { padding-top: 28px; } }
+.curso-conquista { margin-top: 20px; }
+.a-cab .cq-faixa { margin-bottom: 4px; }

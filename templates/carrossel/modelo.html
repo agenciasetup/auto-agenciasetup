@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Carrossel Agência Setup</title>
+<!-- Fontes: Anton (condensada), Great Vibes (letra de floreio da capa), Pinyon Script (floreio pequeno), Instrument Serif
+     itálico (destaque e números), Outfit (texto), Inter (notificações no estilo iOS), JetBrains Mono (réguas e rótulos). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Great+Vibes&family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@200;300;400;500;600;700;800&family=Pinyon+Script&family=Gloock&family=Bricolage+Grotesque:opsz,wght@96,800&family=Fraunces:ital,opsz,wght@1,144,700&family=Syne:wght@800&family=Nothing+You+Could+Do&family=Permanent+Marker&family=Covered+By+Your+Grace&family=Mansalva&family=Reenie+Beanie&family=Sedgwick+Ave+Display&family=Dancing+Script:wght@700&display=block" rel="stylesheet">
+<link rel="stylesheet" href="modelo.css">
+</head>
+<body>
+<!-- Recorte limpo do assunto:
+     1. fecha os furos que o recorte automático abre no cabelo (a luz de recorte dourada vira "fundo"): dilata 4 px e
+        come 5, e o que era furo ganha a cor do cabelo por baixo da foto;
+     2. a borda come 1 px a mais (tira a franja do fundo original e o serrilhado) e ganha 0,7 px de suavidade. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="recorte" x="-2%" y="-2%" width="104%" height="104%" color-interpolation-filters="sRGB">
+    <feMorphology in="SourceAlpha" operator="dilate" radius="4" result="inchado"/>
+    <feMorphology in="inchado" operator="erode" radius="5" result="fechado"/>
+    <feGaussianBlur in="fechado" stdDeviation="0.7" result="borda"/>
+    <feFlood flood-color="#1c140e" result="cabelo"/>
+    <feComposite in="SourceGraphic" in2="cabelo" operator="over" result="sem-furos"/>
+    <feComposite in="sem-furos" in2="borda" operator="in"/>
+  </filter>
+</svg>
+<div id="raiz"></div>
+<script src="modelo.js"></script>
+</body>
+</html>

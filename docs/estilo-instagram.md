@@ -82,6 +82,8 @@ Personagens e objetos atravessam a emenda entre um slide e outro (panorâmico co
 
 ### Fase 2026 (atual)
 
+O padrão que vale hoje está em `references/profundidade.md` da skill `carrossel-agenciasetup` (decisões do Filipe em 30/10/2026). A lista abaixo descreve os carrosséis analisados. Dela, foram reprovados: partículas, vidro, luz dura de pôr do sol, flare e sombra em texto.
+
 - Base quase preta com âmbar e laranja, ou cinza-claro editorial.
 - Cabeçalho fixo: "Calango | Agência Setup" à esquerda e o contador da série diária "#028 / 365" à direita. Linha de progresso no rodapé da capa.
 - Título misto: serifada pesada em minúsculas (uma palavra em laranja) com condensada; selo "calango" laranja pequeno colado no título.
@@ -112,7 +114,7 @@ Personagens e objetos atravessam a emenda entre um slide e outro (panorâmico co
 1. Todo carrossel nasce com os 6 papéis acima e um **gancho de cultura pop ou fato da semana** ligado à IA aplicada ao trabalho.
 2. Todo carrossel aponta para um **recurso grátis no site**: palavra-chave nos comentários, link na DM, página do recurso com download e anúncio do curso.
 3. Série diária com contador **#NNN / 365**.
-4. O mascote calango 3D aparece como personagem recorrente.
+4. O assunto das capas alterna: o rosto do Filipe (foto real, rosto idêntico), um bicho chamativo ou um objeto ligado à tese. O calango vive no selo (o cursor "calango") e no vocativo "Calango,"; no perfil em inglês não existe. O processo completo e o padrão visual atual estão na skill `carrossel-agenciasetup` (`.claude/skills/` e, no conector, `ver_skill`), em `references/profundidade.md`.
 5. Sem cara de IA: nada de "no mundo de hoje", "desvende", "revolucione", travessão, lista de emojis, frase genérica. Cada slide tem uma afirmação concreta ou um print que prova.
 6. Polêmica, sim; ataque a pessoa, não. Assunto político: mostrar a estratégia de comunicação dos dois lados com a mesma régua ("não é sobre concordar ou discordar").
 

@@ -52,9 +52,11 @@ export const db = {
     const r = await pedir(env, `/${tabela}${qs(filtros, { select, limit: 1 })}`);
     return r && r[0] ? r[0] : null;
   },
-  insert(env, tabela, dados, { upsert, conflito, select = '*' } = {}) {
+  // upsert: junta com o que já existe. ignorar: o que já existe fica como está (devolve só as linhas novas).
+  insert(env, tabela, dados, { upsert, ignorar, conflito, select = '*' } = {}) {
     const prefer = ['return=representation'];
     if (upsert) prefer.push('resolution=merge-duplicates');
+    else if (ignorar) prefer.push('resolution=ignore-duplicates');
     return pedir(env, `/${tabela}${qs({}, { select, on_conflict: conflito })}`, {
       method: 'POST', headers: { Prefer: prefer.join(',') }, body: JSON.stringify(dados),
     });
@@ -66,6 +68,11 @@ export const db = {
   update(env, tabela, filtros, dados, select = '*') {
     if (!filtros || !Object.keys(filtros).length) throw new Erro(500, 'update sem filtro');
     return pedir(env, `/${tabela}${qs(filtros, { select })}`, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(dados) });
+  },
+  // Apagar de verdade só o que é do próprio aluno (anotação) ou dado temporário; conteúdo se arquiva.
+  apagar(env, tabela, filtros) {
+    if (!filtros || !Object.keys(filtros).length) throw new Erro(500, 'apagar sem filtro');
+    return pedir(env, `/${tabela}${qs(filtros)}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
   },
   rpc(env, nome, args = {}) {
     return pedir(env, `/rpc/${nome}`, { method: 'POST', body: JSON.stringify(args) });

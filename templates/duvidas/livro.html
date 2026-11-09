@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Dúvidas da Fé</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="duvidas.css">
+<script src="../../_local/duvidas/dados.js"></script>
+<script src="render.js"></script>
+</head>
+<body class="livro">
+<script>
+// O livro em PDF (A5): capa, como usar, sumário, capítulos e dúvidas, página final com a ajuda.
+// Tudo é clicável: no sumário, o capítulo e a dúvida; em cada dúvida, "Voltar ao sumário" em cima e no fim, e a próxima dúvida.
+const { curso, duvidas, amostra } = window.DADOS;
+const tel = curso.whatsapp.replace(/^55(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+const caps = curso.capitulos.map((c) => ({ ...c, prontas: c.duvidas.filter((d) => duvidas[d.slug]) }));
+const ordem = caps.flatMap((c) => c.prontas.map((d) => duvidas[d.slug]));
+const sumario = `<a class="pilula" href="#sumario">${icone('subir')}Voltar ao sumário</a>`;
+const html = [];
+
+// A capa é a mesma da página de venda (templates/duvidas/capa.html, exportada por "node scripts/duvidas.mjs capa").
+html.push(`<section class="capa capa-livro"><img class="fundo" src="${window.DADOS.img}capa-livro.jpg" alt="${curso.titulo}">${amostra ? `<p class="pe-amostra">Amostra · ${ordem.length} dúvidas</p>` : ''}</section>`);
+
+html.push(`<section class="pagina"><h2 class="titulo-pagina">Como usar este livro</h2>
+  <p>Cada dúvida cabe em três minutos de leitura. Leia na ordem ou vá direto na que te interessa: no sumário, toque no título. Em cada dúvida, o botão <b>Voltar ao sumário</b> traz você de volta.</p>
+  <ul class="passos">
+    <li><span class="num">1</span><span><b>Resposta rápida</b><span>A resposta em poucas linhas.</span></span></li>
+    <li><span class="num">2</span><span><b>Explicando com calma</b><span>O porquê, em palavras simples.</span></span></li>
+    <li><span class="num">3</span><span><b>Na Bíblia e a Igreja ensina</b><span>De onde vem a resposta.</span></span></li>
+    <li><span class="num">4</span><span><b>Se alguém te perguntar, diga</b><span>Uma resposta pronta para a conversa.</span></span></li>
+    <li><span class="num">5</span><span><b>Para guardar</b><span>Uma frase para lembrar.</span></span></li>
+  </ul>
+  <p class="aviso">Prefere ler no celular, com letra grande e o botão de ouvir? Entre em <b>${curso.endereco}</b>. Precisa de ajuda? Chame no WhatsApp <b>${tel}</b>.</p>
+</section>`);
+
+html.push(`<section class="pagina" id="sumario"><h2 class="titulo-pagina">Sumário</h2>
+  <p class="dica">${amostra ? 'Toque num título para ir direto. Nesta amostra, só os títulos em preto estão no livro.' : 'Toque num título para ir direto.'}</p>
+  ${caps.map((c) => `<div class="sumario-cap"><h3><span>${c.numero}.</span>${c.prontas.length ? `<a href="#cap-${c.numero}">${c.titulo}</a>` : c.titulo}</h3><ol>${c.duvidas.map((d) => duvidas[d.slug] ? `<li><a href="#${d.slug}">${duvidas[d.slug].titulo}</a></li>` : `<li>${d.titulo}</li>`).join('')}</ol></div>`).join('')}
+</section>`);
+
+for (const c of caps.filter((c) => c.prontas.length)) {
+  html.push(`<section class="pagina abre-cap" id="cap-${c.numero}"><span class="grande">${c.numero}</span><p class="olho">Capítulo ${c.numero}</p><h2>${c.titulo}</h2><p>${c.linha}</p>
+    <ol>${c.prontas.map((d) => `<li><a href="#${d.slug}">${duvidas[d.slug].titulo}</a></li>`).join('')}</ol></section>`);
+  html.push(...c.prontas.map((d) => duvidaHTML(duvidas[d.slug], { livro: true, proxima: ordem[ordem.indexOf(duvidas[d.slug]) + 1] })));
+}
+
+html.push(`<section class="duvida final"><span class="cruz" style="font-size:22pt"></span><h2>Ficou com outra dúvida?</h2><p>Fale com a gente no WhatsApp <b>${tel}</b>.</p><p>Para ler no celular, com letra grande e o botão de ouvir, entre em <b>${curso.endereco}</b>.</p>${sumario}</section>`);
+document.body.insertAdjacentHTML('beforeend', html.join(''));
+window.PRONTO = true;
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 // Kit de componentes do painel. Enxuto: o que as telas usam e nada mais.
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { AlertTriangle, Check, CheckCircle2, ChevronLeft, ChevronRight, Copy, Info, Loader2, X } from 'lucide-react';
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { AlertTriangle, Check, CheckCircle2, ChevronLeft, ChevronRight, Copy, Inbox, Info, Loader2, X } from 'lucide-react';
 import { copiar } from './util';
 import { Link } from './roteador';
 
@@ -90,8 +90,15 @@ export function useAcao() {
 }
 
 // ---------------------------------------------------------------- estrutura
+// A marca: o "S" da Agência Setup num ícone de app, laranja (o mesmo do site).
+// Cada logo tem o próprio degradê: com o mesmo id, o logo do celular herdava o do menu escondido e saía apagado.
 export function Logo() {
-  return <span className="logo-marca" aria-label="Agência Setup"><span className="logo-calango">Calango</span><span className="logo-sep">|</span><span>Agência Setup</span></span>;
+  return (
+    <span className="logo-marca" aria-label="Agência Setup">
+      <img className="logo-icone" src="/img/logo-setup-128.png" alt="" />
+      <span>Agência Setup</span>
+    </span>
+  );
 }
 
 export function Titulo({ titulo, sub, acoes, voltar }: { titulo: ReactNode; sub?: ReactNode; acoes?: ReactNode; voltar?: { para: string; t: string } }) {
@@ -119,10 +126,11 @@ export function Grupo({ titulo, rodape, acoes, children, className }: { titulo?:
   );
 }
 
-export function Celula({ icone, cor, titulo, sub, direita, para, onClick }: { icone?: ReactNode; cor?: string; titulo: ReactNode; sub?: ReactNode; direita?: ReactNode; para?: string; onClick?: () => void }) {
+// cor: nome da cor do sistema (laranja, verde, azul...); corHex: cor livre (a da rede, por exemplo).
+export function Celula({ icone, cor, corHex, titulo, sub, direita, para, onClick }: { icone?: ReactNode; cor?: string; corHex?: string; titulo: ReactNode; sub?: ReactNode; direita?: ReactNode; para?: string; onClick?: () => void }) {
   const corpo = (
     <>
-      {icone && <span className={`celula-icone ${cor ? `cor-${cor}` : ''}`}>{icone}</span>}
+      {icone && <span className={`celula-icone ${cor ? `cor-${cor}` : ''}`} style={corHex ? ({ '--c': corHex } as any) : undefined}>{icone}</span>}
       <span className="celula-texto"><span className="celula-titulo">{titulo}</span>{sub && <span className="celula-sub">{sub}</span>}</span>
       {direita && <span className="celula-direita">{direita}</span>}
       {(para || onClick) && <ChevronRight className="celula-seta" />}
@@ -194,12 +202,14 @@ export function Faixa({ tipo = 'info', children }: { tipo?: 'erro' | 'ok' | 'inf
   return <div className={`faixa faixa-${tipo}`} role={tipo === 'erro' ? 'alert' : undefined}>{i}<div>{children}</div></div>;
 }
 
-export function Carregando({ texto = 'Carregando…' }: { texto?: string }) {
-  return <div className="carregando"><Loader2 className="girar" />{texto}</div>;
+// Sem texto: esqueleto das linhas (listas). Com texto: girando e a frase (tela cheia).
+export function Carregando({ texto }: { texto?: string }) {
+  if (texto) return <div className="carregando"><Loader2 className="girar" />{texto}</div>;
+  return <div className="esqueleto" role="status" aria-label="Carregando"><span /><span /><span /><span /></div>;
 }
 
-export function Vazio({ titulo, texto, acao }: { titulo: string; texto?: ReactNode; acao?: ReactNode }) {
-  return <div className="vazio"><p className="vazio-titulo">{titulo}</p>{texto && <p className="mudo">{texto}</p>}{acao}</div>;
+export function Vazio({ titulo, texto, acao, icone }: { titulo: string; texto?: ReactNode; acao?: ReactNode; icone?: ReactNode }) {
+  return <div className="vazio"><span className="vazio-icone">{icone || <Inbox />}</span><p className="vazio-titulo">{titulo}</p>{texto && <p className="mudo">{texto}</p>}{acao}</div>;
 }
 
 export function ErroCarga({ erro, tentar }: { erro: string; tentar?: () => void }) {

@@ -1,0 +1,188 @@
+{
+  "titulo": "Posts on Autopilot with Claude",
+  "seo": {
+    "titulo": "Posts on Autopilot with Claude | Mini course by Agência Setup",
+    "descricao": "Set up, with no coding, a Claude that finds hot topics, writes posts in your style and makes high-end designs. 18 short lessons and the complete kit."
+  },
+  "blocos": [
+    {
+      "tipo": "heroi",
+      "cta": "I want my posts on autopilot",
+      "titulo": "Your posts ready every day, in your style.",
+      "destaque": "in your style",
+      "subtitulo": "You set up, with no coding, a Claude that finds the hot topics in your niche, writes posts the way you talk and makes high-end designs. You just approve and post.",
+      "vitalicio": true,
+      "video_rotulo": "See it working"
+    },
+    {
+      "tipo": "marquee",
+      "itens": ["Law firms", "Social media", "Personal brand", "Faith content", "Nutrition", "Real estate", "Aesthetics", "Therapy", "Restaurants", "Digital products"]
+    },
+    {
+      "tipo": "historia",
+      "olho": "An example",
+      "titulo": "This is Mark",
+      "destaque": "Mark",
+      "texto": "A lawyer, great at what he does, and with zero time to create content.",
+      "antes": {
+        "alt": "Mark, a lawyer, tired at the office at night, surrounded by papers",
+        "foto": "/img/venda/flavio-antes.webp?v=2",
+        "chips": ["3 posts behind", "2:13 AM · still editing"],
+        "itens": [],
+        "titulo": "Mark with no time",
+        "destaque": "no time",
+        "texto": "Same fight every day: hunt for a topic, write, open Canva. And the post goes out in a rush, after midnight."
+      },
+      "chave": "Autopilot mode",
+      "virada": "He built the system this course teaches",
+      "depois": {
+        "alt": "Mark smiling at the office in the morning, with the post ready on his phone",
+        "foto": "/img/venda/flavio-depois.webp?v=2",
+        "itens": [],
+        "titulo": "Mark on autopilot",
+        "destaque": "on autopilot",
+        "texto": "Claude finds the hot topic, writes it his way and makes the design. Mark just reads and approves.",
+        "notificacoes": [
+          { "app": "Claude", "hora": "8:00 AM", "texto": "Post written in your style. Approve?" },
+          { "app": "Claude", "hora": "1:00 PM", "texto": "Design ready ✓" }
+        ]
+      },
+      "nota": "Mark is an example character. The course works for any niche."
+    },
+    {
+      "tipo": "simulacao",
+      "olho": "How it works",
+      "titulo": "Watch Claude at work",
+      "destaque": "at work",
+      "texto": "You drag a file from the kit into the chat and it does the rest. Nothing goes to Instagram until you approve it.",
+      "janela": "Claude · Posts-on-Autopilot",
+      "arquivo": "04-radar.md",
+      "nicho": "consumer law",
+      "assuntos": [
+        { "t": "Delayed flight: your rights", "calor": 88 },
+        { "t": "Bank scam: will they refund you?", "calor": 76 },
+        { "t": "Online order that never arrived", "calor": 69 }
+      ],
+      "post_titulo": "Flight delayed? Here's what you're owed.",
+      "imagem": "/img/estilos-en/advogado-1.webp",
+      "perfil": "mark.law",
+      "palavra": "FLIGHT",
+      "curtidas": 1284,
+      "dm": "128 new comments on your post"
+    },
+    {
+      "tipo": "cards",
+      "olho": "What you build",
+      "titulo": "A folder on your computer that works for you",
+      "destaque": "works for you",
+      "itens": [
+        { "titulo": "A Claude that writes just like you", "texto": "It interviews you and reads the posts that performed best on your Instagram. That becomes your style skill." },
+        { "titulo": "A hot-topics radar", "texto": "Every day at 7 AM it notes what is trending in your niche. You never start from zero again." },
+        { "titulo": "A content board", "texto": "Like Trello, inside your folder: Ideas, Copy to approve, Approved, Ready to post and Posted." },
+        { "titulo": "High-end design", "texto": "A layered template, intentional covers and the 5-step rule. Beautiful posts that don't look like AI." },
+        { "titulo": "AI images", "texto": "Nano Banana through Google's API and, if you use Magnific, your photo with your exact face." },
+        { "titulo": "Everything on autopilot", "texto": "Scheduled tasks that run on their own, and a guide to get unstuck when something goes wrong." }
+      ]
+    },
+    {
+      "tipo": "estilos",
+      "olho": "Examples",
+      "titulo": "Posts in your style, in any niche",
+      "destaque": "in your style",
+      "texto": "Made by Claude with the course method: the layered template and the 5-step rule.",
+      "itens": [
+        { "nome": "Setup style", "nicho": "Social media and design", "imagens": ["/img/estilos-en/setup-1.webp", "/img/estilos-en/setup-2.webp", "/img/estilos-en/setup-3.webp"] },
+        { "nome": "Law firm, iOS style", "nicho": "Consumer law", "imagens": ["/img/estilos-en/advogado-1.webp", "/img/estilos-en/advogado-2.webp", "/img/estilos-en/advogado-3.webp"] },
+        { "nome": "Elegant", "nicho": "Personal brand and events", "imagens": ["/img/estilos-en/elegante-1.webp", "/img/estilos-en/elegante-2.webp", "/img/estilos-en/elegante-3.webp"] }
+      ]
+    },
+    {
+      "tipo": "para_quem",
+      "olho": "Who it's for",
+      "titulo": "Made for people with no time",
+      "destaque": "no time",
+      "sim": [
+        "You create content, for yourself or for clients, and never have time",
+        "You already use AI, but your posts come out generic",
+        "You want to post every day without spending the day in Canva",
+        "You can't code (and don't want to learn)"
+      ],
+      "nao": [
+        "You want it to post on its own, without you seeing it: here you always approve",
+        "You don't have a computer: Claude runs on Windows or Mac",
+        "You don't want a paid Claude plan: Claude Pro is required"
+      ]
+    },
+    {
+      "tipo": "aulas",
+      "olho": "The course",
+      "titulo": "18 short, straight-to-the-point lessons",
+      "texto": "Every lesson has a \"Do it now\" with the prompt ready to paste into Claude. Watch on your phone, do it on your computer."
+    },
+    {
+      "tipo": "kit",
+      "olho": "Included",
+      "titulo": "The complete kit",
+      "texto": "Recipes, skills and the design template. You drag the file into the chat and Claude does the rest."
+    },
+    {
+      "tipo": "autor",
+      "foto": "/img/filipe.webp",
+      "nome": "Filipe Lourenço",
+      "papel": "Founder of Agência Setup",
+      "texto": "I'm from Brazil, where I built @agenciasetup, one of the country's biggest communities for design and social media. Today my agency runs on AI: the topic radar, the copy, the designs and even the DM replies.\n\nIn this course I show you the same path, in the simplest way I could, for any niche.",
+      "numeros": ["128K|Instagram followers", "983|comments on a single carousel"]
+    },
+    {
+      "tipo": "marquee",
+      "itens": ["Instant access", "7-day guarantee", "18 short lessons", "Kit with ready-made recipes", "AI tutor in every lesson", "Certificate", "Card, Apple Pay or Google Pay"]
+    },
+    {
+      "tipo": "depoimentos",
+      "titulo": "What students say"
+    },
+    {
+      "tipo": "preco",
+      "olho": "Start today",
+      "titulo": "Posts on Autopilot with Claude",
+      "cta": "Get instant access",
+      "itens": [
+        "18 video lessons, 5 to 7 minutes each",
+        "The kit: 10 recipes, 4 skills, guides and the design template",
+        "\"Do it now\" in every lesson, with the prompt ready",
+        "AI tutor to answer questions inside the lesson",
+        "Certificate when you finish 70% of the lessons",
+        "1 year of access, on your phone and computer"
+      ],
+      "texto": "Your access arrives in your email as soon as the payment is approved."
+    },
+    {
+      "tipo": "garantia",
+      "titulo": "7-day guarantee",
+      "texto": "Joined, watched and felt it's not for you? Just ask within 7 days and we refund all your money."
+    },
+    {
+      "tipo": "faq",
+      "titulo": "Frequently asked questions",
+      "itens": [
+        { "p": "Do I need to know how to code?", "r": "No. You drag files into the chat and answer the questions Claude asks. No terminal." },
+        { "p": "What do I need?", "r": "A computer with Windows 10 or newer (or a Mac with macOS 13 or newer), Google Chrome and a paid Claude plan, Pro or Max. The part of Claude we use is not on the free plan." },
+        { "p": "How long does it take to set up?", "r": "3 to 4 hours in total, and you can split it across several days. After that, about 10 minutes a day to approve." },
+        { "p": "Does it post to my Instagram on its own?", "r": "No. Claude prepares the copy and the design, and you approve and post. That way nothing goes out with your name without you seeing it." },
+        { "p": "Does it work for my niche?", "r": "Yes. The radar looks for topics in your niche and the style comes from your own Instagram. The kit has examples from many niches." },
+        { "p": "Is the course in English?", "r": "Yes: the lessons, the kit, the app and the support. Claude also writes your posts in the language of your audience." },
+        { "p": "How do I get access?", "r": "Right away, in your email. You pay once, in US dollars, with a card, Apple Pay or Google Pay, and you can watch on your phone or computer for 1 year." },
+        { "p": "Is there a certificate?", "r": "Yes. When you finish 70% of the lessons, you download your certificate." },
+        { "p": "What if I don't like it?", "r": "You have a 7-day guarantee. Just ask and we refund all your money." }
+      ]
+    },
+    {
+      "tipo": "chamada",
+      "cta": "I want my posts on autopilot",
+      "grande": "Tomorrow, 8 AM",
+      "titulo": "Your post of the day could already be written.",
+      "destaque": "already be written",
+      "texto": "You set it up once and Claude works every day."
+    }
+  ]
+}

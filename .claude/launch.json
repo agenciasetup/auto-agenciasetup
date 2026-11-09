@@ -1,0 +1,10 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "site", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 8787 },
+    { "name": "curso", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev:curso"], "port": 8788 },
+    { "name": "duvidas", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev:duvidas"], "port": 8789 },
+    { "name": "painel-novo", "runtimeExecutable": "npx", "runtimeArgs": ["wrangler", "dev", "--port", "8792", "--inspector-port", "9234", "--persist-to", ".wrangler/state-painel"], "port": 8792 },
+    { "name": "curso-en", "runtimeExecutable": "npx", "runtimeArgs": ["wrangler", "dev", "--port", "8791", "--inspector-port", "9233", "--var", "MODO:curso", "--var", "MARCA_LOCAL:agenciasetup.com", "--var", "MARCA_LOCAL_URL:http://localhost:8791", "--persist-to", ".wrangler/state-en"], "port": 8791 }
+  ]
+}

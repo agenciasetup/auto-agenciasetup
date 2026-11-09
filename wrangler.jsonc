@@ -13,21 +13,31 @@
     "not_found_handling": "none",
     "html_handling": "none",
     // O Worker atende tudo, menos os arquivos fixos (CSS, JS, imagens).
-    "run_worker_first": ["/*", "!/estatico/*", "!/img/*", "!/admin/assets/*"]
+    "run_worker_first": ["/*", "!/estatico/*", "!/img/*", "!/admin/assets/*", "!/aluno/assets/*"]
   },
   // Domínio próprio: a Cloudflare cria o DNS e o certificado sozinha. Sem endereço *.workers.dev público.
   "workers_dev": false,
   "preview_urls": false,
   "routes": [
     { "pattern": "agenciasetup.com.br", "custom_domain": true },
-    { "pattern": "www.agenciasetup.com.br", "custom_domain": true }
+    { "pattern": "www.agenciasetup.com.br", "custom_domain": true },
+    // Área de membros (app do aluno). O Worker decide pelo endereço (worker/index.js).
+    { "pattern": "curso.agenciasetup.com.br", "custom_domain": true },
+    // Cursos com marca própria (lib/marcas.js): o mesmo Worker, com a cara do curso. Dúvidas da Fé (perfil da Raquel).
+    { "pattern": "duvidasdafe.agenciasetup.com.br", "custom_domain": true },
+    // O curso em inglês (Posts on Autopilot, em dólar): agenciasetup.com, zona própria no Cloudflare desde 30/10/2026.
+    { "pattern": "agenciasetup.com", "custom_domain": true },
+    { "pattern": "www.agenciasetup.com", "custom_domain": true }
   ],
   // Relógio: publica o que foi agendado (e, quando as redes forem conectadas, a fila delas).
-  "triggers": { "crons": ["*/10 * * * *"] },
+  "triggers": { "crons": ["* * * * *"] },
   "observability": { "enabled": true },
   // No computador, o endereço continua localhost (sem isto, o wrangler troca pelo domínio da rota).
   "dev": { "host": "localhost:8787", "upstream_protocol": "http" },
   "vars": {
-    "SITE_URL": "https://agenciasetup.com.br"
+    "SITE_URL": "https://agenciasetup.com.br",
+    "CURSO_URL": "https://curso.agenciasetup.com.br",
+    // Asaas de verdade (a chave fica em segredo: ASAAS_CHAVE). No computador, sem a chave, o pagamento é simulado.
+    "ASAAS_AMBIENTE": "producao"
   }
 }

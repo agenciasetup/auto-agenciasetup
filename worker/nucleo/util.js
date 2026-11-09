@@ -121,22 +121,75 @@ function inline(t) {
     .replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>');
 }
 
+// Blocos do texto (fase B de SEO, docs/seo-geo.md), escritos como bloco de código com nome:
+//   ```pros-contras   linhas "+ pró" e "- contra"
+//   ```produto        linhas "nome:", "imagem:", "alt:", "para:", "preco:", "link:", "loja:" (link de loja vai com sponsored)
+//   ```curso          o lugar da chamada do mini curso (a página troca pela oferta no ar)
+// E tabela no formato do GitHub (| a | b |, com a linha |---|---| embaixo do cabeçalho).
+function blocoEspecial(nome, linhas) {
+  if (nome === 'pros-contras') {
+    const pros = linhas.filter((l) => /^\s*\+\s+/.test(l)).map((l) => l.replace(/^\s*\+\s+/, ''));
+    const contras = linhas.filter((l) => /^\s*-\s+/.test(l)).map((l) => l.replace(/^\s*-\s+/, ''));
+    const col = (t, cls, itens) => `<div class="${cls}"><h4>${t}</h4><ul>${itens.map((i) => `<li>${inline(i)}</li>`).join('')}</ul></div>`;
+    return `<div class="pros-contras">${col('Prós', 'pros', pros)}${col('Contras', 'contras', contras)}</div>`;
+  }
+  if (nome === 'produto') {
+    const d = Object.fromEntries(linhas.map((l) => l.match(/^\s*([a-z_]+)\s*:\s*(.+)$/i)).filter(Boolean).map((m) => [m[1].toLowerCase(), m[2].trim()]));
+    if (!d.nome) return '';
+    const link = d.link ? urlSegura(d.link) : '';
+    return `<div class="produto">${d.imagem ? `<img src="${esc(urlSegura(d.imagem))}" alt="${esc(d.alt || d.nome)}" loading="lazy" decoding="async">` : ''}<div class="produto-corpo"><h4>${inline(d.nome)}</h4>${d.para ? `<p><b>Para quem é:</b> ${inline(d.para)}</p>` : ''}${d.preco ? `<p class="produto-preco">${inline(d.preco)}</p>` : ''}${link ? `<a class="bt bt-marca" href="${esc(link)}" target="_blank" rel="sponsored nofollow noopener">${esc(d.loja ? `Ver na ${d.loja}` : 'Ver o preço')}</a>` : ''}</div></div>`;
+  }
+  if (nome === 'curso') return '<div class="bloco-curso" data-bloco-curso></div>';
+  return null;
+}
+
+function tabela(linhas) {
+  const celulas = (l) => l.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+  const cab = celulas(linhas[0]);
+  const corpo = linhas.slice(2).map(celulas);
+  return `<div class="tabela"><table><thead><tr>${cab.map((c) => `<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${corpo.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+
 export function markdown(md = '') {
   const linhas = String(md).replace(/\r/g, '').split('\n');
   const out = [];
   let lista = null;
   let para = [];
   let bloco = null;
+  let nomeBloco = '';
+  const ids = new Set();
   const fecharPara = () => { if (para.length) { out.push(`<p>${inline(para.join(' '))}</p>`); para = []; } };
   const fecharLista = () => { if (lista) { out.push(`</${lista}>`); lista = null; } };
-  for (const l of linhas) {
+  for (let i = 0; i < linhas.length; i++) {
+    const l = linhas[i];
     if (bloco !== null) {
-      if (/^```/.test(l)) { out.push(`<pre><code>${esc(bloco.join('\n'))}</code></pre>`); bloco = null; } else bloco.push(l);
+      if (/^```/.test(l)) {
+        const especial = nomeBloco ? blocoEspecial(nomeBloco, bloco) : null;
+        out.push(especial ?? `<pre><code>${esc(bloco.join('\n'))}</code></pre>`);
+        bloco = null;
+      } else bloco.push(l);
       continue;
     }
-    if (/^```/.test(l)) { fecharPara(); fecharLista(); bloco = []; continue; }
+    const abre = l.match(/^```\s*([a-z-]*)/);
+    if (abre) { fecharPara(); fecharLista(); bloco = []; nomeBloco = abre[1] || ''; continue; }
+    // Tabela: a linha com | e, logo embaixo, a separadora |---|.
+    if (/^\s*\|.*\|\s*$/.test(l) && /^\s*\|?\s*:?-{3,}/.test(linhas[i + 1] || '')) {
+      fecharPara(); fecharLista();
+      const t = [l];
+      while (i + 1 < linhas.length && /^\s*\|.*\|\s*$/.test(linhas[i + 1])) t.push(linhas[++i]);
+      out.push(tabela(t));
+      continue;
+    }
     const h = l.match(/^(#{2,4})\s+(.+)/);
-    if (h) { fecharPara(); fecharLista(); out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); continue; }
+    if (h) {
+      fecharPara(); fecharLista();
+      // Âncora nos intertítulos: o índice do artigo e o link direto para um trecho (o Google mostra "pular para").
+      let id = slugar(h[2].replace(/[*`[\]()]/g, '')).slice(0, 60) || 'secao';
+      while (ids.has(id)) id += '-2';
+      ids.add(id);
+      out.push(`<h${h[1].length} id="${id}">${inline(h[2])}</h${h[1].length}>`);
+      continue;
+    }
     const li = l.match(/^\s*(?:[-*]|(\d+)\.)\s+(.+)/);
     if (li) {
       fecharPara();
