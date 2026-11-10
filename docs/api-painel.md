@@ -95,6 +95,7 @@ Post: `id, rede, perfil (o da conta que publicou), id_na_rede, peca_id, formato,
 ## Oferta do funil (mini curso)
 
 - `GET /oferta` → `{ ativo, landing_slug, titulo, texto, cta, linha_dm, curso_primeiro, no_ar, link }` (`curso_primeiro`: o botão do mini curso em cima do material no direct do Comenta X) | `PATCH /oferta` (mesmos campos; `cursos.editar`)
+- `GET /video/virais?status=novo|roteiro|usado|descartado&dias=&idioma=&limite=` → `{ itens: [{ video_id, canal, idioma, titulo, publicado_em, views, base, vezes, por_dia, status, leitura, url }], canais, regua, ultima_rodada }` (`pautas.ver`) | `POST /video/virais/:id` `{ status: novo|usado|descartado }` | `GET /video/canais` | `POST /video/canais` `{ id, nome, idioma, tema, arroba, tirar }` (`pautas.editar`)
   Só aparece (fim da página de recurso e fim da DM) com `ativo`, landing page publicada e produto ativo.
 
 ## Área de membros (vendas, alunos, aulas, ofertas, links)

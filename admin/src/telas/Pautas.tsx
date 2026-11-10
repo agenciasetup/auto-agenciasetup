@@ -7,17 +7,19 @@ import { useRota } from '../nucleo/roteador';
 import { Abas, AreaTexto, BotaoCopiar, Campo, Carregando, Celula, ErroCarga, Etiqueta, Grupo, Modal, Titulo, Vazio, useAcao, useCarregar, useSessao } from '../nucleo/ui';
 import { FERRAMENTA, FORMATOS, TIPO_PAUTA, haQuanto, listaDeTexto } from '../nucleo/util';
 import { Calor } from './comum';
+import { VideosVirais } from './VideosVirais';
 
 export default function Pautas() {
   const { rota, ir } = useRota();
-  const [aba, setAba] = useState(rota.busca.get('aba') === 'guardadas' ? 'guardadas' : 'alta');
+  const daRota = rota.busca.get('aba');
+  const [aba, setAba] = useState(daRota === 'guardadas' || daRota === 'videos' ? daRota : 'alta');
   useEffect(() => { document.title = 'Em alta | Painel Agência Setup'; }, []);
-  const trocar = (a: string) => { setAba(a); ir(`/pautas${a === 'guardadas' ? '?aba=guardadas' : ''}`, { trocar: true }); };
+  const trocar = (a: string) => { setAba(a); ir(`/pautas${a === 'alta' ? '' : `?aba=${a}`}`, { trocar: true }); };
   return (
     <div className="tela">
       <Titulo titulo="Em alta" sub="O que está quente agora em IA e design, lido de 25 fontes. Texto de fora é só referência." />
-      <Abas abas={[{ id: 'alta', t: 'Em alta agora' }, { id: 'guardadas', t: 'Pautas guardadas' }]} atual={aba} mudar={trocar} />
-      {aba === 'alta' ? <EmAlta /> : <Guardadas />}
+      <Abas abas={[{ id: 'alta', t: 'Em alta agora' }, { id: 'videos', t: 'Vídeos fora da curva' }, { id: 'guardadas', t: 'Pautas guardadas' }]} atual={aba} mudar={trocar} />
+      {aba === 'alta' ? <EmAlta /> : aba === 'videos' ? <VideosVirais /> : <Guardadas />}
     </div>
   );
 }

@@ -9,6 +9,7 @@ Antes de escrever, leia aqui: o que foi usado não volta, e o que está pronto p
 ### Frase do digital
 - não mande o [arquivo aberto] pra quem ainda não pagou [tudo]. (corrigida em 4/11/2026: era "o sinal", e o arquivo aberto vai depois do pagamento final; só use longe do `antes-do-pix-cair`, que tem a mesma tese. O cadeado já está pronto em `templates/frase/imagens/cadeado/`.) Em 7/11 o revisor reprovou de novo para 8/11 (a 7 dias do `antes-do-pix-cair`, ficam gêmeos no feed): **só de 15/11 em diante**. Há um cadeado novo na diagonal, vermelho com a chave, em `templates/frase/imagens/cadeado2/` (camadas prontas, caixa `[0.1777, 0.2896, 0.855, 0.6826]`, `w: 640`), mas o verniz saiu manchado: gere de novo pedindo "smooth glossy red enamel with one clean soft highlight". Card 3 tem que falar de arquivo e pagamento.
 - prompt bom é igual briefing bom: [quase ninguém manda].
+- posto todo dia pro cliente. meu perfil tá parado desde [março]. (conteúdo e arte prontos em `perfil-parado`, ainda não entregue. O revisor reprovou para 18/11 em 10/11: mesma tese e mesma palavra do carrossel "Eu não tinha tempo pra postar" (11/11) e perto do `nao-parou-de-postar` (13/11). **Só de 27/11 em diante**; troque o título e confira a cor dos vizinhos, porque começa no preto.)
 
 ### Motivacional do digital (com foto)
 - postado é melhor que perfeito. [agendado] é melhor que postado. (foto: café passando)
@@ -56,6 +57,8 @@ Antes de escrever, leia aqui: o que foi usado não volta, e o que está pronto p
 | 8/11/2026 | a ideia boa de post não chega às 9h. chega às [3 da manhã]. | `tres-da-manha` | 41a7ac5d, rascunho, sugerida para 9/11 às 19h (sem imagem; se o Chrome voltar, um celular aceso no escuro) |
 | 9/11/2026 | tô cansado, em 5 línguas do digital (designer: ctrl+s, fecha tudo e boa noite / social media: hoje, o algoritmo que lute / freela: aceito o pix e mais nada / Claude: você atingiu o limite. volte às 18h / cliente: vamos deixar pra depois do carnaval / fecho: manda pra quem tá no [limite] hoje) | `to-cansado-no-digital` | 4cd6433c, rascunho, sugerida às 12h (sem imagem, frase no meio) |
 | 9/11/2026 | o post programado pras 19h foi feito às [18h57]. | `post-das-19h` | 26209de1, rascunho, sugerida às 19h (fósforo quase no fim no card invertido). Mesma família de "contraste de horário" do `tres-da-manha` (12/11): sugerir a data a 14 dias dele, de 26/11 em diante |
+| 10/11/2026 | pedi pra IA deixar a legenda mais humana. ela colocou um [foguete]. | `ia-mais-humano` | c7861594, rascunho, sugerida para sáb 14/11 às 19h (sem imagem: o conector do Magnific estava desligado; a ideia era um foguete de brinquedo laranja). Era "o texto"; o revisor pediu "a legenda" (teste da troca de canal) |
+| 10/11/2026 | postei há 4 minutos. já abri os insights [11 vezes]. | `insights-onze-vezes` | 01166f89, rascunho, sugerida para qua 18/11 às 12h (sem imagem, frase no meio) |
 
 ## Descartadas
 

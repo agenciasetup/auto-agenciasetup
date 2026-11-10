@@ -17,6 +17,8 @@ import { responderPendentes } from './atendente.js';
 import { rodarChefeDeGabinete } from './agentes/chefe-de-gabinete.js';
 import { rodarZelador } from './agentes/zelador.js';
 import { rodarConciliador } from './agentes/conciliador.js';
+import { rodarCacadorDeVirais } from './agentes/cacador-de-virais.js';
+import { rodarRoteirista } from './agentes/roteirista.js';
 import { rodarOlheiroDeFerramentas } from './agentes/olheiro-de-ferramentas.js';
 import { contaAtiva, credenciaisAtivas } from '../plataformas/credenciais.js';
 import { chamadasFeitas, comContador, folgaDeChamadas, reservarChamadas } from '../nucleo/db.js';
@@ -47,7 +49,7 @@ async function atenderODirect(env) {
 // Chamadas externas que cada etapa do minuto precisa ter garantidas (estimativa por cima). Ficam reservadas desde o
 // começo, para o Atendente e o Comenta X não gastarem tudo antes; a reserva é solta quando a etapa começa.
 // fila: só a conferência de todo minuto (publicar uma peça gasta mais, e a fila ainda não olha o contador).
-const RESERVA = { fila: 2, fechamento: 8, seo: 12, chefe: 18, zelador: 18, 'olheiro-de-ferramentas': 12 };
+const RESERVA = { fila: 2, fechamento: 8, seo: 12, chefe: 18, zelador: 18, 'olheiro-de-ferramentas': 12, 'cacador-de-virais': 12, roteirista: 32 };
 // O Comenta X lê os comentários (a reserva do aviso da Meta) deixando lugar para um envio da fila: o fixo e um item.
 const RESERVA_ENVIO = 17;
 // Os números dos posts recentes são só para o painel e gastam umas 6 chamadas por conta (4 contas): num minuto cheio
@@ -86,6 +88,11 @@ export async function rodarMinuto(envDoWorker, quando = Date.now()) {
   if (new Date(quando).getUTCMinutes() === 7) etapas.push(['zelador', () => rodarZelador(env, quando)]);
   // O Olheiro de ferramentas: todo dia às 9h21 de Brasília ele vê se já rodou na semana; só trabalha uma vez por semana.
   if (h === 9 && new Date(quando).getUTCMinutes() === 21) etapas.push(['olheiro-de-ferramentas', () => rodarOlheiroDeFerramentas(env, quando)]);
+  // O setor de vídeo. O Caçador de virais (sem IA): no minuto 37 de toda hora lê 4 canais da lista, em rodízio, e guarda
+  // o Short que saiu da curva. A Roteirista: segunda e quinta às 9h31 de Brasília (de novo às 9h41 e 9h51 se falhar; ela
+  // mesma não repete no dia) escreve até 3 roteiros e põe na mesa.
+  if (new Date(quando).getUTCMinutes() === 37) etapas.push(['cacador-de-virais', () => rodarCacadorDeVirais(env, quando)]);
+  if (h === 9 && [31, 41, 51].includes(new Date(quando).getUTCMinutes())) etapas.push(['roteirista', () => rodarRoteirista(env, quando)]);
   // O Conciliador da Colmeia: só trabalha quando a Colmeia mudou e está quieta há 3 minutos (nos outros minutos, 1 leitura).
   etapas.push(['conciliador', () => rodarConciliador(env, quando)]);
   // O resumo do dia só trabalha a partir das 23h58: fora disso não precisa de reserva.

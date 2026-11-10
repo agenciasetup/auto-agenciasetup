@@ -140,7 +140,7 @@ function sinalDe(a) {
 
 export async function verEscritorio(env) {
   const [agentes, resumo, abertas, fechadas, teto, atividade, placar, movimentos, arte, linhasDeConsumo, batimentos] = await Promise.all([
-    db.select(env, 'agentes', { select: 'id,sala,nome,apelido,funcao,onde,cadencia,modelo,estado,nivel,teto_dia_usd,ordem,criado_em,atualizado_em', ordem: 'ordem.asc,nome.asc', limite: 300 }),
+    db.select(env, 'agentes', { select: 'id,sala,nome,apelido,funcao,onde,maquina,cadencia,modelo,estado,nivel,teto_dia_usd,ordem,criado_em,atualizado_em', ordem: 'ordem.asc,nome.asc', limite: 300 }),
     db.rpc(env, 'escritorio_resumo'),
     db.select(env, 'propostas', { filtros: { status: 'in.(nova,aprovada,depois)' }, ordem: 'criado_em.desc', limite: 120 }),
     db.select(env, 'propostas', { filtros: { status: 'in.(feita,descartada)' }, ordem: 'atualizado_em.desc', limite: 20 }),
@@ -169,8 +169,11 @@ export async function verEscritorio(env) {
         vendas: VENDEDOR_DO_AGENTE[a.id] ? placar.find((v) => v.vendedor === VENDEDOR_DO_AGENTE[a.id]) || null : null,
         consumo: consumo.agentes[a.id] || null,
       };
-      // Quem roda no computador fica offline quando nenhum computador dá sinal de vida.
-      ag.offline = a.estado === 'ativo' && a.onde === 'computador' && maquinas.alguma === false;
+      // Quem roda no computador fica offline quando nenhum computador dá sinal de vida. Quem só roda numa máquina
+      // (agentes.maquina: a voz clonada e o render são do Windows) fica offline quando essa máquina para de dar sinal.
+      const dela = a.maquina ? maquinas.lista.find((m) => m.id === a.maquina) : null;
+      ag.offline = a.estado === 'ativo' && a.onde === 'computador' && (dela ? !!dela.em && !dela.viva : maquinas.alguma === false);
+      ag.maquina_nome = dela ? dela.nome : null;
       ag.sinal = ag.offline ? null : sinalDe(ag);
       return ag;
     }),

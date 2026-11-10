@@ -1055,3 +1055,6 @@ button.pl-placa:hover svg { opacity: 1; }
 .pl-zzz { letter-spacing: 0.04em; animation: pl-zzz 2.4s ease-in-out infinite; }
 @keyframes pl-zzz { 50% { translate: 0 -3px; opacity: 0.7; } }
 @media (prefers-reduced-motion: reduce) { .pl-zzz { animation: none; } }
+
+/* Vídeos fora da curva (Em alta): quantas vezes a média do canal, no selo do calor */
+.video-vezes { font-size: 12.5px; letter-spacing: -0.02em; }

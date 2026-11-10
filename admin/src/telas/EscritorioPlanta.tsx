@@ -53,7 +53,7 @@ export function fazendo(a: any): string {
   if (a.estado === 'desligado') return 'Demitido';
   if (a.estado === 'planejado') return 'Vaga aberta: ainda não foi construído';
   if (a.estado === 'pausado') return 'Em pausa';
-  if (a.offline) return 'Offline: nenhum computador ligado';
+  if (a.offline) return a.maquina_nome ? `Offline: ${a.maquina_nome} desligado` : 'Offline: nenhum computador ligado';
   if (u?.status === 'rodando') return 'Trabalhando agora';
   if (a.trabalho?.frase) return semPonto(a.trabalho.frase);
   if (u?.resumo) return semPonto(u.resumo);
@@ -337,7 +337,7 @@ export function Perfil({ a, nomes, foto, fechar, mudou, podeEditar }: { a: any; 
         </header>
         <div className="pl-perfil-corpo">
           <p className="pl-estado"><span className={`esc-luz esc-luz-${estado}`} />{nomes.estados[estado]}{estado !== 'planejado' ? ` · ${nomes.onde[det?.onde || a.onde] || ''}` : ''}{(det?.cadencia || a.cadencia) ? ` · ${det?.cadencia || a.cadencia}` : ''}</p>
-          {a.offline && <p className="pl-sinal"><b>Offline.</b> Nenhum computador da agência está ligado, e este agente roda no computador. Ele volta sozinho quando um deles ligar.</p>}
+          {a.offline && <p className="pl-sinal"><b>Offline.</b> {a.maquina_nome ? `Este agente só roda no ${a.maquina_nome}, que está sem sinal. Ele volta sozinho quando esse computador ligar.` : 'Nenhum computador da agência está ligado, e este agente roda no computador. Ele volta sozinho quando um deles ligar.'}</p>}
           {a.sinal && estado === 'ativo' && <p className={`pl-sinal pl-sinal-${a.sinal.nivel}`}><Seta sinal={a.sinal} classe="pl-seta-linha" /><b>{NOME_SINAL[a.sinal.nivel]}.</b> {a.sinal.motivo}</p>}
 
           {podeEditar && det && renomear === null && <button type="button" className="bt bt-mini bt-texto pl-renomear" onClick={() => setRenomear(apelido || '')}><Pencil />Mudar o nome</button>}
