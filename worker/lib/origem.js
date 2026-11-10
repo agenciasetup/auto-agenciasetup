@@ -2,6 +2,7 @@
 // Sem IP e sem perfil: só origem, meio, campanha, conteúdo e a página. Ver docs/area-de-membros.md, seção 5.
 import { db } from '../nucleo/db.js';
 import { aleatorio } from '../nucleo/util.js';
+import { codigoValido, lerConversa } from './pessoa.js';
 
 export const COOKIE = 'as_v';
 const MARCAS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
@@ -38,18 +39,23 @@ function referenciaDe(referrer) {
   return r ? { origem: r[1], meio: r[2] } : null;
 }
 
-// Lê as marcas de um endereço. "?de=dm-xxxx" (DM do Comenta X) e "?de=pinterest" viram origem e meio.
+// Lê as marcas de um endereço. "?de=dm-xxxx" (DM do Comenta X) e "?de=pinterest" viram origem e meio. "?de=a-código"
+// é o link mandado numa conversa do direct (pessoa.js): diz quem mandou (Atendente ou vendedor) e para quem.
 export function marcasDe(url, referrer) {
   const s = url.searchParams;
   const t = {
     origem: limpa(s.get('utm_source'), 60), meio: limpa(s.get('utm_medium'), 60), campanha: limpa(s.get('utm_campaign')),
     conteudo: limpa(s.get('utm_content')), termo: limpa(s.get('utm_term')),
     clid: s.get('fbclid') ? 'fbclid' : s.get('gclid') ? 'gclid' : s.get('ttclid') ? 'ttclid' : null,
+    // A pessoa do Instagram que recebeu o link: "&p=código" nos botões do Comenta X.
+    pessoa: codigoValido(s.get('p')),
   };
   const de = limpa(s.get('de'), 60);
   if (de && !t.origem) {
     const dm = de.match(/^dm-(.+)$/);
-    if (dm) Object.assign(t, { origem: 'instagram', meio: 'dm', campanha: t.campanha || dm[1] });
+    const conversa = lerConversa(de);
+    if (conversa) Object.assign(t, { origem: 'instagram', meio: 'direct', campanha: t.campanha || 'conversa', conteudo: t.conteudo || conversa.quem, pessoa: conversa.pessoa || t.pessoa });
+    else if (dm) Object.assign(t, { origem: 'instagram', meio: 'dm', campanha: t.campanha || dm[1] });
     else Object.assign(t, { origem: de });
   }
   if (!t.origem && !t.campanha) Object.assign(t, referenciaDe(referrer) || {});
@@ -57,11 +63,11 @@ export function marcasDe(url, referrer) {
   return t.origem || t.campanha || t.clid ? t : null;
 }
 
-const iguais = (a, b) => ['origem', 'meio', 'campanha', 'conteudo'].every((k) => (a[k] || null) === (b[k] || null));
+const iguais = (a, b) => ['origem', 'meio', 'campanha', 'conteudo', 'pessoa'].every((k) => (a[k] || null) === (b[k] || null));
 
 export async function registrarToque(env, visitante, marcas, extra = {}) {
   // O clique no link curto e a página que abre logo depois trazem as mesmas marcas: é uma visita só, não duas.
-  const [ultimo] = await db.select(env, 'toques', { filtros: { visitante: `eq.${visitante}`, quando: `gte.${new Date(Date.now() - 30 * 60_000).toISOString()}` }, select: 'origem,meio,campanha,conteudo', ordem: 'quando.desc', limite: 1 });
+  const [ultimo] = await db.select(env, 'toques', { filtros: { visitante: `eq.${visitante}`, quando: `gte.${new Date(Date.now() - 30 * 60_000).toISOString()}` }, select: 'origem,meio,campanha,conteudo,pessoa', ordem: 'quando.desc', limite: 1 });
   if (ultimo && iguais(ultimo, marcas)) return;
   await db.inserirRapido(env, 'toques', {
     visitante, ...marcas,
@@ -77,9 +83,9 @@ export async function toquesDoVisitante(env, visitante) {
   if (!visitante) return { primeiro: null, ultimo: null, lista: [] };
   const desde = new Date(Date.now() - 30 * 86400_000).toISOString();
   // Do mais novo para o mais antigo: com mais de 20 toques, o último da conta tem de ser o último de verdade.
-  const novos = await db.select(env, 'toques', { filtros: { visitante: `eq.${visitante}`, quando: `gte.${desde}` }, select: 'quando,origem,meio,campanha,conteudo,termo,link,clid,pagina', ordem: 'quando.desc', limite: 20 });
+  const novos = await db.select(env, 'toques', { filtros: { visitante: `eq.${visitante}`, quando: `gte.${desde}` }, select: 'quando,origem,meio,campanha,conteudo,termo,pessoa,link,clid,pagina', ordem: 'quando.desc', limite: 20 });
   const lista = novos.reverse();
-  const [primeiro] = lista.length === 20 ? await db.select(env, 'toques', { filtros: { visitante: `eq.${visitante}`, quando: `gte.${desde}` }, select: 'quando,origem,meio,campanha,conteudo,termo,link,clid,pagina', ordem: 'quando.asc', limite: 1 }) : lista;
+  const [primeiro] = lista.length === 20 ? await db.select(env, 'toques', { filtros: { visitante: `eq.${visitante}`, quando: `gte.${desde}` }, select: 'quando,origem,meio,campanha,conteudo,termo,pessoa,link,clid,pagina', ordem: 'quando.asc', limite: 1 }) : lista;
   return { primeiro: primeiro || null, ultimo: lista[lista.length - 1] || null, lista };
 }
 
@@ -98,6 +104,7 @@ export function canalDe(t) {
   if (insta || o === 'story') {
     const dono = insta && insta[1] ? `Instagram (${insta[1][0].toUpperCase()}${insta[1].slice(1)})` : 'Instagram';
     if (pago) return `Anúncio no ${dono}`;
+    if (m === 'direct') return insta && insta[1] ? `Conversa no direct do ${dono}` : 'Conversa no direct';
     if (m === 'dm') return insta && insta[1] ? `Direct do ${dono}` : 'Direct do Comenta X';
     if (o === 'story' || m === 'story') return `${dono}: story`;
     if (m === 'bio' || t.conteudo === 'link_in_bio' || o === 'ig') return `${dono}: link da bio`;

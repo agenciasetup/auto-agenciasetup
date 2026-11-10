@@ -723,6 +723,16 @@ Pedido do dono: "ao invés do MCP atual, construa o MCP estilo code mode do Clou
 - **Arte fora do Git.** As salas são imagem gerada: moram no bucket `midia` e em `_local/escritorio/`, e o painel lê o endereço de `config.escritorio_arte`.
 - **Cupom de parceiro.** Criado com o ok do dono para um lead do direct: R$ 79,90 no Combo, 1 uso, até 30/11.
 
+## Tomadas em 10/11/2026 (confiabilidade, funil do material e a pessoa no link)
+
+- **O dinheiro estava no material, não no escritório.** A análise mostrou que quem ia do direct para o material grátis comprava em 1% dos casos, e quem ia direto para a página de venda, em 14%. Por isso a oferta subiu para o topo do material e o curso virou o primeiro botão do direct (`config.oferta.curso_primeiro`). O dono aprovou os dois ("Pode fazer"). As marcas `material-topo` e `curso-topo` mostram em Vendas se deu certo; o interruptor desfaz em um clique.
+- **A compra é ligada à pessoa pelo link.** Nome e e-mail quase nunca casavam com o @ do Instagram (2 de 551). Cada link que sai no direct leva um código curto da pessoa (10 letras do SHA-256 de perfil e @, sem dado pessoal). Vale para os botões do Comenta X, para o Atendente e para os vendedores. Quem compra vai para "Comprou" sozinho e ninguém oferece de novo; o placar passa a enxergar qual vendedor vendeu.
+- **Comportamento se ajusta na Colmeia; o código só guarda as travas.** Frase de atendimento escrita no código contradisse item do dono mais de uma vez. O Conciliador (pedido do dono) junta os itens que se contradizem; junção que mexe em preço, link ou item de agente espera o sim dele.
+- **Nunca negar, direcionar.** O dono reprovou "não tenho esse curso": o Atendente não diz sim nem não, manda a pessoa falar com o time no WhatsApp (a frase dele está na Colmeia).
+- **Limite do plano grátis da Cloudflare tratado no código.** O relógio de minuto conta as chamadas de cada execução e adia a etapa que não cabe. Pagar o Workers (US$ 5 por mês) sobe o limite de 50 para 1.000 chamadas e continua recomendado; o cartão está na mesa do Escritório. Erro de lógica não se resolve pagando.
+- **Mídia: postou, apagou.** Com o ok do dono, o original de peça publicada há 2 dias ou mais sai do Supabase e fica só uma miniatura. O que ainda não foi postado nunca entra. Os arquivos sem peça (759 MB com mais de 7 dias) ficaram de fora, esperando a resposta dele.
+- **Contas de teste do dono** (modo ensaio do Atendente): as cinco que ele indicou, guardadas em `config.atendente.contas_teste`.
+
 ## Em aberto
 
 - **Follow-up do direct:** no ar desde 08/11/2026 (versão `8267d516`) com a tarefa `direct-followup`. Falta a primeira rodada com o dono olhando e conferir na primeira semana se o "achado pelo nome" erra. Sete rodadas por dia lendo o direct gastam bastante do limite semanal do Claude: se apertar, ficar com 9h, 14h e 20h.

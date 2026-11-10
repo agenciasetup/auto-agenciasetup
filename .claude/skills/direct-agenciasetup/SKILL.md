@@ -31,6 +31,8 @@ Preço muda em campanha. Antes de citar valor, confira a página (ou `ver_oferta
 
 Não liste os cursos do combo de memória: mande a página. Não fale de curso que não está nesta tabela sem conferir que está à venda.
 
+**O link sai sempre com a etiqueta da pessoa.** Cada pessoa da lista traz `links_venda.posts` e `links_venda.combo`: é o mesmo endereço da tabela com `?de=...` no fim (o vendedor dela e o código dela). Mande sempre esse, nunca o endereço sem etiqueta. É por ele que a compra é ligada à pessoa (ela vai para "Comprou" sozinha e ninguém oferece de novo) e que o placar sabe qual vendedor vendeu. A `proxima_mensagem` da lista já vem com o link certo. Os exemplos de `references/mensagens.md` mostram o endereço base: na hora de mandar, troque pelo da pessoa.
+
 ## O jeito de conversar (lido das conversas reais, 08/11/2026)
 
 O Filipe conversa como amigo que manja do assunto, não como vendedor. Frases curtas, várias mensagens seguidas em vez de um bloco, e o link sozinho numa mensagem.

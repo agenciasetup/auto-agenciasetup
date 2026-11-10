@@ -47,7 +47,7 @@ ${imagem ? `<meta property="og:image" content="${esc(imagem)}">` : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="${FONTES}">
-<link rel="stylesheet" href="/estatico/site.css?v=8">
+<link rel="stylesheet" href="/estatico/site.css?v=9">
 <script>document.documentElement.classList.add('js');setTimeout(function(){if(!document.documentElement.classList.contains('revelar-ok'))document.documentElement.classList.remove('js')},2500)</script>
 ${ad ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${esc(ad)}" crossorigin="anonymous"></script>` : ''}
 ${ldjson ? `<script type="application/ld+json">${jsonScript(ldjson)}</script>` : ''}

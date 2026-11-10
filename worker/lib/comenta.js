@@ -81,13 +81,14 @@ export function variantesDe(g) {
 }
 
 // O link vai num botão (modelo de botão da Meta: texto até 640 e até 3 botões). O {link} sai do texto; o mini curso
-// entra como segundo botão. Se a Meta recusar o modelo, vai o texto com os links escritos.
+// entra como segundo botão, ou como primeiro quando a oferta pede (curso.primeiro; o material fica logo abaixo). Se a
+// Meta recusar o modelo, vai o texto com os links escritos, o material antes.
 export function formasComLink(modelo, { link, usuario, titulo, botao, curso, idioma = 'pt' }) {
   const tx = textosDe(idioma);
   const base = String(modelo || '').trim() || (idioma === 'en' ? VERSAO_PADRAO_EN : VERSAO_PADRAO).direto.dm;
   const semLink = preencher(base.replace(/[ \t]*\{link\}[ \t]*/g, ' '), { usuario, titulo, curso: curso && curso.nome, idioma }) || tx.aqui;
   const botoes = [{ type: 'web_url', url: link, title: tituloBotao(botao, tx.link) }];
-  if (curso && curso.url) botoes.push({ type: 'web_url', url: curso.url, title: tituloBotao(curso.botao, tx.curso) });
+  if (curso && curso.url) botoes[curso.primeiro ? 'unshift' : 'push']({ type: 'web_url', url: curso.url, title: tituloBotao(curso.botao, tx.curso) });
   const formas = [];
   if (Array.from(semLink).length <= 640) formas.push({ attachment: { type: 'template', payload: { template_type: 'button', text: semLink, buttons: botoes } } });
   let texto = preencher(base.includes('{link}') ? base : `${base}\n{link}`, { link, usuario, titulo, curso: curso && curso.nome, idioma });

@@ -2,9 +2,12 @@
 // O que ele olha:
 // 1. Tarefa do computador que não rodou. As tarefas agendadas do Claude gravam um turno (tabela turnos). Passaram 45
 //    minutos da hora esperada e não tem turno desde então: é alerta.
-// 2. Erros: turno com erro nas últimas 24 horas, atendimento do direct com erro e fila do Atendente parada (mensagem
-//    esperando há mais de 5 minutos).
+// 2. Erros: turno com erro nas últimas 24 horas, atendimento do direct com erro, fila do Atendente parada (mensagem
+//    esperando há mais de 5 minutos) e conversa que ficou no meio do caminho (a execução caiu depois de pegar a mensagem
+//    e ninguém respondeu).
 // 3. Gasto: o gasto de IA do dia passou de 80% do teto.
+// 4. O aviso da Meta parou: nenhuma mensagem nem comentário chegando na hora por 5 horas no horário de pico, ou
+//    comentários entrando só pela leitura do relógio.
 // O que ele faz com um alerta: um aviso no celular (tipo "escritorio") e, quando o problema se repete (2 dias seguidos
 // ou 3 vezes em 24 horas), um cartão na mesa, com o número e a hora como prova.
 // Ele não repete o mesmo aviso: só de novo depois de 6 horas ou quando o problema muda. O que já avisou fica em
@@ -24,6 +27,14 @@ const AVISAR_DE_NOVO = 6 * HORA; // o mesmo alerta, sem mudar, só volta ao celu
 const EM_ORDEM_A_CADA = 6 * HORA; // o turno "Tudo em ordem" entra no máximo uma vez nesse tempo
 const FILA_PARADA = 5 * MINUTO;
 const JANELA_DA_FILA = 6 * HORA; // o Atendente só pega mensagem de até 6 horas (função atendente_fila)
+// O aviso da Meta (webhook): o público escreve mais das 16h às 23h. Em 7 dias de novembro de 2026 o maior buraco sem
+// nada chegando nesse horário foi de 4h36; 5 horas sem nada, ali, é sinal de aviso parado.
+const PICO_DE = 16;
+const PICO_ATE = 23;
+const SEM_AVISO = 5 * HORA;
+const NA_HORA = 5_000; // comentário que entra na fila em até 5 segundos veio pelo aviso (256 de 257 na mesma semana)
+const SO_PELO_RELOGIO = 3 * HORA; // janela para ver comentários entrando só pela leitura do relógio
+const TENTATIVA_FALHOU = 'Tentativa 1 falhou'; // o mesmo começo de detalhe que o Atendente usa (atendente.js)
 const GASTO_ALTO = 0.8;
 const COSTUME_DIAS = 14; // quantos dias de turnos ele lê para saber a que horas a tarefa do dia costuma chegar
 const CARTAO_DE_NOVO = 7 * DIA; // um cartão por problema; outro só depois de uma semana
@@ -76,7 +87,8 @@ const passou = (iso, limite, agora) => !(agora - Date.parse(iso || '') < limite)
 function lerEstado(linha) {
   const v = (linha && linha.valor) || {};
   const objeto = (x) => (x && typeof x === 'object' && !Array.isArray(x) ? { ...x } : {});
-  return { avisos: objeto(v.avisos), vezes: Array.isArray(v.vezes) ? v.vezes.filter((x) => x && x.tipo && x.em) : [], cartoes: objeto(v.cartoes), em_ordem_em: v.em_ordem_em || null };
+  // orfas_desde: quando ele começou a conferir conversa no meio do caminho (as linhas de antes não têm o motivo anotado).
+  return { avisos: objeto(v.avisos), vezes: Array.isArray(v.vezes) ? v.vezes.filter((x) => x && x.tipo && x.em) : [], cartoes: objeto(v.cartoes), em_ordem_em: v.em_ordem_em || null, orfas_desde: v.orfas_desde || null };
 }
 function podar(estado, agora) {
   for (const [k, v] of Object.entries(estado.avisos)) if (passou(v && v.avisado_em, GUARDAR, agora)) delete estado.avisos[k];
@@ -173,15 +185,18 @@ function turnosComErro(turnos, agentes, agora) {
   });
 }
 
-// Uma leitura só: os atendimentos com erro das últimas 24 horas e as mensagens esperando resposta há mais de 5 minutos.
+// Uma leitura só: os atendimentos com erro das últimas 24 horas e tudo o que chegou nas últimas 6 horas (para ver a
+// fila parada, a conversa que ficou no meio do caminho e a última chegada pelo aviso da Meta).
 // As datas vão entre aspas porque o ponto e os dois-pontos são sinais do filtro "or" do PostgREST.
 function lerAtendimentos(env, agora) {
   const data = (ms) => `"${new Date(ms).toISOString()}"`;
-  const ou = `(and(classe.eq.erro,criado_em.gte.${data(agora - DIA)}),and(classe.eq.esperando,criado_em.gte.${data(agora - JANELA_DA_FILA)},criado_em.lt.${data(agora - FILA_PARADA)}))`;
-  return db.select(env, 'atendimentos', { filtros: { or: ou }, select: 'id,classe,criado_em', ordem: 'criado_em.desc', limite: 300 });
+  const ou = `(and(classe.eq.erro,criado_em.gte.${data(agora - DIA)}),criado_em.gte.${data(agora - JANELA_DA_FILA)})`;
+  return db.select(env, 'atendimentos', { filtros: { or: ou }, select: 'id,classe,criado_em,followup_id,detalhe,mid', ordem: 'criado_em.desc', limite: 1000 });
 }
 
-function doAtendente(linhas, agora) {
+// ensaio: o Atendente está no modo ensaio (mensagem de quem não é conta de teste espera de propósito).
+// orfasDesde: só confere conversa no meio do caminho nas linhas criadas depois disso.
+function doAtendente(linhas, agora, { ensaio = false, orfasDesde = 0 } = {}) {
   const alertas = [];
   const em = (l) => Date.parse(l.criado_em);
   const erros = linhas.filter((l) => l.classe === 'erro' && em(l) <= agora && agora - em(l) <= DIA);
@@ -197,7 +212,32 @@ function doAtendente(linhas, agora) {
       ganho: 'Quem escreve no direct volta a receber resposta na hora.',
     });
   }
-  const parados = linhas.filter((l) => l.classe === 'esperando' && agora - em(l) >= FILA_PARADA && agora - em(l) <= JANELA_DA_FILA);
+  // Conversa no meio do caminho: a mensagem mais nova da pessoa ficou como "anotou" sem motivo (ou com a marca de que
+  // a primeira tentativa falhou). O Atendente anota o motivo sempre que só anota; sem motivo, a execução caiu depois de
+  // pegar a mensagem (ou antes de pôr na lista, quando nem ficha tem) e ninguém respondeu.
+  const semMotivo = (l) => l.classe === 'anotou' && (!l.detalhe || String(l.detalhe).startsWith(TENTATIVA_FALHOU));
+  const naJanela = (l) => em(l) >= orfasDesde && agora - em(l) >= FILA_PARADA && agora - em(l) <= JANELA_DA_FILA;
+  const ultimaDe = new Map();
+  for (const l of linhas) {
+    if (!l.followup_id) continue;
+    const u = ultimaDe.get(l.followup_id);
+    if (!u || Number(l.id) > Number(u.id)) ultimaDe.set(l.followup_id, l);
+  }
+  const orfas = [...[...ultimaDe.values()].filter((l) => semMotivo(l) && naJanela(l)), ...linhas.filter((l) => !l.followup_id && semMotivo(l) && naJanela(l))];
+  if (orfas.length) {
+    const nova = orfas.reduce((a, b) => (Number(b.id) > Number(a.id) ? b : a));
+    const n = `${orfas.length} ${orfas.length === 1 ? 'conversa ficou' : 'conversas ficaram'}`;
+    alertas.push({
+      tipo: 'sem-resposta', assinatura: String(nova.id), problema: 'Conversas do direct estão ficando sem resposta por erro',
+      titulo: `${n} sem resposta no direct`,
+      corpo: `O Atendente pegou a mensagem e parou no meio, sem responder nem passar para você. A última foi ${quandoFoi(em(nova), agora)}.`,
+      prova: `${n} no meio do caminho nas últimas 6 horas (tabela atendimentos, classe anotou sem motivo). A última chegou ${quandoFoi(em(nova), agora)}.`,
+      acao: 'Abrir o Follow-up, ver quem escreveu nesse horário e responder. Depois ver no registro do Worker por que a execução caiu (limite de chamadas ou banco fora do ar).',
+      ganho: 'Ninguém que escreveu no direct fica esperando para sempre.',
+    });
+  }
+  // No modo ensaio, quem não é conta de teste espera de propósito: a fila parada não é alerta.
+  const parados = ensaio ? [] : linhas.filter((l) => l.classe === 'esperando' && agora - em(l) >= FILA_PARADA && agora - em(l) <= JANELA_DA_FILA);
   if (parados.length) {
     const antigo = parados.reduce((a, b) => (em(b) < em(a) ? b : a));
     const n = `${parados.length} ${parados.length === 1 ? 'mensagem esperando' : 'mensagens esperando'}`;
@@ -213,6 +253,56 @@ function doAtendente(linhas, agora) {
     });
   }
   return alertas;
+}
+
+// ---------------------------------------------------------------- 4) o aviso da Meta parou
+// O que chega "na hora" vem pelo aviso da Meta: toda mensagem do direct (tabela atendimentos, fora as linhas
+// "resposta:", que são do painel), o pedido da palavra pelo direct e o comentário que entra na fila em poucos segundos.
+// Comentário que entra minutos depois de feito foi achado pela leitura do relógio, não pelo aviso.
+// Dois sinais: (a) no horário de pico, 5 horas sem nada chegando na hora; (b) em 3 horas, três ou mais comentários
+// achados só pelo relógio e nenhum chegando na hora.
+function lerComentarios(env, agora) {
+  return db.select(env, 'respostas_gatilho', { filtros: { criado_em: `gte.${new Date(agora - SEM_AVISO).toISOString()}` }, select: 'origem,criado_em,comentado_em', ordem: 'criado_em.desc', limite: 500 });
+}
+
+function semAvisoDaMeta(atendimentos, comentarios, agora) {
+  if (!atendimentos || !comentarios) return []; // sem uma das leituras não dá para afirmar nada
+  const em = (l) => Date.parse(l.criado_em);
+  const peloAviso = (c) => c.origem === 'direct' || (c.comentado_em && em(c) - Date.parse(c.comentado_em) < NA_HORA);
+  const chegadas = [
+    ...atendimentos.filter((a) => !String(a.mid || '').startsWith('resposta:')).map(em),
+    ...comentarios.filter(peloAviso).map(em),
+  ].filter((t) => t <= agora);
+  const ultima = chegadas.length ? Math.max(...chegadas) : 0;
+  const ultimaTxt = ultima ? `A última chegada na hora foi ${quandoFoi(ultima, agora)}.` : `Nenhuma chegada na hora nas últimas ${SEM_AVISO / HORA} horas.`;
+  const base = {
+    tipo: 'sem-aviso-meta', assinatura: diaBR(agora), problema: 'O aviso da Meta está parando',
+    acao: 'Rodar "node scripts/meta-webhook.mjs situacao" para ver se o aviso continua ligado na conta e na Página, e conferir em Redes se o Instagram e o Facebook estão conectados. Enquanto isso o direct fica sem resposta: olhe o Instagram.',
+    ganho: 'O direct e o Comenta X voltam a responder na hora.',
+  };
+  // (b) O relógio está achando comentários que o aviso não trouxe. Só conta o comentário achado até 30 minutos depois
+  // de feito: mais velho que isso é a primeira leitura de um post que acabou de ganhar palavra, não aviso perdido.
+  const recentes = comentarios.filter((c) => agora - em(c) <= SO_PELO_RELOGIO && em(c) <= agora);
+  const peloRelogio = recentes.filter((c) => c.origem !== 'direct' && c.comentado_em && !peloAviso(c) && em(c) - Date.parse(c.comentado_em) <= 30 * MINUTO);
+  const naHora = chegadas.filter((t) => agora - t <= SO_PELO_RELOGIO);
+  if (peloRelogio.length >= 3 && !naHora.length) {
+    return [{
+      ...base, titulo: 'O aviso da Meta parou de chegar',
+      corpo: `Em 3 horas, ${peloRelogio.length} comentários entraram só pela leitura do relógio e nada chegou na hora. ${ultimaTxt}`,
+      prova: `Nas últimas 3 horas (conferido às ${horaBR(agora)}): ${peloRelogio.length} comentários achados pelo relógio, nenhuma mensagem e nenhum comentário pelo aviso. ${ultimaTxt}`,
+    }];
+  }
+  // (a) Horário de pico inteiro dentro da janela, e nada chegou.
+  const hora = noBrasil(agora).getUTCHours();
+  const pico = hora >= PICO_DE && hora <= PICO_ATE && agora - SEM_AVISO >= meiaNoiteBR(agora) + PICO_DE * HORA;
+  if (pico && !(ultima > agora - SEM_AVISO)) {
+    return [{
+      ...base, titulo: `Nenhum aviso da Meta há ${SEM_AVISO / HORA} horas, em horário de pico`,
+      corpo: `Nenhuma mensagem do direct e nenhum comentário chegaram na hora desde as ${horaBR(agora - SEM_AVISO)} (conferido às ${horaBR(agora)}). ${ultimaTxt}`,
+      prova: `Das ${horaBR(agora - SEM_AVISO)} às ${horaBR(agora)} de ${diaMes(agora)}, horário em que o público mais escreve, nada chegou pelo aviso da Meta (tabelas atendimentos e respostas_gatilho). ${ultimaTxt}`,
+    }];
+  }
+  return [];
 }
 
 // ---------------------------------------------------------------- 3) gasto
@@ -255,17 +345,24 @@ function cartaoDe(a, estado) {
 // Para chamar uma vez por hora, perto do minuto 7: as tarefas gravam o turno quando terminam (a rodada das 21h de
 // 09/11/2026 gravou às 21h59), e no minuto 7 a rodada da hora anterior já teve 67 minutos para aparecer.
 export async function rodarZelador(env, quando = Date.now(), { simular = false } = {}) {
-  // Seis chamadas ao banco, de uma vez. A do estado não pode falhar em silêncio (sem ela ele repetiria todos os avisos);
+  // Oito chamadas ao banco, de uma vez. A do estado não pode falhar em silêncio (sem ela ele repetiria todos os avisos);
   // as outras, se falharem, só pulam a conferência que dependia delas.
   const pular = (nome) => (e) => { console.error('zelador', nome, e && e.message); return null; };
-  const [linhaEstado, listaAgentes, turnosLidos, atendimentos, gasto] = await Promise.all([
+  const [linhaEstado, listaAgentes, turnosLidos, atendimentos, gasto, comentarios, cfgAtendente] = await Promise.all([
     db.um(env, 'config', { chave: `eq.${CHAVE}` }),
     db.select(env, 'agentes', { select: 'id,nome,apelido,estado', limite: 300 }).catch(pular('agentes')),
     db.select(env, 'turnos', { filtros: { inicio: `gte.${new Date(quando - COSTUME_DIAS * DIA).toISOString()}` }, select: 'id,agente_id,status,inicio', ordem: 'inicio.desc', limite: 1000 }).catch(pular('turnos')),
     lerAtendimentos(env, quando).catch(pular('atendimentos')),
     orcamento(env).catch(pular('gasto')),
+    lerComentarios(env, quando).catch(pular('comentarios')),
+    db.um(env, 'config', { chave: 'eq.atendente' }).catch(pular('atendente')),
   ]);
   const estado = lerEstado(linhaEstado);
+  // Primeira rodada desta versão: as linhas de antes não têm o motivo anotado, então a conferência de conversa no meio
+  // do caminho só vale daqui para a frente.
+  const estreia = !estado.orfas_desde;
+  if (estreia) estado.orfas_desde = new Date(quando).toISOString();
+  const ensaio = !!(cfgAtendente && cfgAtendente.valor && cfgAtendente.valor.modo === 'ensaio');
   const agentes = Object.fromEntries((listaAgentes || []).map((a) => [a.id, a]));
   const proprio = agentes[AGENTE];
   if (proprio && (proprio.estado === 'pausado' || proprio.estado === 'desligado')) return { pulou: proprio.estado, alertas: [] };
@@ -274,7 +371,8 @@ export async function rodarZelador(env, quando = Date.now(), { simular = false }
   const alertas = [
     ...(turnos ? tarefasQueNaoRodaram(turnos, agentes, quando) : []),
     ...(turnos ? turnosComErro(turnos, agentes, quando) : []),
-    ...(atendimentos ? doAtendente(atendimentos, quando) : []),
+    ...(atendimentos ? doAtendente(atendimentos, quando, { ensaio, orfasDesde: Date.parse(estado.orfas_desde) }) : []),
+    ...semAvisoDaMeta(atendimentos, comentarios, quando),
     ...gastoAlto(gasto, quando),
   ];
 
@@ -303,7 +401,7 @@ export async function rodarZelador(env, quando = Date.now(), { simular = false }
   podar(estado, quando);
 
   const errosAtendente = atendimentos ? atendimentos.filter((l) => l.classe === 'erro').length : null;
-  const esperando = atendimentos ? atendimentos.filter((l) => l.classe === 'esperando').length : null;
+  const esperando = atendimentos ? atendimentos.filter((l) => l.classe === 'esperando' && quando - Date.parse(l.criado_em) >= FILA_PARADA).length : null;
   if (simular) {
     return {
       simulado: true, quando: agora,
@@ -311,12 +409,12 @@ export async function rodarZelador(env, quando = Date.now(), { simular = false }
       aviso: avisar.length ? mensagem(avisar) : null,
       cartao: proposta,
       turno: avisar.length || proposta ? 'ok' : emOrdem ? 'sem_trabalho' : null,
-      leu: { agentes: listaAgentes ? listaAgentes.length : null, turnos: turnos ? turnos.length : null, turnos_com_erro_24h: turnos ? turnos.filter((t) => t.status === 'erro' && quando - Date.parse(t.inicio) <= DIA).length : null, atendimentos_com_erro_24h: errosAtendente, mensagens_esperando: esperando, gasto },
+      leu: { agentes: listaAgentes ? listaAgentes.length : null, turnos: turnos ? turnos.length : null, turnos_com_erro_24h: turnos ? turnos.filter((t) => t.status === 'erro' && quando - Date.parse(t.inicio) <= DIA).length : null, atendimentos_com_erro_24h: errosAtendente, mensagens_esperando: esperando, comentarios_5h: comentarios ? comentarios.length : null, atendente_em_ensaio: ensaio, gasto },
     };
   }
 
   // Marca antes de mandar: se algo falhar depois, a próxima hora não manda o mesmo aviso de novo.
-  if (avisar.length || proposta || emOrdem) await gravar(env, estado);
+  if (avisar.length || proposta || emOrdem || estreia) await gravar(env, estado);
   const aparelhos = avisar.length ? await avisarEquipe(env, 'escritorio', mensagem(avisar)) : 0;
   let cartao = null;
   if (proposta) {

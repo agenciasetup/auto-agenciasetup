@@ -11,7 +11,38 @@ function cabecalhos(env, extra = {}) {
   return { apikey: k, ...auth, 'Content-Type': 'application/json', ...extra };
 }
 
+// ---------------------------------------------------------------- contador de chamadas externas
+// O plano grátis da Cloudflare deixa cada execução fazer 50 chamadas externas, e cada ida ao banco conta. O relógio de
+// minuto cria um env só daquela execução com um contador (comContador). Toda ida ao banco soma sozinha; quem chama a
+// Meta ou o Claude soma com contarChamada. Antes de começar um trabalho que não pode parar no meio, a etapa pergunta a
+// folga (folgaDeChamadas) e, se for pouca, deixa para a próxima execução. reservarChamadas guarda chamadas para uma
+// etapa que roda depois. Sem contador (site, painel, aviso da Meta, relógio de 10 minutos) nada muda: a folga é infinita.
+const TETO_GRATIS = 50;
+const TETO_PAGO = 1000;
+const SOBRA = 4; // fica fora da conta: uma chamada repetida, o registro de um erro
+
+export function comContador(env) {
+  const e = Object.create(env);
+  // Um env que não se deixa herdar segue sem contador, como era antes.
+  if (e.SUPABASE_URL !== env.SUPABASE_URL) return env;
+  e.__chamadas = { n: 0, reserva: 0, teto: (env.WORKERS_PAGO === '1' ? TETO_PAGO : TETO_GRATIS) - SOBRA };
+  return e;
+}
+export function contarChamada(env, n = 1) {
+  if (env && env.__chamadas) env.__chamadas.n += Math.max(0, Number(n) || 0);
+}
+export function folgaDeChamadas(env) {
+  const c = env && env.__chamadas;
+  return c ? c.teto - c.reserva - c.n : Infinity;
+}
+// n positivo guarda, n negativo solta (a etapa que tinha a reserva vai rodar agora).
+export function reservarChamadas(env, n) {
+  if (env && env.__chamadas) env.__chamadas.reserva = Math.max(0, env.__chamadas.reserva + (Number(n) || 0));
+}
+export const chamadasFeitas = (env) => (env && env.__chamadas ? env.__chamadas.n : null);
+
 async function pedir(env, caminho, opcoes = {}) {
+  contarChamada(env);
   const r = await fetch(`${env.SUPABASE_URL}/rest/v1${caminho}`, { ...opcoes, headers: cabecalhos(env, opcoes.headers) });
   const t = await r.text();
   if (!r.ok) {
@@ -43,6 +74,7 @@ export const db = {
   async select(env, tabela, { filtros, select = '*', ordem, limite, offset, contar } = {}) {
     const caminho = `/${tabela}${qs(filtros, { select, order: ordem, limit: limite, offset })}`;
     if (!contar) return pedir(env, caminho);
+    contarChamada(env);
     const r = await fetch(`${env.SUPABASE_URL}/rest/v1${caminho}`, { headers: cabecalhos(env, { Prefer: 'count=exact' }) });
     if (!r.ok) { console.error('supabase', r.status, (await r.text()).slice(0, 300)); throw new Erro(502, 'O banco recusou a consulta.'); }
     const total = Number((r.headers.get('content-range') || '').split('/')[1] || 0);
@@ -81,6 +113,7 @@ export const db = {
 
 // Auth do Supabase (admin): gerar link de convite ou de troca de senha, criar e apagar logins.
 export async function authAdmin(env, caminho, opcoes = {}) {
+  contarChamada(env);
   const r = await fetch(`${env.SUPABASE_URL}/auth/v1${caminho}`, { ...opcoes, headers: cabecalhos(env, opcoes.headers) });
   const t = await r.text();
   if (!r.ok) {
@@ -93,6 +126,7 @@ export async function authAdmin(env, caminho, opcoes = {}) {
 
 // Envia um arquivo para o Storage do Supabase e devolve o endereço público.
 export async function enviarArquivo(env, bucket, caminho, corpo, tipo) {
+  contarChamada(env);
   const r = await fetch(`${env.SUPABASE_URL}/storage/v1/object/${bucket}/${caminho}`, {
     method: 'POST',
     headers: { ...cabecalhos(env, { 'Content-Type': tipo || 'application/octet-stream' }), 'x-upsert': 'true' },

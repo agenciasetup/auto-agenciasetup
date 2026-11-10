@@ -5,7 +5,7 @@ import { db } from '../nucleo/db.js';
 import { Erro } from '../nucleo/util.js';
 import { contaAtiva, credenciaisAtivas } from '../plataformas/credenciais.js';
 import { salvarAgente } from './escritorio.js';
-import { MODELOS_ATENDENTE, MODOS_ATENDENTE, configAtendente, levarResposta, mandarParaFollowup, salvarConfigAtendente, simular } from './atendente.js';
+import { MODELOS_ATENDENTE, MODOS_ATENDENTE, configAtendente, ehContaDeTeste, levarResposta, mandarParaFollowup, salvarConfigAtendente, simular } from './atendente.js';
 import { aprenderResposta } from './colmeia.js';
 
 const quemE = (u) => ({ quem: u.casa ? null : u.id, quemNome: u.casa ? 'Claude' : String(u.nome || '').trim().split(/\s+/)[0] });
@@ -16,12 +16,13 @@ export async function verFollowup(x, { fase, interesse, busca, perfil, limite } 
   return { ...lista, atendente: { ...atendente, modos: MODOS_ATENDENTE, modelos: MODELOS_ATENDENTE } };
 }
 
-// O Atendente: ligar, desligar e escolher entre responder sozinho e só preparar a resposta.
+// O Atendente: ligar, desligar e escolher o modo: responder sozinho, só preparar a resposta ou o ensaio (só responde as
+// contas de teste, que ficam em contas_teste).
 export async function salvarAtendente(x, dados) {
   exigir(x.u, 'followup.atendente');
   const r = await salvarConfigAtendente(x.env, dados || {});
   await salvarAgente(x.env, { estado: r.ligado ? 'ativo' : 'pausado', motivo: r.ligado ? `Ligado: ${MODOS_ATENDENTE[r.modo].toLowerCase()}.` : 'Desligado no painel.' }, 'atendente', quemE(x.u)).catch(() => null);
-  await auditar(x.env, x.u, 'followup.atendente', 'config:atendente', { ligado: r.ligado, modo: r.modo, modelo: r.modelo });
+  await auditar(x.env, x.u, 'followup.atendente', 'config:atendente', { ligado: r.ligado, modo: r.modo, modelo: r.modelo, contas_teste: r.contas_teste.length });
   return { ...r, modos: MODOS_ATENDENTE, modelos: MODELOS_ATENDENTE };
 }
 
@@ -40,7 +41,7 @@ export async function testarAtendente(x, { texto, nome, usuario, modelo, ha_min 
 // Manda uma mensagem pela API do Instagram para alguém da lista (só dentro das 24 horas da última mensagem da pessoa).
 export async function mandarFollowupPeloSistema(x, id, texto) {
   exigir(x.u, 'followup.editar');
-  const f = await db.um(x.env, 'followups', { id: `eq.${String(id || '')}` }, 'id,perfil,usuario,igsid,ultima_em,proxima_mensagem');
+  const f = await db.um(x.env, 'followups', { id: `eq.${String(id || '')}` }, 'id,perfil,usuario,vendedor,igsid,ultima_em,proxima_mensagem');
   if (!f) throw new Erro(404, 'Não encontrado.');
   const conta = await contaAtiva(x.env, 'instagram', f.perfil);
   if (!conta || !conta.m.mandarDirect) throw new Erro(409, 'O Instagram desse perfil não está conectado.');
@@ -72,7 +73,9 @@ export async function responderDuvidaFollowup(x, id, resposta) {
   if (antes && antes.duvida) {
     await aprenderResposta(x.env, { pergunta: antes.duvida, resposta, produto: antes.interesse, autor: `para @${antes.usuario}` });
     const cfg = await configAtendente(x.env);
-    if (cfg.ligado && cfg.modo === 'automatico') levou = await levarResposta(x.env, antes).catch(() => false);
+    // No modo ensaio o Atendente só fala com as contas de teste: para as outras, a resposta fica para o dono mandar.
+    const sozinho = cfg.modo === 'automatico' || (cfg.modo === 'ensaio' && ehContaDeTeste(cfg, antes.usuario));
+    if (cfg.ligado && sozinho) levou = await levarResposta(x.env, antes).catch(() => false);
   }
   await auditar(x.env, x.u, 'followup.responder', `followup:${id}`, { colmeia: !!(antes && antes.duvida), atendente_leva: levou });
   return { ...r, na_colmeia: !!(antes && antes.duvida), atendente_leva: levou };

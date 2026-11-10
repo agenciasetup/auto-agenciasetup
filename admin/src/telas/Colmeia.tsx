@@ -2,8 +2,10 @@
 // tarefa do direct e quem escreve as mensagens do Comenta X). Aqui o dono ensina em português simples ("quando
 // perguntarem isso, responda aquilo"), aprova o que os agentes propõem, vê o que entrou em mais respostas e em mais
 // vendas, e testa como o Atendente responderia. Lógica em worker/lib/colmeia.js (migration 39).
+// Item que o Conciliador escreveu para juntar itens que se contradiziam (migration 40) mostra quem ele juntou e tem o
+// botão de desfazer: o item novo sai e os de antes voltam a valer.
 import { useEffect, useState } from 'react';
-import { Archive, Check, FlaskConical, Pencil, Plus, Search, X } from 'lucide-react';
+import { Archive, Check, FlaskConical, Pencil, Plus, Search, Undo2, X } from 'lucide-react';
 import { get, post } from '../nucleo/api';
 import { Carregando, ErroCarga, Etiqueta, Grupo, Titulo, Vazio, avisar, useCarregar, useSessao } from '../nucleo/ui';
 import { numero } from '../nucleo/util';
@@ -51,8 +53,8 @@ export default function Colmeia() {
     } catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
     setSalvando(false);
   };
-  const mudarStatus = async (id: string, status: string, ok: string) => {
-    try { await post(`/colmeia/${id}`, { status }); avisar(ok); recarregar(); }
+  const mudarStatus = async (id: string, status: string, ok: string, extra: Record<string, unknown> = {}) => {
+    try { await post(`/colmeia/${id}`, { status, ...extra }); avisar(ok); recarregar(); }
     catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
   };
   const editar = (i: any) => { setF({ id: i.id, tipo: i.tipo, produto: i.produto, titulo: i.titulo, texto: i.texto }); document.getElementById('col-ensinar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
@@ -74,7 +76,7 @@ export default function Colmeia() {
       )}
 
       {d && propostas.length > 0 && (
-        <Grupo titulo="Esperando o seu sim" rodape="Sugestões dos agentes e respostas que você deu para uma pessoa só. Aprovou, passa a valer para todo mundo.">
+        <Grupo titulo="Esperando o seu sim" rodape="Sugestões dos agentes, junções de itens que se contradizem e respostas que você deu para uma pessoa só. Aprovou, passa a valer para todo mundo.">
           <div className="col-lista">
             {propostas.map((i: any) => <Item key={i.id} i={i} nomes={d.nomes} podeEditar={podeEditar} editar={editar} mudarStatus={mudarStatus} />)}
           </div>
@@ -132,8 +134,15 @@ export default function Colmeia() {
   );
 }
 
-function Item({ i, nomes, podeEditar, editar, mudarStatus }: { i: any; nomes: any; podeEditar: boolean; editar: (i: any) => void; mudarStatus: (id: string, status: string, ok: string) => void }) {
+function Item({ i, nomes, podeEditar, editar, mudarStatus }: { i: any; nomes: any; podeEditar: boolean; editar: (i: any) => void; mudarStatus: (id: string, status: string, ok: string, extra?: Record<string, unknown>) => void }) {
   const dono = i.origem === 'dono';
+  const proposta = i.status === 'proposta';
+  // Junção do Conciliador: o item guarda os itens que ele substitui.
+  const juntou: any[] = Array.isArray(i.substitui) ? i.substitui : [];
+  const juncao = juntou.length > 0;
+  const quem = juncao
+    ? `${i.autor || 'Conciliador'} ${proposta ? 'propôs juntar e espera o seu sim' : 'juntou'}`
+    : dono ? (proposta ? `Você respondeu assim${i.autor ? ` (${i.autor})` : ''}. Vale para todo mundo?` : 'Você ensinou') : i.origem === 'agente' ? `Agente${i.autor ? `: ${i.autor}` : ''}` : 'Já estava no roteiro';
   return (
     <article className="col-item">
       <div className="col-item-topo">
@@ -142,14 +151,22 @@ function Item({ i, nomes, podeEditar, editar, mudarStatus }: { i: any; nomes: an
       </div>
       <h3>{i.titulo}</h3>
       <p>{i.texto}</p>
-      {i.prova && <p className="mudo col-prova"><b>Prova:</b> {i.prova}</p>}
+      {juncao && (
+        <p className="mudo col-prova">
+          <b>{proposta ? 'Quero juntar estes itens:' : 'Juntei estes itens:'}</b>{' '}
+          {juntou.map((s: any, k: number) => <span key={s.id || k}>{k > 0 ? ' · ' : ''}“{s.titulo}”</span>)}.{' '}
+          {proposta ? 'Se você aprovar, eles são arquivados e este passa a valer no lugar.' : 'Eles estão arquivados. Se você desfizer a junção, eles voltam a valer e este sai.'}
+        </p>
+      )}
+      {i.prova && <p className="mudo col-prova"><b>{juncao ? 'Por quê:' : 'Prova:'}</b> {i.prova}</p>}
       <div className="col-item-pe">
-        <span className="mudo">{dono ? (i.status === 'proposta' ? `Você respondeu assim${i.autor ? ` (${i.autor})` : ''}. Vale para todo mundo?` : 'Você ensinou') : i.origem === 'agente' ? `Agente${i.autor ? `: ${i.autor}` : ''}` : 'Já estava no roteiro'}{i.usos > 0 ? ` · entrou em ${numero(i.usos)} ${i.usos === 1 ? 'resposta' : 'respostas'}` : ''}{i.vendas > 0 ? ` · ${numero(i.vendas)} ${i.vendas === 1 ? 'venda depois' : 'vendas depois'}` : ''}</span>
+        <span className="mudo">{quem}{i.usos > 0 ? ` · entrou em ${numero(i.usos)} ${i.usos === 1 ? 'resposta' : 'respostas'}` : ''}{i.vendas > 0 ? ` · ${numero(i.vendas)} ${i.vendas === 1 ? 'venda depois' : 'vendas depois'}` : ''}</span>
         {podeEditar && (
           <span className="rec-acoes">
-            {i.status === 'proposta' && <button type="button" className="bt bt-mini bt-tinta" onClick={() => mudarStatus(i.id, 'ativa', 'Aprovado. Já vale para todos os vendedores.')}><Check />Aprovar</button>}
+            {proposta && <button type="button" className="bt bt-mini bt-tinta" onClick={() => mudarStatus(i.id, 'ativa', juncao ? 'Junção aprovada. Os itens de antes foram arquivados e este já vale.' : 'Aprovado. Já vale para todos os vendedores.')}><Check />{juncao ? 'Aprovar a junção' : 'Aprovar'}</button>}
+            {juncao && !proposta && <button type="button" className="bt bt-mini bt-texto" onClick={() => mudarStatus(i.id, 'arquivada', 'Junção desfeita. Os itens de antes voltaram a valer.', { desfazer: true })}><Undo2 />Desfazer a junção</button>}
             <button type="button" className="bt bt-mini bt-texto" onClick={() => editar(i)}><Pencil />Mudar</button>
-            <button type="button" className="bt bt-mini bt-texto" onClick={() => mudarStatus(i.id, 'arquivada', i.status === 'proposta' ? 'Proposta descartada.' : 'Arquivado. Os vendedores param de usar.')}>{i.status === 'proposta' ? <X /> : <Archive />}{i.status === 'proposta' ? 'Descartar' : 'Arquivar'}</button>
+            <button type="button" className="bt bt-mini bt-texto" onClick={() => mudarStatus(i.id, 'arquivada', proposta ? (juncao ? 'Proposta descartada. Os itens de antes continuam valendo.' : 'Proposta descartada.') : juncao ? 'Arquivado. Os itens de antes continuam arquivados.' : 'Arquivado. Os vendedores param de usar.')}>{proposta ? <X /> : <Archive />}{proposta ? 'Descartar' : 'Arquivar'}</button>
           </span>
         )}
       </div>

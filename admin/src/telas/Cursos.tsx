@@ -37,7 +37,7 @@ function Oferta() {
   const podeEditar = pode('cursos.editar');
   const mudar = (k: string, v: any) => setO((x: any) => ({ ...x, [k]: v }));
   const salvar = () => rodar('salvar', async () => {
-    const r = await patch('/oferta', { ativo: o.ativo, landing_slug: o.landing_slug || '', titulo: o.titulo, texto: o.texto, cta: o.cta, linha_dm: o.linha_dm });
+    const r = await patch('/oferta', { ativo: o.ativo, landing_slug: o.landing_slug || '', titulo: o.titulo, texto: o.texto, cta: o.cta, linha_dm: o.linha_dm, curso_primeiro: !!o.curso_primeiro });
     setDados((d: any) => [r, d[1]]);
   }, 'Oferta salva.');
 
@@ -58,6 +58,8 @@ function Oferta() {
       <Campo rotulo="Botão" valor={o.cta} mudar={(v) => mudar('cta', v)} placeholder="Quero conhecer" desativado={!podeEditar} />
       <AreaTexto rotulo="Frase no fim da DM" valor={o.linha_dm} mudar={(v) => mudar('linha_dm', v)} linhas={2} desativado={!podeEditar}
         placeholder={'Quer aprender a criar isso com IA, do zero? É o que eu ensino no mini curso "{curso}": {link_curso}'} dica="Aceita {curso} (o título da landing page) e {link_curso}. Vazio: a DM não fala do curso." />
+      <Marcar rotulo="Curso como primeiro botão do direct" valor={!!o.curso_primeiro} mudar={(v) => mudar('curso_primeiro', v)} desativado={!podeEditar}
+        dica="Ligado: no direct do Comenta X o botão do mini curso vai em cima e o do material logo abaixo. As vendas desse botão aparecem em Vendas com o conteúdo curso-topo." />
       {podeEditar && <div className="barra-acoes barra-acoes-fim"><button className="bt bt-tinta" disabled={!!ocupado} onClick={salvar}><Save />Salvar oferta</button></div>}
     </Grupo>
   </>;

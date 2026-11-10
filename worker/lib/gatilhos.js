@@ -10,15 +10,16 @@
 // Na hora: a Meta avisa pelo webhook os toques e mensagens no direct e, com Acesso Avançado, os comentários.
 // Reserva: o relógio lê os comentários dos posts com palavra ligada. Um comentário entra uma vez só na fila, e uma pessoa
 // recebe um direct só por post (o banco garante). Duas etapas no relógio: varrer (barato) e enviar (caro, com limite).
-import { db } from '../nucleo/db.js';
+import { contarChamada, db, folgaDeChamadas } from '../nucleo/db.js';
 import { slugar } from '../nucleo/util.js';
 import { avisarSeTokenMorreu, contaAtiva, contaPorId, contasAtivas, credenciaisAtivas, temRecurso } from '../plataformas/credenciais.js';
 import { escolherVariante, formasComLink, formasPergunta, preencher, primeiroNome, respostaPublicaIA, textosDe, variantesDe } from './comenta.js';
 import { pago } from './desempenho.js';
 import { prepararIntegracoes } from './integracoes.js';
 import { PERFIS, idiomaDe, perfilValido, siteDoPerfil } from './perfis.js';
+import { codigoDaPessoa, comPessoa } from './pessoa.js';
 import { normalPalavra, pediu } from './temas.js';
-import { anotarHumano, atender } from './atendente.js';
+import { anotarEco, atender } from './atendente.js';
 
 const DIA = 86400_000;
 const JANELA_GENERICA = 30 * DIA; // palavra sem post fixo vale para posts dos últimos 30 dias que pedem a palavra
@@ -79,17 +80,21 @@ async function ofertaEn(env) {
   return { ...o, nome, titulo: o.titulo || nome, texto: o.texto || '', link: `${siteDoPerfil(env, 'en')}/` };
 }
 
-// O segundo botão do direct: o mini curso, com a palavra como campanha.
-function cursoDaOferta(oferta, g, rede) {
+// O botão do mini curso no direct, com a palavra como campanha. Fica em segundo; com "curso_primeiro" ligado na oferta
+// ele sobe para primeiro e a marca vira "curso-topo", para a venda de cada posição aparecer separada em Vendas.
+function cursoDaOferta(oferta, g, rede, pessoa = '') {
   if (!oferta) return null;
   try {
     const u = new URL(oferta.link);
     u.searchParams.set('utm_source', rede);
     u.searchParams.set('utm_medium', 'dm');
     u.searchParams.set('utm_campaign', slugar(g.palavra, 30) || 'comenta');
-    u.searchParams.set('utm_content', 'curso');
+    const primeiro = oferta.curso_primeiro === true;
+    u.searchParams.set('utm_content', primeiro ? 'curso-topo' : 'curso');
+    // O código de quem recebeu (pessoa.js): é por ele que a compra é ligada à pessoa do follow-up.
+    if (pessoa) u.searchParams.set('p', pessoa);
     const linha = String(oferta.linha_dm || '').replace(/\{link_curso\}/g, '').replace(/\{curso\}/g, oferta.nome || 'mini curso').trim();
-    return { url: u.toString(), nome: oferta.nome, botao: oferta.botao_dm || '', linha };
+    return { url: u.toString(), nome: oferta.nome, botao: oferta.botao_dm || '', linha, primeiro };
   } catch {
     return null;
   }
@@ -156,6 +161,7 @@ export async function linkDaVariante(env, g, v, r) {
 // "recentes" (horas): só os posts publicados nesse intervalo. É a conferência de minuto em minuto, que responde rápido
 // onde chegam quase todos os comentários; a de 10 minutos continua passando por todos.
 // Cada perfil por si (lib/perfis.js): as palavras do perfil, os posts do perfil e a conta do perfil naquela rede.
+const CUSTO_VARRER_POST = 4; // chamadas externas para ler um post: até 2 páginas na rede, a gravação e a marca de lido
 export async function varrerComentarios(env, { posts: maxPosts, recentes } = {}) {
   const gatilhos = await db.select(env, 'gatilhos', { filtros: { ativo: 'eq.true' }, select: 'id,rede,perfil,palavra,posts' });
   if (!gatilhos.length) return { posts: 0, novos: 0 };
@@ -163,6 +169,9 @@ export async function varrerComentarios(env, { posts: maxPosts, recentes } = {})
   const resultado = { posts: 0, novos: 0 };
   const grupos = [...new Set(gatilhos.map((g) => `${g.rede}:${perfilValido(g.perfil)}`))];
   for (const grupo of grupos) {
+    // Sem folga de chamadas externas nesta execução (nucleo/db.js): os posts que faltam ficam para a próxima volta.
+    // Ler de novo depois não perde nada: o comentário entra uma vez só e o post menos lido vem primeiro.
+    if (folgaDeChamadas(env) < CUSTO_VARRER_POST + 2) { resultado.sem_folga = true; break; }
     const [rede, perfil] = grupo.split(':');
     const c = await contaAtiva(env, rede, perfil);
     if (!c || !c.m.lerComentarios || !temRecurso(c.conexao, c.m, 'comentarios')) continue;
@@ -190,8 +199,10 @@ export async function varrerComentarios(env, { posts: maxPosts, recentes } = {})
       ];
       // Primeira leitura: só os últimos 7 dias (resposta privada mais velha que isso a Meta recusa).
       const desde = p.comentarios_ate ? Date.parse(p.comentarios_ate) : Date.now() - 7 * DIA;
+      if (folgaDeChamadas(env) < CUSTO_VARRER_POST) { resultado.sem_folga = true; break; }
       let comentarios;
       try {
+        contarChamada(env, pago(env) ? 6 : 2); // até esse tanto de páginas na rede
         comentarios = await m.lerComentarios({ credenciais, post_id: p.id_na_rede, desde, paginas: pago(env) ? 6 : 2 });
       } catch (e) {
         // Token morto desta conta: as outras contas (o outro perfil) continuam.
@@ -357,16 +368,46 @@ export async function registrarComentarios(env, rede, comentarios, conta) {
 
 // ---------------------------------------------------------------- enviar: direct + resposta pública, com limite
 const marcar = (env, id, status, erro, extra) => db.rpc(env, 'marcar_resposta', { p_id: id, p_status: status, p_erro: erro || null, p_extra: extra || {} });
+// O id que a Meta deu à mensagem que saiu. Vai junto no registro (extra.mid) e o banco guarda em mensagens_nossas, para
+// o eco dela ser reconhecido como do sistema (atendente.js).
+const midDe = (enviado) => (enviado && enviado.message_id ? String(enviado.message_id) : undefined);
+
+// Chamadas externas do envio, para caber no limite da execução (plano grátis: 50; contador em nucleo/db.js).
+// O fixo: os ajustes, a conta da hora, a fila, as palavras e, no primeiro item, a conta, os números da versão, o link
+// curto e a oferta. Cada item: o direct, o registro, a resposta pública (a IA, o consumo e o comentário) e o registro dela.
+const CUSTO_ENVIO_FIXO = 10;
+const CUSTO_ENVIO_ITEM = 7;
 
 export async function enviarRespostas(env, { limite } = {}) {
+  // Só sai da fila o que dá para levar até o fim com as chamadas externas que sobram nesta execução.
+  const cabem = Math.floor((folgaDeChamadas(env) - CUSTO_ENVIO_FIXO) / CUSTO_ENVIO_ITEM);
+  if (cabem < 1) return { enviadas: 0, falhas: 0, limite: 'Sem folga de chamadas nesta execução: a fila fica para a próxima.' };
   const cfg = await ajustesComenta(env);
   // Limite por hora (proteção da conta): o que passar fica na fila para a próxima volta.
   const teto = Number(cfg.limite_hora) || 200;
   const umaHora = await db.select(env, 'respostas_gatilho', { filtros: { enviado_em: `gte.${new Date(Date.now() - 3600_000).toISOString()}` }, select: 'id', limite: teto + 1 }).catch(() => []);
   const folga = teto - (umaHora || []).length;
   if (folga <= 0) return { enviadas: 0, falhas: 0, limite: `Limite de ${teto} directs por hora.` };
-  const lote = await db.rpc(env, 'pegar_respostas', { p_limite: Math.min(limite || (pago(env) ? 40 : 5), folga) });
+  const lote = await db.rpc(env, 'pegar_respostas', { p_limite: Math.min(limite || (pago(env) ? 40 : 5), folga, cabem) });
   if (!lote || !lote.length) return { enviadas: 0, falhas: 0 };
+  // O que foi pego e ainda não teve o envio começado. Se a volta parar antes da hora (acesso vencido, limite da Meta,
+  // falta de chamadas, erro), esses voltam para "pendente" na hora, no fim da função. Em "enviando" fica só o item que
+  // estava no meio do envio: esse o banco marca para conferência em vez de mandar de novo (pegar_respostas, migration 41).
+  const naoTentados = new Set(lote.map((r) => r.id));
+  const resolver = async (id, ...resto) => { await marcar(env, id, ...resto); naoTentados.delete(id); };
+  const res = { enviadas: 0, falhas: 0 };
+  try {
+    await enviarLote(env, lote, { naoTentados, resolver, res });
+  } finally {
+    if (naoTentados.size) {
+      res.devolvidas = naoTentados.size;
+      await db.update(env, 'respostas_gatilho', { id: `in.(${[...naoTentados].join(',')})`, status: 'eq.enviando' }, { status: 'pendente', pego_em: null }, 'id').catch((e) => console.error('comenta devolver', e && e.message));
+    }
+  }
+  return res;
+}
+
+async function enviarLote(env, lote, { naoTentados, resolver, res }) {
   const ids = [...new Set(lote.map((r) => r.gatilho_id).filter(Boolean))];
   const gatilhos = ids.length ? await db.select(env, 'gatilhos', { filtros: { id: `in.(${ids.join(',')})` }, select: CAMPOS_G }) : [];
   const porId = new Map(gatilhos.map((g) => [g.id, g]));
@@ -376,13 +417,14 @@ export async function enviarRespostas(env, { limite } = {}) {
     if (!ofertas.has(perfil)) ofertas.set(perfil, await ofertaAtiva(env, perfil).catch(() => null));
     return ofertas.get(perfil);
   };
-  const res = { enviadas: 0, falhas: 0 };
   const contas = new Map();
   for (const r of lote) {
+    // Faltou folga de chamadas para mais um item inteiro: os que sobraram voltam para a fila (no fim de enviarRespostas).
+    if (folgaDeChamadas(env) < CUSTO_ENVIO_ITEM + 1) break;
     // Pedido pelo direct que parou no meio (o Worker caiu): não dá para responder como comentário.
-    if (r.origem === 'direct') { await marcar(env, r.id, 'falhou', 'O envio pelo direct parou no meio. Confira no app.'); continue; }
+    if (r.origem === 'direct') { await resolver(r.id, 'falhou', 'O envio pelo direct parou no meio. Confira no app.'); continue; }
     const g = porId.get(r.gatilho_id);
-    if (!g || !g.ativo) { await marcar(env, r.id, 'ignorada', 'A palavra foi desligada antes do envio.'); continue; }
+    if (!g || !g.ativo) { await resolver(r.id, 'ignorada', 'A palavra foi desligada antes do envio.'); continue; }
     const perfil = perfilValido(g.perfil);
     const idioma = idiomaDe(perfil);
     const tx = textosDe(idioma);
@@ -395,22 +437,27 @@ export async function enviarRespostas(env, { limite } = {}) {
       contas.set(chave, porDm || emPublico ? { ...c, porDm, credenciais: await credenciaisAtivas(env, c.conexao) } : null);
     }
     const c = contas.get(chave);
-    if (!c) { await marcar(env, r.id, 'pendente', 'A conta não tem permissão de mensagens. Reconecte em Redes.'); continue; }
+    if (!c) { await resolver(r.id, 'pendente', 'A conta não tem permissão de mensagens. Reconecte em Redes.'); continue; }
     const v = escolherVariante(g, await statsDe(env, g.id));
-    if (!v) { await marcar(env, r.id, 'falhou', 'A palavra não tem versão ativa.'); res.falhas++; continue; }
+    if (!v) { await resolver(r.id, 'falhou', 'A palavra não tem versão ativa.'); res.falhas++; continue; }
     let link = null;
     try { link = await linkDaVariante(env, g, v, r); } catch (e) { console.error('comenta link', e && e.message); }
-    if (!link) { await marcar(env, r.id, 'falhou', 'O material desta palavra não está publicado no site.'); res.falhas++; continue; }
+    if (!link) { await resolver(r.id, 'falhou', 'O material desta palavra não está publicado no site.'); res.falhas++; continue; }
     const titulo = tituloDe(g);
     // O nome só vem no comentário do Facebook; no Instagram, só depois do toque no botão.
     const usuario = r.nome || '';
     const espera = c.porDm && (g.modo === 'seguir' || g.modo === 'pergunta');
     let enviado = null;
     try {
+      const pessoa = c.porDm && !espera ? await codigoDaPessoa(perfil, r.usuario).catch(() => '') : '';
+      const curso = c.porDm && !espera ? cursoDaOferta(await ofertaDo(perfil), g, r.rede, pessoa) : null;
+      // Daqui para a frente o envio começou: se a execução cair, este item não volta para a fila.
+      naoTentados.delete(r.id);
+      contarChamada(env);
       if (c.porDm) {
         const formas = espera
           ? formasPergunta(preencher(v.pergunta, { usuario, titulo, idioma }), `cx:${r.id}`, g.modo === 'seguir' ? tx.segui : tx.quero)
-          : formasComLink(v.dm, { link: link.url, usuario, titulo, botao: v.botao, curso: cursoDaOferta(await ofertaDo(perfil), g, r.rede), idioma });
+          : formasComLink(v.dm, { link: comPessoa(link.url, pessoa), usuario, titulo, botao: v.botao, curso, idioma });
         enviado = await c.m.mensagemPrivada({ credenciais: c.credenciais, comentario_id: r.comentario_id, formas });
       } else {
         await c.m.responderComentario({ credenciais: c.credenciais, comentario_id: r.comentario_id, texto: `${r.usuario ? `@${r.usuario} ` : ''}${tx.semDm(titulo, link.url)}` });
@@ -423,20 +470,26 @@ export async function enviarRespostas(env, { limite } = {}) {
       if (passageiro) break; // limite da Meta: para agora e continua na próxima execução
       continue;
     }
+    // O direct saiu: registra já, antes da resposta pública (que chama a IA e pode demorar ou cair). Se a execução
+    // parar daqui para a frente, o item já está como enviado e não sai de novo. "mid" é o id da mensagem na Meta: o
+    // banco guarda para reconhecer o eco dela (mensagens_nossas).
+    statsMem.delete(g.id);
+    await marcar(env, r.id, espera ? 'pergunta' : 'enviada', null, { variante: v.id, igsid: enviado && enviado.recipient_id ? String(enviado.recipient_id) : undefined, link_codigo: link.codigo || undefined, mid: midDe(enviado) });
+    res.enviadas++;
     // A resposta pública ajuda o post (mais comentários) e avisa quem comentou. Escrita pela IA para aquela pessoa;
     // sem a IA (ou se ela falhar), uma das respostas da versão. Se falhar, o direct já foi.
-    let publico_ok;
     if (c.porDm && g.responder_publico !== false && c.m.responderComentario) {
       const lista = v.publico && v.publico.length ? v.publico : (g.respostas && g.respostas.length ? g.respostas : tx.respostas);
-      const frase = (g.resposta_ia !== false && await respostaPublicaIA(env, { comentario: r.texto, palavra: g.palavra, titulo, exemplos: lista, idioma }))
+      const comIA = g.resposta_ia !== false && !!env.ANTHROPIC_CHAVE;
+      if (comIA) contarChamada(env);
+      const frase = (comIA && await respostaPublicaIA(env, { comentario: r.texto, palavra: g.palavra, titulo, exemplos: lista, idioma }))
         || preencher(lista[Math.floor(Math.random() * lista.length)], { usuario, titulo, idioma });
-      publico_ok = await c.m.responderComentario({ credenciais: c.credenciais, comentario_id: r.comentario_id, texto: frase }).then(() => true, (e) => { console.error('comenta resposta publica', e && e.message); return false; });
+      contarChamada(env);
+      const publico_ok = await c.m.responderComentario({ credenciais: c.credenciais, comentario_id: r.comentario_id, texto: frase }).then(() => true, (e) => { console.error('comenta resposta publica', e && e.message); return false; });
+      // Só o campo: o estado não é tocado, porque a pessoa já pode ter tocado no botão nesse meio tempo.
+      await db.update(env, 'respostas_gatilho', { id: `eq.${r.id}` }, { publico_ok }, 'id').catch((e) => console.error('comenta publico', e && e.message));
     }
-    statsMem.delete(g.id);
-    await marcar(env, r.id, espera ? 'pergunta' : 'enviada', null, { variante: v.id, igsid: enviado && enviado.recipient_id ? String(enviado.recipient_id) : undefined, link_codigo: link.codigo || undefined, publico_ok });
-    res.enviadas++;
   }
-  return res;
 }
 
 // ---------------------------------------------------------------- direct: toque no botão, resposta ou a palavra
@@ -447,11 +500,12 @@ export async function aoDirect(env, rede, m, conta, ctx) {
   if (!m.message && !m.postback) return 'sem mensagem';
   const msg = m.message || {};
   if (msg.is_echo) {
-    // O eco de uma mensagem nossa. Se foi alguém da equipe pelo aplicativo, o Atendente fica quieto nessa conversa por um
-    // tempo (atendente.js compara com a hora do último envio do sistema).
+    // O eco de uma mensagem nossa. O id dele (msg.mid) é anotado e comparado com os ids que o sistema mandou
+    // (atendente.js, anotarEco). Se não é de um envio do sistema e é texto simples que não veio do nosso app, foi alguém
+    // da equipe pelo aplicativo: o Atendente fica quieto nessa conversa por um tempo.
     const doApp = !!msg.app_id && [env.META_APP_ID, env.INSTAGRAM_APP_ID].filter(Boolean).map(String).includes(String(msg.app_id));
     const comBotao = Array.isArray(msg.attachments) && msg.attachments.some((x) => x && x.type === 'template');
-    if (rede === 'instagram' && !doApp && !comBotao && msg.text && m.recipient && m.recipient.id) await anotarHumano(env, String(m.recipient.id));
+    if (rede === 'instagram' && m.recipient && m.recipient.id) return anotarEco(env, { igsid: String(m.recipient.id), mid: msg.mid, talvezGente: !doApp && !comBotao && !!msg.text });
     return `eco${msg.app_id ? (doApp ? ' do sistema' : ' de outro app') : ''}`;
   }
   if (msg.is_deleted) return 'eco';
@@ -510,24 +564,27 @@ async function responderToque(env, c, credenciais, pend, igsid, texto) {
   // Modo seguir: o material só vai para quem segue; quem não segue recebe o lembrete com o botão de novo. Se a Meta
   // não disser se segue, vai o material (melhor do que travar todo mundo).
   if (g.modo === 'seguir' && segue === false) {
+    let lembrete = null;
     try {
-      await c.m.mandarDirect({ credenciais, para: igsid, formas: formasPergunta(preencher(v.lembrete || tx.lembrete, { usuario, titulo, idioma }), `cx:${pend.id}`, tx.segui) });
+      lembrete = await c.m.mandarDirect({ credenciais, para: igsid, formas: formasPergunta(preencher(v.lembrete || tx.lembrete, { usuario, titulo, idioma }), `cx:${pend.id}`, tx.segui) });
     } catch (e) { console.error('comenta lembrete', e && e.message); }
-    await marcar(env, pend.id, 'pergunta', null, { ...extra, seguia: false });
+    await marcar(env, pend.id, 'pergunta', null, { ...extra, seguia: false, mid: midDe(lembrete) });
     return 'lembrete';
   }
   const link = await linkDaVariante(env, g, v, pend);
   if (!link) { await marcar(env, pend.id, 'falhou', 'O material desta palavra não está publicado no site.', extra); return 'sem material'; }
+  let saiu = null;
   try {
     const oferta = await ofertaAtiva(env, perfil).catch(() => null);
-    await c.m.mandarDirect({ credenciais, para: igsid, formas: formasComLink(v.depois || v.dm, { link: link.url, usuario, titulo, botao: v.botao, curso: cursoDaOferta(oferta, g, pend.rede), idioma }) });
+    const pessoa = await codigoDaPessoa(perfil, (quem && quem.usuario) || pend.usuario).catch(() => '');
+    saiu = await c.m.mandarDirect({ credenciais, para: igsid, formas: formasComLink(v.depois || v.dm, { link: comPessoa(link.url, pessoa), usuario, titulo, botao: v.botao, curso: cursoDaOferta(oferta, g, pend.rede, pessoa), idioma }) });
   } catch (e) {
     await marcar(env, pend.id, 'falhou', `O material não saiu: ${e.message}`, extra);
     return 'erro';
   }
   // "seguia": se já seguia no primeiro toque. Quem passou a seguir depois do lembrete conta como seguidor novo.
   const passou = g.modo === 'seguir' && pend.seguia === false && segue === true;
-  await marcar(env, pend.id, 'link', null, { ...extra, link_codigo: link.codigo || undefined, ...(passou ? { seguiu: true } : segue === null ? {} : { seguia: segue }) });
+  await marcar(env, pend.id, 'link', null, { ...extra, mid: midDe(saiu), link_codigo: link.codigo || undefined, ...(passou ? { seguiu: true } : segue === null ? {} : { seguia: segue }) });
   statsMem.delete(g.id);
   return 'link';
 }
@@ -555,13 +612,14 @@ async function palavraNoDirect(env, c, credenciais, rede, igsid, mid, texto) {
   try {
     // Modo seguir para quem ainda não segue: o pedido para seguir com o botão; o material no toque.
     if (g.modo === 'seguir' && quem && quem.segue === false) {
-      await c.m.mandarDirect({ credenciais, para: igsid, formas: formasPergunta(preencher(v.pergunta, { usuario, titulo, idioma }), `cx:${r.id}`, tx.segui) });
-      await marcar(env, r.id, 'pergunta', null, { ...extra, seguia: false, link_codigo: link.codigo || undefined });
+      const pedido = await c.m.mandarDirect({ credenciais, para: igsid, formas: formasPergunta(preencher(v.pergunta, { usuario, titulo, idioma }), `cx:${r.id}`, tx.segui) });
+      await marcar(env, r.id, 'pergunta', null, { ...extra, seguia: false, link_codigo: link.codigo || undefined, mid: midDe(pedido) });
       return 'pergunta';
     }
     const oferta = await ofertaAtiva(env, perfil).catch(() => null);
-    await c.m.mandarDirect({ credenciais, para: igsid, formas: formasComLink(g.modo === 'direto' ? v.dm : v.depois, { link: link.url, usuario, titulo, botao: v.botao, curso: cursoDaOferta(oferta, g, rede), idioma }) });
-    await marcar(env, r.id, 'enviada', null, { ...extra, link_codigo: link.codigo || undefined, ...(quem && quem.segue !== null ? { seguia: quem.segue } : {}) });
+    const pessoa = await codigoDaPessoa(perfil, quem && quem.usuario).catch(() => '');
+    const saiu = await c.m.mandarDirect({ credenciais, para: igsid, formas: formasComLink(g.modo === 'direto' ? v.dm : v.depois, { link: comPessoa(link.url, pessoa), usuario, titulo, botao: v.botao, curso: cursoDaOferta(oferta, g, rede, pessoa), idioma }) });
+    await marcar(env, r.id, 'enviada', null, { ...extra, mid: midDe(saiu), link_codigo: link.codigo || undefined, ...(quem && quem.segue !== null ? { seguia: quem.segue } : {}) });
     statsMem.delete(g.id);
     return 'material';
   } catch (e) {

@@ -325,12 +325,12 @@ async function pagina(request, env, ctx, url) {
   if (m) {
     const r = await C.recurso(env, m[1]);
     if (!r) return naoEncontrada(base);
-    const [relacionados, anuncios, oferta] = await Promise.all([C.relacionados(env, r, 3), escolher(env, ['lateral', 'fim'], { tags: [...(r.tags || []), r.tipo], categoria_id: r.categoria_id }), C.oferta(env)]);
+    const [relacionados, anuncios, oferta] = await Promise.all([C.relacionados(env, r, 3), escolher(env, ['lateral', 'fim'], { tags: [...(r.tags || []), r.tipo], categoria_id: r.categoria_id }), C.ofertaComPreco(env)]);
     registrar(env, ctx, anuncios);
     const capa = r.capa_url || (Array.isArray(r.galeria) && r.galeria[0] && r.galeria[0].url) || undefined;
     return html(casca({
       ...base, titulo: r.titulo, descricao: r.resumo, imagem: capa, classe: 'pagina-recurso', aba: r.tipo === 'agente' ? '/agentes' : '/recursos',
-      corpo: P.paginaRecurso({ r, cats, relacionados, anuncios, cfg, oferta }),
+      corpo: P.paginaRecurso({ r, cats, relacionados, anuncios, cfg, oferta, endereco: url }),
       ldjson: (() => {
         const s = env.SITE_URL; const { org } = entidades(s); const agente = r.tipo === 'agente';
         return grafo({

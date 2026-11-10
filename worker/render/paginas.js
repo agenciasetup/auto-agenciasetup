@@ -4,6 +4,8 @@ import { dataLonga, esc, markdown, tamanho, urlSegura } from '../nucleo/util.js'
 import { htmlAdsense, htmlAnuncio } from '../lib/anuncios.js';
 import { icone } from './icones.js';
 import { ASSUNTOS, TIPOS_ARTIGO, caminhoArtigo } from '../lib/assuntos.js';
+import { marcasDe } from '../lib/origem.js';
+import { precoDaVenda } from './venda.js';
 
 // ---------------------------------------------------------------- vocabulário
 export const TIPOS = {
@@ -338,7 +340,44 @@ function videoEmbed(url) {
   return `<a class="bt" href="${esc(u)}" target="_blank" rel="noopener">${icone('video')}Ver vídeo de como usar</a>`;
 }
 
-export function paginaRecurso({ r, cats, relacionados, anuncios, cfg, oferta }) {
+// A faixa do mini curso no topo do material (10/11/2026: de quem vinha da DM para o material, quase ninguém chegava à
+// oferta do fim). Compacta, feita para o celular, e o material continua logo abaixo. O preço é o da oferta do checkout,
+// já com a campanha com data (conteudo.ofertaComPreco). Oferta desligada ou sem preço: a faixa não aparece.
+// O link leva a origem da visita adiante (a palavra da DM, o post) e marca o conteúdo como "material-topo": em Vendas,
+// o filtro de conteúdo mostra as visitas e as vendas que saíram daqui. Visita sem marca vai sem marca, para não trocar
+// a origem de verdade (a que já está guardada para o visitante) por uma inventada.
+const MARCA_TOPO = 'material-topo';
+const brl = (c) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+function linkDoTopo(link, endereco) {
+  const destino = urlSegura(link);
+  let m = null;
+  try { m = endereco ? marcasDe(new URL(String(endereco))) : null; } catch {}
+  if (!m) return destino;
+  try {
+    const u = new URL(destino);
+    for (const [k, v] of [['utm_source', m.origem], ['utm_medium', m.meio], ['utm_campaign', m.campanha], ['utm_term', m.termo]]) if (v) u.searchParams.set(k, v);
+    u.searchParams.set('utm_content', MARCA_TOPO);
+    return u.toString();
+  } catch {
+    return destino;
+  }
+}
+function faixaDoCurso(oferta, { agente, endereco } = {}) {
+  const preco = oferta && oferta.venda ? precoDaVenda(oferta.venda, null) : null;
+  if (!preco || !oferta.link) return '';
+  return `<a class="oferta-topo" href="${esc(linkDoTopo(oferta.link, endereco))}" data-oferta-topo>
+    <div class="oferta-topo-texto">
+      <p class="olho">${icone('curso')}Mini curso${oferta.nome ? ` · ${esc(oferta.nome)}` : ''}</p>
+      <p class="oferta-topo-frase"><span>${agente ? 'O agente' : 'O material'} está logo abaixo.</span> Com o curso, o Claude passa a fazer os seus posts sozinho, todo dia.</p>
+    </div>
+    <div class="oferta-topo-acao">
+      <p class="oferta-topo-preco">${preco.de > preco.base ? `<span class="sr">de </span><s>${esc(brl(preco.de))}</s><span class="sr"> por </span>` : ''}<b>${esc(brl(preco.base))}</b></p>
+      <span class="bt bt-marca">Ver o curso${icone('seta')}</span>
+    </div>
+  </a>`;
+}
+
+export function paginaRecurso({ r, cats, relacionados, anuncios, cfg, oferta, endereco }) {
   const x = tipo(r.tipo);
   const agente = ehAgente(r);
   const arquivo = r.arquivo_url || r.link_externo;
@@ -363,6 +402,7 @@ export function paginaRecurso({ r, cats, relacionados, anuncios, cfg, oferta }) 
   return `
 <div class="faixa">
   <nav class="migalhas" aria-label="Você está em"><a href="/recursos">Recursos</a>${icone('direita')}<a href="${r.tipo === 'agente' ? '/agentes' : `/recursos?tipo=${esc(r.tipo)}`}">${esc(x.p)}</a></nav>
+  ${faixaDoCurso(oferta, { agente, endereco })}
   <div class="recurso">
     <article>
       <div class="recurso-capa">${capa(r, { grande: true })}</div>

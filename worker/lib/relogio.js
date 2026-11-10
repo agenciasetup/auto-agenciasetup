@@ -16,8 +16,10 @@ import { prepararIntegracoes } from './integracoes.js';
 import { responderPendentes } from './atendente.js';
 import { rodarChefeDeGabinete } from './agentes/chefe-de-gabinete.js';
 import { rodarZelador } from './agentes/zelador.js';
+import { rodarConciliador } from './agentes/conciliador.js';
 import { rodarOlheiroDeFerramentas } from './agentes/olheiro-de-ferramentas.js';
 import { contaAtiva, credenciaisAtivas } from '../plataformas/credenciais.js';
+import { chamadasFeitas, comContador, folgaDeChamadas, reservarChamadas } from '../nucleo/db.js';
 
 const RODIZIO = ['radar', 'metricas', 'radar', 'posts', 'radar', 'metricas'];
 const TAREFAS = {
@@ -42,17 +44,34 @@ async function atenderODirect(env) {
   return responderPendentes(env, { limite: env.WORKERS_PAGO ? 6 : 2, contaDe });
 }
 
-export async function rodarMinuto(env, quando = Date.now()) {
+// Chamadas externas que cada etapa do minuto precisa ter garantidas (estimativa por cima). Ficam reservadas desde o
+// começo, para o Atendente e o Comenta X não gastarem tudo antes; a reserva é solta quando a etapa começa.
+// fila: só a conferência de todo minuto (publicar uma peça gasta mais, e a fila ainda não olha o contador).
+const RESERVA = { fila: 2, fechamento: 8, seo: 12, chefe: 18, zelador: 18, 'olheiro-de-ferramentas': 12 };
+// O Comenta X lê os comentários (a reserva do aviso da Meta) deixando lugar para um envio da fila: o fixo e um item.
+const RESERVA_ENVIO = 17;
+// Os números dos posts recentes são só para o painel e gastam umas 6 chamadas por conta (4 contas): num minuto cheio
+// eles ficam para daqui a 5 minutos, em vez de estourar o limite no meio.
+const FOLGA_RECENTES = 26;
+
+export async function rodarMinuto(envDoWorker, quando = Date.now()) {
+  // Um env só desta execução, com o contador de chamadas externas (nucleo/db.js). O plano grátis corta a execução em
+  // 50 chamadas: cada etapa olha a folga antes de começar um trabalho que não pode parar no meio.
+  const env = comContador(envDoWorker);
   const feito = {};
   const etapas = [
     // O Atendente do direct vem primeiro: responde quem parou de escrever há uns 20 segundos (até 2 conversas por minuto,
-    // para caber nas chamadas do plano grátis junto com a fila e o Comenta X).
+    // e a segunda só começa se houver folga de chamadas para ela inteira).
     ['atendente', () => atenderODirect(env)],
     ['fila', () => processarFila(env)],
-    ['comenta', async () => ({ varrer: await varrerComentarios(env, { recentes: 48 }), enviar: await enviarRespostas(env) })],
+    ['comenta', async () => {
+      reservarChamadas(env, RESERVA_ENVIO);
+      const varrer = await varrerComentarios(env, { recentes: 48 }).finally(() => reservarChamadas(env, -RESERVA_ENVIO));
+      return { varrer, enviar: await enviarRespostas(env) };
+    }],
   ];
   // A cada 5 minutos (fora da volta completa): números e imagem dos posts recentes, para o painel ficar quase ao vivo.
-  if (new Date(quando).getUTCMinutes() % 5 === 3) etapas.push(['recentes', () => atualizarRecentes(env)]);
+  if (new Date(quando).getUTCMinutes() % 5 === 3) etapas.push(['recentes', () => (folgaDeChamadas(env) < FOLGA_RECENTES ? { pulou: 'sem folga de chamadas neste minuto' } : atualizarRecentes(env))]);
   // Às 23h58 (Brasília): o resumo do dia no celular da equipe (push.js). Fora dessa hora não faz nada.
   etapas.push(['fechamento', () => fecharODia(env, quando)]);
   // Search Console (searchconsole.js): no minuto 17 das horas cheias, das 6h às 23h de Brasília, um site por vez, até os
@@ -67,13 +86,25 @@ export async function rodarMinuto(env, quando = Date.now()) {
   if (new Date(quando).getUTCMinutes() === 7) etapas.push(['zelador', () => rodarZelador(env, quando)]);
   // O Olheiro de ferramentas: todo dia às 9h21 de Brasília ele vê se já rodou na semana; só trabalha uma vez por semana.
   if (h === 9 && new Date(quando).getUTCMinutes() === 21) etapas.push(['olheiro-de-ferramentas', () => rodarOlheiroDeFerramentas(env, quando)]);
+  // O Conciliador da Colmeia: só trabalha quando a Colmeia mudou e está quieta há 3 minutos (nos outros minutos, 1 leitura).
+  etapas.push(['conciliador', () => rodarConciliador(env, quando)]);
+  // O resumo do dia só trabalha a partir das 23h58: fora disso não precisa de reserva.
+  const precisa = (nome) => (nome === 'fechamento' && h * 60 + new Date(quando).getUTCMinutes() < 23 * 60 + 58 ? 0 : RESERVA[nome] || 0);
+  for (const [nome] of etapas) reservarChamadas(env, precisa(nome));
   for (const [nome, fn] of etapas) {
+    reservarChamadas(env, -precisa(nome));
     try {
       feito[nome] = await fn();
     } catch (e) {
       feito[nome] = { erro: e && e.message };
       console.error('minuto', nome, e && (e.stack || e.message));
     }
+  }
+  // Para acompanhar no registro do Worker (wrangler tail) quando um minuto chega perto do limite.
+  const chamadas = chamadasFeitas(env);
+  if (chamadas !== null) {
+    feito.chamadas = chamadas;
+    if (chamadas >= 40) console.log(`minuto: ${chamadas} chamadas externas contadas`);
   }
   return feito;
 }

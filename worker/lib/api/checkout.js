@@ -4,6 +4,7 @@ import { db } from '../../nucleo/db.js';
 import { Erro, corpoJson, json, respostaErro } from '../../nucleo/util.js';
 import { asaas, stripe } from '../../pagamento/index.js';
 import { cookieVisitante, destinoComMarcas, lerVisitante, marcasDe, novoVisitante, registrarToque } from '../origem.js';
+import { codigoValido, comPessoa } from '../pessoa.js';
 import { dadosParaRetomar, guardarContato, moedaDaLinha, pararLembretes } from '../recuperacao.js';
 import { cotar, criarPedido, criarUpsell, guardarAviso, ofertaDepois, processarAviso, situacaoPedido } from '../vendas.js';
 
@@ -128,12 +129,14 @@ export async function linkCurto(request, env, ctx, url, codigo) {
   let v = lerVisitante(request);
   const novo = !v;
   if (novo) v = novoVisitante();
-  const marcas = { origem: l.utm_source, meio: l.utm_medium, campanha: l.utm_campaign, conteudo: l.utm_content, termo: l.utm_term, clid: null };
+  // "?p=código": a pessoa do Instagram que recebeu este link no direct (pessoa.js). Vai junto para a página de destino.
+  const pessoa = codigoValido(url.searchParams.get('p'));
+  const marcas = { origem: l.utm_source, meio: l.utm_medium, campanha: l.utm_campaign, conteudo: l.utm_content, termo: l.utm_term, clid: null, pessoa };
   // Só o caminho e só o domínio: o endereço inteiro, depois de limpo, virava "/recursos/skilldedm-skill".
   const soCaminho = (u, base) => { try { return new URL(u, base).pathname; } catch { return null; } };
   const soDominio = (u) => { try { return new URL(u).hostname; } catch { return null; } };
   ctx.waitUntil(registrarToque(env, v, marcas, { link: l.codigo, pagina: soCaminho(l.destino, url.origin), referer: soDominio(request.headers.get('referer') || ''), pais: request.cf?.country || null }).catch(() => {}));
-  const headers = { location: destinoComMarcas(url.origin, l), 'cache-control': 'no-store' };
+  const headers = { location: comPessoa(destinoComMarcas(url.origin, l), pessoa), 'cache-control': 'no-store' };
   if (novo) headers['set-cookie'] = cookieVisitante(env, v, new URL(request.url).hostname);
   return new Response(null, { status: 302, headers });
 }

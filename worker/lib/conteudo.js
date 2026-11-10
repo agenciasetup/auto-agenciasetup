@@ -25,6 +25,30 @@ export const categorias = (env) => lembrar('categorias', () => db.select(env, 'c
 // A oferta do fim do funil (mini curso), quando está no ar. Some sozinha se a landing page sair do ar.
 export const oferta = (env) => (demo(env) ? Promise.resolve(null) : lembrar('oferta', () => ofertaAtiva(env).catch(() => null)));
 
+// A mesma oferta com o preço de verdade, para a faixa do mini curso no topo do material (render/paginas.js). O preço é
+// o da oferta do checkout do produto da landing (a do link do produto ou a primeira aberta, como na página de venda),
+// já com a campanha com data (lib/campanha.js). Sem oferta aberta no checkout, vem sem `venda` e a faixa não aparece.
+export const ofertaComPreco = (env) => lembrar('oferta-preco', async () => {
+  const o = await oferta(env);
+  if (!o || !o.landing_slug) return o;
+  try {
+    const lp = await db.um(env, 'landing_pages', { slug: `eq.${o.landing_slug}`, status: 'eq.publicado' }, 'produto_id,produto:produtos(link_checkout)');
+    if (!lp || !lp.produto_id) return o;
+    const ofertas = await db.select(env, 'ofertas', { filtros: { produto_id: `eq.${lp.produto_id}`, ativa: 'eq.true' }, select: 'slug,preco_centavos,preco_de_centavos,parcelas_max,juros_mes,pix_desconto_pct,metodos,garantia_dias,checkout,valida_ate', ordem: 'criado_em.asc' });
+    const agora = Date.now();
+    const abertas = ofertas.filter((x) => !x.valida_ate || new Date(x.valida_ate).getTime() > agora).map((x) => comCampanha(x, agora));
+    const doLink = ((lp.produto && lp.produto.link_checkout) || '').match(/\/checkout\/([a-z0-9-]+)/);
+    const aberta = (doLink && abertas.find((x) => x.slug === doLink[1])) || abertas[0];
+    if (!aberta) return o;
+    // Só os campos do preço: o resto do checkout (textos, depoimentos) não precisa ficar na memória.
+    const { checkout, valida_ate, ...venda } = aberta;
+    return { ...o, venda };
+  } catch (e) {
+    console.error('oferta com preço', e.message);
+    return o;
+  }
+});
+
 export async function config(env) {
   return lembrar('config', async () => {
     const linhas = await db.select(env, 'config', { filtros: { chave: 'in.(site,adsense)' } });

@@ -5,6 +5,7 @@
 // responder fica na fase "duvida" até o dono responder na tela; as respostas viram exemplo (respostasAprendidas).
 import { db } from '../nucleo/db.js';
 import { Erro } from '../nucleo/util.js';
+import { LINKS_VENDA, codigoDaPessoa, marcarLinks } from './pessoa.js';
 
 const DIA = 24 * 60 * 60 * 1000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -63,6 +64,16 @@ function links(f) {
   };
 }
 
+// Os links de venda desta pessoa (pessoa.js): levam o vendedor dela e o código dela, para a compra cair no nome certo.
+// A mensagem pronta já sai com eles no lugar do link sem marca.
+async function comVenda(l, vendedor) {
+  const codigo = await codigoDaPessoa(l.perfil, l.usuario).catch(() => '');
+  return {
+    links_venda: Object.fromEntries(Object.entries(LINKS_VENDA).map(([k, url]) => [k, marcarLinks(url, vendedor, codigo)])),
+    proxima_mensagem: l.proxima_mensagem ? marcarLinks(l.proxima_mensagem, vendedor, codigo) : l.proxima_mensagem,
+  };
+}
+
 // ---------------------------------------------------------------- a lista
 const CAMPOS = 'id,perfil,usuario,nome,conversa,origem,interesse,fase,palavras,posts,email,ultima_mensagem,ultima_em,nosso_em,toques,proxima_mensagem,proximo_em,duvida,duvida_em,resposta,respondida_em,produto,comprou_em,compra_por,pos_venda_em,nota,historico,primeiro_em,atualizado_em,vendedor,tocado_em,respondeu_em,igsid,humano_em,quem:equipe!followups_respondida_por_fkey(nome)';
 const ORDEM = {
@@ -95,7 +106,7 @@ export async function listaFollowup(env, { fase = 'novo', interesse = '', busca 
     db.rpc(env, 'followup_placar', { p_perfil: p }).catch(() => []),
   ]);
   const linhas = r.linhas || r;
-  const itens = linhas.map((l) => ({
+  const itens = await Promise.all(linhas.map(async (l) => ({
     ...l, quem: undefined, respondida_por: l.quem ? l.quem.nome : null,
     historico: (l.historico || []).slice(-8),
     na_hora: !!(l.proximo_em && Date.parse(l.proximo_em) <= agora && ['novo', 'ofertado', 'conversando'].includes(l.fase)),
@@ -103,8 +114,8 @@ export async function listaFollowup(env, { fase = 'novo', interesse = '', busca 
     vendedor: l.vendedor || vendedorDe(l.usuario, ativos), vendedor_fixo: !!l.vendedor,
     // Dá para mandar pelo sistema (API) só até 24 horas depois da última mensagem da pessoa.
     pode_api: !!(l.igsid && l.ultima_em && agora - Date.parse(l.ultima_em) < 23.5 * 3600_000), igsid: undefined,
-    ...links(l),
-  }));
+    ...links(l), ...(await comVenda(l, l.vendedor || vendedorDe(l.usuario, ativos))),
+  })));
   return {
     numeros: { ...numeros, na_hora: naHora, por_interesse: porInteresse }, fases: FASES, interesses: INTERESSES, fase: f, itens, total: r.total ?? itens.length,
     vendedores: VENDEDORES, vendedores_ativos: ativos, placar: lerPlacar(placar),
@@ -136,7 +147,8 @@ export async function lerFollowup(env, { id, usuario, perfil = 'br' }) {
   if (id && !UUID.test(String(id))) throw new Erro(404, 'Não encontrado.');
   const l = await db.um(env, 'followups', filtros, CAMPOS);
   if (!l) return null;
-  return { ...l, quem: undefined, respondida_por: l.quem ? l.quem.nome : null, vendedor: l.vendedor || vendedorDe(l.usuario, await vendedoresAtivos(env)), vendedor_fixo: !!l.vendedor, ...links(l) };
+  const vendedor = l.vendedor || vendedorDe(l.usuario, await vendedoresAtivos(env));
+  return { ...l, quem: undefined, respondida_por: l.quem ? l.quem.nome : null, vendedor, vendedor_fixo: !!l.vendedor, ...links(l), ...(await comVenda(l, vendedor)) };
 }
 
 // ---------------------------------------------------------------- salvar

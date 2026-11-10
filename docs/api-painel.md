@@ -94,7 +94,7 @@ Post: `id, rede, perfil (o da conta que publicou), id_na_rede, peca_id, formato,
 
 ## Oferta do funil (mini curso)
 
-- `GET /oferta` → `{ ativo, landing_slug, titulo, texto, cta, linha_dm, no_ar, link }` | `PATCH /oferta` (mesmos campos; `cursos.editar`)
+- `GET /oferta` → `{ ativo, landing_slug, titulo, texto, cta, linha_dm, curso_primeiro, no_ar, link }` (`curso_primeiro`: o botão do mini curso em cima do material no direct do Comenta X) | `PATCH /oferta` (mesmos campos; `cursos.editar`)
   Só aparece (fim da página de recurso e fim da DM) com `ativo`, landing page publicada e produto ativo.
 
 ## Área de membros (vendas, alunos, aulas, ofertas, links)

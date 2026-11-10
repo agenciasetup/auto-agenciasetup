@@ -21,6 +21,15 @@ const VAZIOS: Record<string, { t: string; d: string }> = {
 };
 const COR_INTERESSE: Record<string, string> = { posts: 'laranja', combo: 'ambar', videos: 'azul', material: 'cinza', outro: 'cinza', nao_sei: 'vermelho' };
 const NOME_ORIGEM: Record<string, string> = { direct: 'direct', story: 'resposta ao story', comentario: 'comentário', manual: 'anotado à mão' };
+// Os três modos do Atendente, na ordem em que o botão troca. O rótulo mostra o modo de agora; o clique vai para o próximo.
+const MODOS_ATENDENTE = ['automatico', 'rascunho', 'ensaio'];
+const ROTULO_MODO: Record<string, string> = { automatico: 'Modo: responde sozinho', rascunho: 'Modo: só prepara a resposta', ensaio: 'Modo: ensaio' };
+const AVISO_MODO: Record<string, string> = {
+  automatico: 'O Atendente voltou a responder todo mundo sozinho.',
+  rascunho: 'O Atendente agora só prepara a resposta e espera você mandar.',
+  ensaio: 'Ensaio ligado: só as contas de teste recebem resposta.',
+};
+const proximoModo = (modo: string) => MODOS_ATENDENTE[(MODOS_ATENDENTE.indexOf(modo) + 1) % MODOS_ATENDENTE.length];
 
 export default function Followup() {
   useEffect(() => { document.title = 'Follow-up do direct | Painel Agência Setup'; }, []);
@@ -92,12 +101,16 @@ export default function Followup() {
           <div className="fu-atendente">
             <span className={`esc-luz esc-luz-${d.atendente.ligado ? 'ativo' : 'pausado'}`} />
             <b>{d.atendente.ligado ? 'Ligado' : 'Desligado'}</b>
-            <span className="mudo">{d.atendente.ligado ? d.atendente.modos[d.atendente.modo] : 'As mensagens que chegam são só anotadas na lista.'}</span>
+            <span className="mudo">{!d.atendente.ligado
+              ? 'As mensagens que chegam são só anotadas na lista.'
+              : d.atendente.modo === 'ensaio'
+                ? `Ensaio: só responde as contas de teste (${(d.atendente.contas_teste || []).map((u: string) => `@${u}`).join(', ') || 'nenhuma conta na lista'}). Quem não é de teste fica esperando e recebe a resposta quando o modo voltar para "responde sozinho", se a mensagem tiver menos de 6 horas.`
+                : d.atendente.modos[d.atendente.modo]}</span>
             {pode('followup.atendente') && (
               <span className="rec-acoes">
                 <button className="bt bt-mini bt-tingido" onClick={() => atendente({ ligado: !d.atendente.ligado }, d.atendente.ligado ? 'Atendente desligado.' : 'Atendente ligado.')}>{d.atendente.ligado ? 'Desligar' : 'Ligar'}</button>
                 {d.atendente.ligado && d.atendente.modelos && <button className="bt bt-mini bt-texto" title={d.atendente.modelos[d.atendente.modelo]} onClick={() => atendente({ modelo: d.atendente.modelo === 'misto' ? 'claude-haiku-5-5' : d.atendente.modelo === 'claude-haiku-5-5' ? 'claude-sonnet-5-5' : 'misto' }, 'Modelo do Atendente trocado.')}>{d.atendente.modelo === 'misto' ? 'Modelo: misto' : d.atendente.modelo === 'claude-haiku-5-5' ? 'Modelo: só o barato' : 'Modelo: só o cuidadoso'}</button>}
-                {d.atendente.ligado && <button className="bt bt-mini bt-texto" onClick={() => atendente({ modo: d.atendente.modo === 'automatico' ? 'rascunho' : 'automatico' }, 'Modo do Atendente mudado.')}>{d.atendente.modo === 'automatico' ? 'Só preparar a resposta' : 'Responder sozinho'}</button>}
+                {d.atendente.ligado && <button className="bt bt-mini bt-texto" title={`Clique para trocar para: ${(ROTULO_MODO[proximoModo(d.atendente.modo)] || '').replace('Modo: ', '')}`} onClick={() => atendente({ modo: proximoModo(d.atendente.modo) }, AVISO_MODO[proximoModo(d.atendente.modo)] || 'Modo do Atendente mudado.')}>{ROTULO_MODO[d.atendente.modo] || 'Modo do Atendente'}</button>}
               </span>
             )}
           </div>

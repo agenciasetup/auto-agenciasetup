@@ -597,6 +597,34 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.55); -webkit-backdrop-filter: blu
 .barra-acao small { color: var(--verde); font-weight: 600; font-size: 0.75rem; }
 @media (min-width: 1024px) { .barra-acao { display: none; } }
 
+/* Faixa do mini curso no topo do material: quem chega pela DM vê a oferta antes do conteúdo, e o material fica logo
+   abaixo. Compacta no celular: a frase e, numa linha só, o preço e o botão. O preço vem da oferta do checkout (paginas.js). */
+.oferta-topo {
+  position: relative; overflow: hidden; isolation: isolate;
+  display: grid; gap: 14px; margin-top: 14px; padding: 16px;
+  border-radius: var(--raio-l);
+  background: radial-gradient(120% 160% at 100% 0%, rgba(255, 122, 0, 0.24), transparent 58%), var(--bg-2);
+  box-shadow: var(--brilho-topo), 0 0 0 1px var(--marca-borda);
+  -webkit-tap-highlight-color: transparent;
+}
+.oferta-topo .olho { margin: 0 0 6px; }
+.oferta-topo-frase { margin: 0; font-size: 1.0625rem; font-weight: 600; line-height: 1.35; letter-spacing: -0.015em; text-wrap: pretty; }
+.oferta-topo-frase span { color: var(--texto-2); font-weight: 500; }
+.oferta-topo-acao { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.oferta-topo-preco { margin: 0; display: flex; flex-direction: column; gap: 3px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.oferta-topo-preco s { color: var(--texto-3); font-size: 0.8125rem; }
+.oferta-topo-preco b { font-size: 1.5rem; letter-spacing: -0.03em; }
+.oferta-topo-acao .bt { flex: 1 1 150px; }
+.oferta-topo:active .bt { transform: scale(0.97); }
+@media (hover: hover) { .oferta-topo:hover .bt-marca { filter: brightness(1.06); } }
+@media (min-width: 760px) {
+  .oferta-topo { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 28px; padding: 18px 22px; }
+  .oferta-topo-acao { flex-wrap: nowrap; gap: 18px; }
+  .oferta-topo-preco { flex-direction: row; align-items: baseline; gap: 8px; }
+  .oferta-topo-preco s { font-size: 0.9375rem; }
+  .oferta-topo-acao .bt { flex: none; }
+}
+
 /* Texto longo (Markdown) */
 .texto { font-size: 1.0625rem; line-height: 1.7; color: #e4e4e7; }
 .texto > :first-child { margin-top: 0; }

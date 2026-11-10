@@ -678,7 +678,8 @@ export async function listarGatilhos(x, { perfil } = {}) {
 // ---------------------------------------------------------------- oferta (mini curso no fim do funil)
 // Cada perfil tem a sua oferta (lib/perfis.js): a do Brasil em "oferta", a do inglês em "oferta_en" (o curso em dólar,
 // que leva à raiz de agenciasetup.com; nome e botao_dm só existem nela).
-const CAMPOS_OFERTA = ['ativo', 'landing_slug', 'titulo', 'texto', 'cta', 'linha_dm', 'nome', 'botao_dm'];
+const CAMPOS_OFERTA = ['ativo', 'landing_slug', 'titulo', 'texto', 'cta', 'linha_dm', 'nome', 'botao_dm', 'curso_primeiro'];
+const OFERTA_SIM_NAO = ['ativo', 'curso_primeiro'];
 
 export async function lerOferta(x, perfil) {
   exigir(x.u, 'cursos.ver');
@@ -693,7 +694,7 @@ export async function salvarOferta(x, dados) {
   const p = lerPerfil(dados.perfil);
   const chave = perfilDe(p).oferta;
   const d = {};
-  for (const k of CAMPOS_OFERTA) if (dados[k] !== undefined) d[k] = k === 'ativo' ? !!dados[k] : dados[k] == null ? '' : String(dados[k]).slice(0, k === 'texto' || k === 'linha_dm' ? 400 : 120);
+  for (const k of CAMPOS_OFERTA) if (dados[k] !== undefined) d[k] = OFERTA_SIM_NAO.includes(k) ? !!dados[k] : dados[k] == null ? '' : String(dados[k]).slice(0, k === 'texto' || k === 'linha_dm' ? 400 : 120);
   if (d.landing_slug) {
     d.landing_slug = slugar(d.landing_slug);
     const lp = await db.um(x.env, 'landing_pages', { slug: `eq.${d.landing_slug}` }, 'id');
