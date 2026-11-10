@@ -30,6 +30,26 @@ export const INTERESSES = {
 const ORIGENS = ['direct', 'story', 'comentario', 'manual'];
 const PERFIS = ['br', 'en'];
 
+// Teste de vendedor (10/11/2026, docs/escritorio.md): cada vendedor é um roteiro de conversa, descrito em
+// .claude/skills/direct-agenciasetup/references/mensagens.md. A pessoa fica com o mesmo vendedor do primeiro toque
+// até o fim. Quem ainda não foi tocado já aparece na lista com o vendedor que vai atender: o sorteio sai do @, então
+// é sempre o mesmo para a mesma pessoa e divide a lista em partes iguais, sem ninguém escolher.
+export const VENDEDORES = {
+  calango: 'Calango (amigo, link e frase curta)',
+  pergunta: 'Pergunta antes (só oferta depois da resposta)',
+};
+const VENDEDORES_PADRAO = ['calango', 'pergunta'];
+async function vendedoresAtivos(env) {
+  const c = await db.um(env, 'config', { chave: 'eq.followup_vendedores' }).catch(() => null);
+  const lista = c && c.valor && Array.isArray(c.valor.ativos) ? c.valor.ativos.filter((v) => VENDEDORES[v]) : [];
+  return lista.length ? lista : VENDEDORES_PADRAO;
+}
+export function vendedorDe(usuario, ativos = VENDEDORES_PADRAO) {
+  let h = 2166136261;
+  for (const ch of String(usuario || '')) h = Math.imul(h ^ ch.codePointAt(0), 16777619) >>> 0;
+  return ativos[h % ativos.length];
+}
+
 const texto = (v, max) => { const t = String(v ?? '').trim(); return t ? t.slice(0, max) : null; };
 const quando = (v) => { if (v === null || v === '') return null; const d = new Date(v); if (Number.isNaN(d.getTime())) throw new Erro(400, 'Data inválida.'); return d.toISOString(); };
 export const normalUsuario = (v) => String(v || '').trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[/?#].*$/, '').toLowerCase();
@@ -44,7 +64,7 @@ function links(f) {
 }
 
 // ---------------------------------------------------------------- a lista
-const CAMPOS = 'id,perfil,usuario,nome,conversa,origem,interesse,fase,palavras,posts,email,ultima_mensagem,ultima_em,nosso_em,toques,proxima_mensagem,proximo_em,duvida,duvida_em,resposta,respondida_em,produto,comprou_em,compra_por,pos_venda_em,nota,historico,primeiro_em,atualizado_em,quem:equipe!followups_respondida_por_fkey(nome)';
+const CAMPOS = 'id,perfil,usuario,nome,conversa,origem,interesse,fase,palavras,posts,email,ultima_mensagem,ultima_em,nosso_em,toques,proxima_mensagem,proximo_em,duvida,duvida_em,resposta,respondida_em,produto,comprou_em,compra_por,pos_venda_em,nota,historico,primeiro_em,atualizado_em,vendedor,tocado_em,respondeu_em,igsid,humano_em,quem:equipe!followups_respondida_por_fkey(nome)';
 const ORDEM = {
   duvida: 'duvida_em.asc.nullslast',
   comprou: 'comprou_em.desc.nullslast',
@@ -69,15 +89,45 @@ export async function listaFollowup(env, { fase = 'novo', interesse = '', busca 
   if (b) filtros.or = `(usuario.ilike.*${b}*,nome.ilike.*${b}*,email.ilike.*${b}*)`;
   const lim = Math.min(200, Math.max(1, Number(limite) || 50));
   const ordem = ORDEM[f] || 'proximo_em.asc.nullsfirst,ultima_em.desc.nullslast';
-  const r = await db.select(env, 'followups', { filtros, select: CAMPOS, ordem, limite: lim, contar: true });
+  const [r, ativos, placar] = await Promise.all([
+    db.select(env, 'followups', { filtros, select: CAMPOS, ordem, limite: lim, contar: true }),
+    vendedoresAtivos(env),
+    db.rpc(env, 'followup_placar', { p_perfil: p }).catch(() => []),
+  ]);
   const linhas = r.linhas || r;
   const itens = linhas.map((l) => ({
     ...l, quem: undefined, respondida_por: l.quem ? l.quem.nome : null,
     historico: (l.historico || []).slice(-8),
     na_hora: !!(l.proximo_em && Date.parse(l.proximo_em) <= agora && ['novo', 'ofertado', 'conversando'].includes(l.fase)),
+    // O vendedor de quem já foi tocado é fixo; o de quem ainda não foi é o do sorteio.
+    vendedor: l.vendedor || vendedorDe(l.usuario, ativos), vendedor_fixo: !!l.vendedor,
+    // Dá para mandar pelo sistema (API) só até 24 horas depois da última mensagem da pessoa.
+    pode_api: !!(l.igsid && l.ultima_em && agora - Date.parse(l.ultima_em) < 23.5 * 3600_000), igsid: undefined,
     ...links(l),
   }));
-  return { numeros: { ...numeros, na_hora: naHora, por_interesse: porInteresse }, fases: FASES, interesses: INTERESSES, fase: f, itens, total: r.total ?? itens.length };
+  return {
+    numeros: { ...numeros, na_hora: naHora, por_interesse: porInteresse }, fases: FASES, interesses: INTERESSES, fase: f, itens, total: r.total ?? itens.length,
+    vendedores: VENDEDORES, vendedores_ativos: ativos, placar: lerPlacar(placar),
+  };
+}
+
+// O placar dos vendedores: de cada um, quantas pessoas atendeu, quantas responderam, quantas compraram e a receita.
+// As taxas só aparecem com 30 pessoas ou mais: com menos, o número engana.
+function lerPlacar(linhas) {
+  return (Array.isArray(linhas) ? linhas : []).map((l) => {
+    const pessoas = Number(l.pessoas) || 0;
+    const taxa = (n) => (pessoas >= 30 ? Math.round((Number(n) / pessoas) * 1000) / 10 : null);
+    return {
+      vendedor: l.vendedor, nome: VENDEDORES[l.vendedor] || l.vendedor, pessoas,
+      responderam: Number(l.responderam) || 0, compraram: Number(l.compraram) || 0, receita_centavos: Number(l.receita_centavos) || 0,
+      taxa_resposta: taxa(l.responderam), taxa_compra: taxa(l.compraram),
+      receita_por_100_centavos: pessoas >= 30 ? Math.round(((Number(l.receita_centavos) || 0) / pessoas) * 100) : null,
+      desde: l.desde || null, pouco: pessoas < 300,
+    };
+  });
+}
+export async function placarFollowup(env, perfil = 'br') {
+  return lerPlacar(await db.rpc(env, 'followup_placar', { p_perfil: PERFIS.includes(perfil) ? perfil : 'br' }).catch(() => []));
 }
 
 // Uma pessoa pelo id ou pelo @ (com o histórico inteiro).
@@ -86,7 +136,7 @@ export async function lerFollowup(env, { id, usuario, perfil = 'br' }) {
   if (id && !UUID.test(String(id))) throw new Erro(404, 'Não encontrado.');
   const l = await db.um(env, 'followups', filtros, CAMPOS);
   if (!l) return null;
-  return { ...l, quem: undefined, respondida_por: l.quem ? l.quem.nome : null, ...links(l) };
+  return { ...l, quem: undefined, respondida_por: l.quem ? l.quem.nome : null, vendedor: l.vendedor || vendedorDe(l.usuario, await vendedoresAtivos(env)), vendedor_fixo: !!l.vendedor, ...links(l) };
 }
 
 // ---------------------------------------------------------------- salvar
@@ -111,6 +161,7 @@ export async function salvarFollowup(env, d = {}, { id, quem = null, quemNome = 
   const evento = (tipo, t) => hist.push({ em: agora, tipo, texto: String(t).slice(0, 500), ...(quemNome ? { quem: quemNome } : {}) });
 
   if (d.nome !== undefined) m.nome = texto(d.nome, 120);
+  if (d.igsid !== undefined) m.igsid = /^[0-9]{5,30}$/.test(String(d.igsid || '')) ? String(d.igsid) : null;
   if (d.conversa !== undefined) {
     const c = String(d.conversa || '').match(/(\d{6,25})/);
     m.conversa = c ? c[1] : null;
@@ -126,6 +177,8 @@ export async function salvarFollowup(env, d = {}, { id, quem = null, quemNome = 
     m.ultima_mensagem = texto(d.ultima_mensagem, 500);
     m.ultima_em = d.ultima_em ? quando(d.ultima_em) : agora;
     if (m.ultima_mensagem && m.ultima_mensagem !== atual.ultima_mensagem) evento('pessoa', m.ultima_mensagem);
+    // A primeira resposta depois do nosso primeiro toque: é o que o placar dos vendedores conta.
+    if (m.ultima_mensagem && atual.tocado_em && !atual.respondeu_em && Date.parse(m.ultima_em) > Date.parse(atual.tocado_em)) m.respondeu_em = m.ultima_em;
   } else if (d.ultima_em !== undefined) m.ultima_em = quando(d.ultima_em);
   // mandei: o que saiu agora. A próxima mensagem enviada junto é a do toque seguinte; sem ela, fica vazia. Sem
   // proximo_em, o próximo toque fica para daqui a um dia, e quem estava em "novo" passa para "ofertado".
@@ -136,6 +189,12 @@ export async function salvarFollowup(env, d = {}, { id, quem = null, quemNome = 
     m.proxima_mensagem = d.proxima_mensagem !== undefined ? texto(d.proxima_mensagem, 1000) : null;
     if (d.proximo_em === undefined) m.proximo_em = new Date(Date.now() + DIA).toISOString();
     if (d.fase === undefined && (atual.fase === 'novo' || atual.novo)) d.fase = 'ofertado';
+    // O primeiro toque fixa o vendedor da pessoa: o que veio no pedido (se for um dos ativos) ou o do sorteio pelo @.
+    if (!atual.tocado_em) m.tocado_em = agora;
+    if (!atual.vendedor) {
+      const ativos = await vendedoresAtivos(env);
+      m.vendedor = ativos.includes(d.vendedor) ? d.vendedor : vendedorDe(atual.usuario, ativos);
+    }
     evento('nos', t || 'Mensagem enviada');
   } else if (d.proxima_mensagem !== undefined) m.proxima_mensagem = texto(d.proxima_mensagem, 1000);
   if (d.proximo_em !== undefined) m.proximo_em = quando(d.proximo_em);
@@ -173,12 +232,12 @@ export async function responderDuvida(env, id, resposta, { quem = null, quemNome
   if (!UUID.test(String(id))) throw new Erro(404, 'Não encontrado.');
   const r = texto(resposta, 2000);
   if (!r) throw new Erro(400, 'Escreva a resposta.');
-  const atual = await db.um(env, 'followups', { id: `eq.${id}` }, 'id,fase,duvida,historico');
+  const atual = await db.um(env, 'followups', { id: `eq.${id}` }, 'id,fase,duvida,historico,comprou_em');
   if (!atual) throw new Erro(404, 'Não encontrado.');
   const agora = new Date().toISOString();
   const m = {
     resposta: r, respondida_em: agora, respondida_por: quem, proximo_em: agora, proxima_mensagem: null,
-    fase: atual.fase === 'duvida' ? 'conversando' : atual.fase,
+    fase: atual.fase === 'duvida' ? (atual.comprou_em ? 'comprou' : 'conversando') : atual.fase,
     historico: [...(atual.historico || []), { em: agora, tipo: 'resposta', texto: `Resposta do dono: ${r}`.slice(0, 500), ...(quemNome ? { quem: quemNome } : {}) }].slice(-60),
   };
   await db.update(env, 'followups', { id: `eq.${id}` }, m, 'id');

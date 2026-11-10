@@ -18,6 +18,7 @@ import { pago } from './desempenho.js';
 import { prepararIntegracoes } from './integracoes.js';
 import { PERFIS, idiomaDe, perfilValido, siteDoPerfil } from './perfis.js';
 import { normalPalavra, pediu } from './temas.js';
+import { anotarHumano, atender } from './atendente.js';
 
 const DIA = 86400_000;
 const JANELA_GENERICA = 30 * DIA; // palavra sem post fixo vale para posts dos últimos 30 dias que pedem a palavra
@@ -260,7 +261,7 @@ export async function webhookMeta(request, env, ctx, url) {
   if (!(await assinaturaMeta(env, bruto, request.headers.get('x-hub-signature-256')))) return new Response('Assinatura inválida', { status: 401 });
   let corpo;
   try { corpo = JSON.parse(new TextDecoder().decode(bruto)); } catch { return new Response('JSON inválido', { status: 400 }); }
-  ctx.waitUntil(avisosMeta(env, corpo).catch((e) => console.error('comenta webhook', e && e.message)));
+  ctx.waitUntil(avisosMeta(env, corpo, ctx).catch((e) => console.error('comenta webhook', e && e.message)));
   return new Response('EVENT_RECEIVED');
 }
 
@@ -279,7 +280,7 @@ async function contaDoAviso(env, rede, ids, guardadas) {
   return guardadas.get(`${rede}:*`);
 }
 
-async function avisosMeta(env, corpo) {
+async function avisosMeta(env, corpo, ctx) {
   const rede = corpo && corpo.object === 'instagram' ? 'instagram' : corpo && corpo.object === 'page' ? 'facebook' : null;
   if (!rede || !Array.isArray(corpo.entry)) return;
   // A chave do Claude (resposta pública escrita pela IA) vem de Integrações.
@@ -316,7 +317,7 @@ async function avisosMeta(env, corpo) {
   let naFila = 0;
   for (const { c, novos } of porConta.values()) naFila += await registrarComentarios(env, rede, novos, c);
   const feitos = [];
-  for (const { m, c } of diretos) feitos.push(await aoDirect(env, rede, m, c).catch((e) => { console.error('comenta direct', e && e.message); return 'erro'; }));
+  for (const { m, c } of diretos) feitos.push(await aoDirect(env, rede, m, c, ctx).catch((e) => { console.error('comenta direct', e && e.message); return 'erro'; }));
   // Só o tipo do aviso no registro do Worker (sem texto nem nome), para conferir com `wrangler tail`.
   const campos = corpo.entry.flatMap((e) => [...(e.changes || []).map((x) => x && x.field), ...(e.messaging ? ['messaging'] : [])]);
   console.log(`aviso meta: ${rede} ${[...new Set(campos)].join(',') || '-'}; ${novosTotal} comentário(s), ${naFila} na fila${feitos.length ? `; direct: ${feitos.join(', ')}` : ''}${semConta ? `; ${semConta} sem conta conectada com esse id` : ''}`);
@@ -441,11 +442,19 @@ export async function enviarRespostas(env, { limite } = {}) {
 // ---------------------------------------------------------------- direct: toque no botão, resposta ou a palavra
 // Só mensagem de verdade (texto, botão); leitura, reação e o eco das nossas mensagens também chegam por aqui.
 // "conta": a conta que recebeu a mensagem (o aviso diz qual); só as palavras do perfil dela valem. Sem ela, a do Brasil.
-export async function aoDirect(env, rede, m, conta) {
+export async function aoDirect(env, rede, m, conta, ctx) {
   if (!m || !m.sender || !m.sender.id) return 'sem remetente';
   if (!m.message && !m.postback) return 'sem mensagem';
   const msg = m.message || {};
-  if (msg.is_echo || msg.is_deleted) return 'eco';
+  if (msg.is_echo) {
+    // O eco de uma mensagem nossa. Se foi alguém da equipe pelo aplicativo, o Atendente fica quieto nessa conversa por um
+    // tempo (atendente.js compara com a hora do último envio do sistema).
+    const doApp = !!msg.app_id && [env.META_APP_ID, env.INSTAGRAM_APP_ID].filter(Boolean).map(String).includes(String(msg.app_id));
+    const comBotao = Array.isArray(msg.attachments) && msg.attachments.some((x) => x && x.type === 'template');
+    if (rede === 'instagram' && !doApp && !comBotao && msg.text && m.recipient && m.recipient.id) await anotarHumano(env, String(m.recipient.id));
+    return `eco${msg.app_id ? (doApp ? ' do sistema' : ' de outro app') : ''}`;
+  }
+  if (msg.is_deleted) return 'eco';
   const c = conta || await contaAtiva(env, rede, 'br');
   if (!c || !c.m.mandarDirect) return 'sem conta';
   const igsid = String(m.sender.id);
@@ -462,7 +471,16 @@ export async function aoDirect(env, rede, m, conta) {
   if (pend) return responderToque(env, c, credenciais, pend, igsid, texto);
   // 2) A palavra mandada no direct (de um story ou de um Reels): o material vai na hora.
   if (!texto || !msg.mid) return 'conversa';
-  return palavraNoDirect(env, c, credenciais, rede, igsid, msg.mid, texto);
+  const r = await palavraNoDirect(env, c, credenciais, rede, igsid, msg.mid, texto);
+  if (r !== 'conversa' || rede !== 'instagram') return r;
+  // 3) Conversa comum: o Atendente anota na lista de follow-up e responde o que o dono já liberou (atendente.js).
+  // Roda depois da resposta à Meta, para o aviso não estourar o tempo.
+  const quem = await perfilDe(c, credenciais, igsid);
+  const tarefa = atender(env, { conta: c, credenciais, igsid, mid: msg.mid, texto, deStory: !!(msg.reply_to && msg.reply_to.story), perfilDaPessoa: quem })
+    .then((x) => { console.log(`atendente: ${x}`); return x; })
+    .catch((e) => { console.error('atendente', e && e.message); return 'erro'; });
+  if (ctx && ctx.waitUntil) { ctx.waitUntil(tarefa); return 'atendente'; }
+  return tarefa;
 }
 
 async function perfilDe(c, credenciais, igsid) {

@@ -13,6 +13,11 @@ import { cuidarDaArea } from './area-relogio.js';
 import { fecharODia } from './push.js';
 import { importarDaVez } from './searchconsole.js';
 import { prepararIntegracoes } from './integracoes.js';
+import { responderPendentes } from './atendente.js';
+import { rodarChefeDeGabinete } from './agentes/chefe-de-gabinete.js';
+import { rodarZelador } from './agentes/zelador.js';
+import { rodarOlheiroDeFerramentas } from './agentes/olheiro-de-ferramentas.js';
+import { contaAtiva, credenciaisAtivas } from '../plataformas/credenciais.js';
 
 const RODIZIO = ['radar', 'metricas', 'radar', 'posts', 'radar', 'metricas'];
 const TAREFAS = {
@@ -23,9 +28,26 @@ const TAREFAS = {
 
 export const tarefaDaVez = (quando) => RODIZIO[Math.floor(quando / 600_000) % RODIZIO.length];
 
+// A conta do Instagram de cada perfil, com o token aberto, para o Atendente ler a conversa e responder.
+async function atenderODirect(env) {
+  await prepararIntegracoes(env);
+  const guardadas = new Map();
+  const contaDe = async (perfil) => {
+    if (!guardadas.has(perfil)) {
+      const c = await contaAtiva(env, 'instagram', perfil).catch(() => null);
+      guardadas.set(perfil, c ? { c, credenciais: await credenciaisAtivas(env, c.conexao) } : null);
+    }
+    return guardadas.get(perfil);
+  };
+  return responderPendentes(env, { limite: env.WORKERS_PAGO ? 6 : 2, contaDe });
+}
+
 export async function rodarMinuto(env, quando = Date.now()) {
   const feito = {};
   const etapas = [
+    // O Atendente do direct vem primeiro: responde quem parou de escrever há uns 20 segundos (até 2 conversas por minuto,
+    // para caber nas chamadas do plano grátis junto com a fila e o Comenta X).
+    ['atendente', () => atenderODirect(env)],
     ['fila', () => processarFila(env)],
     ['comenta', async () => ({ varrer: await varrerComentarios(env, { recentes: 48 }), enviar: await enviarRespostas(env) })],
   ];
@@ -38,6 +60,13 @@ export async function rodarMinuto(env, quando = Date.now()) {
   const h = (new Date(quando).getUTCHours() + 21) % 24;
   // A chave da conta robô vem de Integrações (o relógio de minuto não carrega as integrações sozinho).
   if (new Date(quando).getUTCMinutes() === 17 && h >= 6) etapas.push(['seo', async () => { await prepararIntegracoes(env); return importarDaVez(env, quando); }]);
+  // O Chefe de gabinete: o resumo das 8h com as 3 decisões do dia (8h02, e de novo às 8h22 e 8h42 se a primeira falhar;
+  // ele mesmo não repete no dia). Fica por último: se as chamadas do plano grátis acabarem, quem espera é ele.
+  if (h === 8 && [2, 22, 42].includes(new Date(quando).getUTCMinutes())) etapas.push(['chefe', () => rodarChefeDeGabinete(env, quando)]);
+  // O Zelador (sem IA): no minuto 7 de toda hora confere se as tarefas rodaram, os erros e o gasto, e avisa.
+  if (new Date(quando).getUTCMinutes() === 7) etapas.push(['zelador', () => rodarZelador(env, quando)]);
+  // O Olheiro de ferramentas: todo dia às 9h21 de Brasília ele vê se já rodou na semana; só trabalha uma vez por semana.
+  if (h === 9 && new Date(quando).getUTCMinutes() === 21) etapas.push(['olheiro-de-ferramentas', () => rodarOlheiroDeFerramentas(env, quando)]);
   for (const [nome, fn] of etapas) {
     try {
       feito[nome] = await fn();

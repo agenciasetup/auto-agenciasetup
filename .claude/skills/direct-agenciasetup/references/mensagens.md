@@ -2,6 +2,7 @@
 
 Cada linha de uma mensagem é **uma mensagem separada** no direct (Enter entre elas). O link sempre sozinho.
 Varie: não mande a mesma versão para duas pessoas seguidas, e troque uma palavra ou outra para não ficar igual.
+Desde 09/11/2026 dá para testar abordagens novas além destas (o Filipe: "permita que os agentes testem mensagens que mais vendem"): anote no evento da ficha qual usou ("abordagem: pergunta antes"), para comparar depois. Preço e condição continuam sendo só os da tabela.
 Com mulher, troque "irmão / brother / meu peixe" pelo nome ou por nada, e a abertura por "Oláaa" / "Eaii".
 
 Links:
@@ -181,3 +182,60 @@ Pegue o conteúdo da resposta dele e escreva curto, no jeito dele, começando pe
 - Mais de uma mensagem de follow-up no mesmo dia para a mesma pessoa.
 - Mais de 10 pessoas numa rodada, ou mais de 40 mensagens puxadas por nós no dia (veja a trava 4 da SKILL.md).
 - Follow-up fora dos horários da tarefa (9h, 10h, 12h, 16h, 18h, 19h, 20h, 21h e 22h). À noite pode: é quando o público mais está ativo.
+
+---
+
+## 8. Os vendedores (teste desde 10/11/2026)
+
+Cada pessoa da lista vem com `vendedor`: o roteiro que atende essa pessoa do primeiro toque até o fim. Quem decide é o sistema (um sorteio pelo @, metade para cada). Não troque o vendedor de ninguém no meio da conversa: o placar só vale assim. No primeiro toque, mande `vendedor` junto no `followup_salvar`.
+
+### Calango (o jeito atual)
+
+Tudo o que está nas partes 1 a 4 deste arquivo: abre como amigo, manda o link e uma frase curta, e volta com "conseguiu?".
+
+### Pergunta antes
+
+A primeira mensagem é uma pergunta fácil de responder, sem link. O link só vai depois que a pessoa responde, ligado ao que ela disse. Quem responde abre a conversa.
+
+Primeiro toque, pelo interesse:
+
+Comentou POSTS ou CALANGO (já recebeu o link do mini curso pelo Comenta X):
+
+> Opaaa, tudo certo?
+> Me conta, vc posta mais pra vc ou pra cliente?
+
+> Eaiii, firme?
+> Hoje vc cuida dos posts de quantos perfis?
+
+Comentou a palavra de um material:
+
+> Opaaa!
+> Pegou {material}? Vai usar em post seu ou de cliente?
+
+Pediu o Combo (já recebeu o link):
+
+> Falaaa, tudo certo?
+> Vc já trabalha com design ou tá começando agora?
+
+Depois da resposta, a oferta:
+
+Posta para cliente ou cuida de vários perfis:
+
+> Então vai te poupar um tempo absurdo
+> No mini curso vc monta a estrutura no Claude e repete pra cada cliente, no estilo de cada um
+> https://agenciasetup.com.br/cursos/posts-automaticos
+
+Posta para o próprio perfil:
+
+> Shooow, então é pra vc mesmo
+> No mini curso vc ensina o seu estilo pro Claude e ele faz os posts, vc só aprova
+> https://agenciasetup.com.br/cursos/posts-automaticos
+
+Combo, qualquer resposta:
+
+> Brabo! Então dá uma olhada no combo, são os cursos de design da agência num pacote só
+> https://agenciasetup.com.br/cursos/combo-black-calango
+
+Não respondeu à pergunta: o segundo toque, um dia depois, é o link com uma frase ("Te deixo o link aqui pra quando quiser 👀" e o link). Terceiro toque não tem.
+
+O que vale para os dois vendedores: preço e condição só os da tabela da SKILL.md, nada de promessa de resultado, e o que a pessoa responder fora do roteiro (dúvida nova, desconto, reclamação) vai para o Filipe.

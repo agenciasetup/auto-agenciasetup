@@ -15,6 +15,8 @@ export const TIPOS_AVISO = {
   pedido: { t: 'Pedido feito', sub: 'Alguém gerou o Pix ou foi para o pagamento do cartão.', padrao: true },
   reembolso: { t: 'Reembolso e contestação', sub: 'Aluno pediu reembolso, reembolso agendado ou feito, contestação no cartão.', padrao: true },
   recusado: { t: 'Cartão recusado', sub: 'O cartão não passou: bom momento para chamar no WhatsApp.', padrao: true },
+  escritorio: { t: 'Escritório de IA', sub: 'O resumo do dia do chefe de gabinete e os alertas do zelador (tarefa que não rodou, erro, gasto perto do teto).', padrao: true },
+  direct: { t: 'Dúvida no direct', sub: 'Alguém perguntou no direct algo que só você sabe responder, ou uma resposta ficou pronta para você mandar.', padrao: true },
   fechamento: { t: 'Resumo do fim do dia', sub: 'Às 23h58, quanto o dia fechou, no tom do dia.', padrao: true },
   teste: { t: 'Pedidos de teste', sub: 'Compras simuladas e ofertas de teste também avisam.', padrao: false },
 };

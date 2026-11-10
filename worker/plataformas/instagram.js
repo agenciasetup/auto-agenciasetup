@@ -280,6 +280,16 @@ export default {
     const d = await chamar(`${GRAPH}/${para}?fields=name,username,is_user_follow_business&access_token=${encodeURIComponent(credenciais.token)}`);
     return { nome: d.name || '', usuario: d.username || '', segue: typeof d.is_user_follow_business === 'boolean' ? d.is_user_follow_business : null };
   },
+
+  // As últimas mensagens da conversa com uma pessoa, da mais antiga para a mais nova: [{ de: 'nos' | 'pessoa', texto, em }].
+  // Inclui o que a equipe escreveu à mão no aplicativo. O Atendente lê isso antes de responder (atendente.js).
+  async conversa({ credenciais, com, nosso, limite = 12 }) {
+    const campos = encodeURIComponent(`messages.limit(${Math.min(25, Math.max(1, limite))}){message,from,created_time}`);
+    const d = await chamar(`${GRAPH}/me/conversations?platform=instagram&user_id=${encodeURIComponent(com)}&fields=${campos}&access_token=${encodeURIComponent(credenciais.token)}`);
+    const lista = (((d.data || [])[0] || {}).messages || {}).data || [];
+    return lista.filter((m) => m && m.message && m.created_time).map((m) => ({ de: String((m.from && m.from.id) || '') === String(com) ? 'pessoa' : 'nos', texto: String(m.message).slice(0, 600), em: new Date(m.created_time).toISOString() }))
+      .sort((a, b) => Date.parse(a.em) - Date.parse(b.em));
+  },
 };
 
 // Token morto, permissão, limite: não adianta tentar outra forma da mensagem.

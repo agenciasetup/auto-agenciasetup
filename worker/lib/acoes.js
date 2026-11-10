@@ -28,6 +28,8 @@ export * from './acoes-entregas.js';
 export * from './acoes-followup.js';
 export * from './acoes-avisos.js';
 export * from './acoes-seo.js';
+export * from './acoes-escritorio.js';
+export * from './acoes-colmeia.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

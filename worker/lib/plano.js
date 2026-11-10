@@ -11,6 +11,7 @@ import { somarVendas } from './acoes.js';
 import { situacaoContas } from './desempenho.js';
 import { resumoRecuperacao } from './recuperacao.js';
 import { MODELOS, PADRAO, custo } from './tutor.js';
+import { anotarConsumo } from './consumo.js';
 
 const DIA = 86400_000;
 const BRASILIA = 3 * 3600_000;
@@ -214,6 +215,7 @@ export async function gerarPlano(env, agora = Date.now()) {
     if (e instanceof Anthropic.RateLimitError) throw new Erro(429, 'O Claude está ocupado agora. Tente de novo em 1 minuto.');
     throw new Erro(502, 'O Claude não respondeu agora. Tente de novo em instantes.');
   }
+  await anotarConsumo(env, 'editor-chefe', modelo, r.usage || {}, 'plano');
   const bloco = r.content.find((b) => b.type === 'tool_use');
   const e = bloco && bloco.input;
   // Resposta cortada no meio chega sem a última parte: melhor manter o plano anterior do que gravar um pela metade.

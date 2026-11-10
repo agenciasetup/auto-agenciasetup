@@ -191,6 +191,32 @@ Fora do painel: `/checkout/<oferta>`, `/checkout/obrigado?pedido=`, `POST /api/c
 - `GET /config` → `{ site: {...}, adsense: { cliente, ativo } }` | `PATCH /config/:chave` `{ valor }` → `{ ok }` (`site`, `adsense`)
 - `GET /historico?pagina=1` → `{ itens: [{ id, quando, quem, via, acao, alvo, detalhes }], total, por_pagina }`
 
+## Escritório de IA (`worker/lib/acoes-escritorio.js`; `escritorio.ver` para ler, `escritorio.decidir` para decidir, `escritorio.editar` para o resto)
+
+- `GET /escritorio` → `{ salas: [{ id, nome, agentes: [{ id, sala, nome, funcao, onde, cadencia, modelo, estado, turnos: { ultimo, hoje, custo_hoje, erros_7d } | null, placar: { feitas_por_ele, na_mesa, aprovadas, com_resultado } | null }] }], mesa: [proposta], aprovadas: [proposta], depois: [proposta], fechadas: [proposta], numeros: { trabalhando, planejados, pausados, na_mesa, aprovadas, custo_hoje_usd, custo_mes_usd, teto_dia_usd }, nomes: { salas, onde, estados, status, esforcos } }`
+- `GET /escritorio` também devolve `arte: { versao, salas: { <sala>: url }, bonecos } | null`, `movimentos` (os 30 últimos da carreira, com `agente_nome`), `demitidos`, e em cada agente `nivel` e `controla` (se pausar e demitir desligam de verdade); `nomes.niveis` e `nomes.carreira` trazem os rótulos
+- `GET /escritorio/agentes/:id` → o agente com `caderno`, `turnos` (20), `propostas` (30), `historico` (40 da carreira), `nivel_nome` e `controla` (a frase que explica o que o botão desliga, ou `null`)
+- `POST /escritorio/agentes/:id` `{ sala, nome, funcao, onde, cadencia, modelo, estado, nivel, promover, rebaixar, motivo, teto_dia_usd, ordem, caderno, caderno_mais }` → o agente (cria se o id é novo). Mudar `estado` ou o nível grava uma linha na carreira com o `motivo`; só `motivo` grava uma anotação. No Atendente e nos dois vendedores, o estado liga e desliga de verdade
+- `POST /escritorio/teto` `{ teto_dia_usd }` → `{ ok, teto_dia_usd }`
+- `POST /escritorio/propostas/:id/decidir` `{ decisao: aprovada|depois|descartada|nova, motivo }` → a proposta
+- `POST /escritorio/propostas/:id/resultado` `{ resultado }` → a proposta, com status `feita`
+- Turno e proposta nova entram só pelo conector (`escritorio_turno`, `escritorio_propor`): quem trabalha são os agentes.
+
+## Colmeia de vendas (`worker/lib/acoes-colmeia.js`; `colmeia.ver` para ler, `colmeia.editar` para escrever)
+
+- `GET /colmeia?tipo&produto&status&busca` → `{ itens: [{ id, tipo, produto, titulo, texto, prova, origem, autor, status, usos, vendas }], numeros: { ativas, propostas }, nomes }`
+- `POST /colmeia` `{ tipo, produto, titulo, texto, prova }` → o item (pelo painel vale na hora; pelo conector com a chave da casa, regra e resposta nascem como proposta)
+- `POST /colmeia/:id` `{ titulo, texto, produto, tipo, status: ativa|arquivada }` → o item
+- `POST /followup/atendente/testar` aceita `{ texto (uma mensagem por linha), nome, usuario, ha_min, modelo }` e devolve também `espera`, `modelo`, `tokens` e `contexto`
+- `POST /followup/atendente` aceita `modelo: claude-haiku-5-5|claude-sonnet-5-5`
+
+## Atendente do direct (`worker/lib/acoes-followup.js`)
+
+- `GET /followup` devolve também `atendente: { ligado, modo, modos }` e, em cada pessoa, `pode_api` (dá para mandar pela API: escreveu nas últimas 24 horas)
+- `POST /followup/atendente` `{ ligado, modo: automatico|rascunho }` → a configuração (`followup.atendente`, Editor)
+- `POST /followup/atendente/testar` `{ texto, nome }` → `{ classe, mensagens, interesse, motivo, custo_usd }`, sem mandar nem gravar nada
+- `POST /followup/:id/mandar` `{ texto }` → manda pela API do Instagram (cada linha, uma mensagem; sem texto, a próxima mensagem da ficha). 409 fora das 24 horas
+
 ## Rotas fora da API
 
 - `/admin/*`: o painel (SPA). `/admin/entrar?token=<hash>&tipo=invite|recovery`: link de convite ou troca de senha. `/admin/conectar?pedido=...`: tela "Permitir".

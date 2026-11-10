@@ -6,7 +6,7 @@
 import { StrictMode, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
-  BarChart3, Bot, CalendarDays, ChevronDown, ChevronRight, ChevronsUpDown, Ellipsis, ExternalLink, FileText, Flame, GraduationCap, Headset, History, House, ListChecks, LogOut,
+  BarChart3, Bot, Building2, CalendarDays, ChevronDown, ChevronRight, ChevronsUpDown, Ellipsis, ExternalLink, FileText, Flame, GraduationCap, Headset, Hexagon, History, House, ListChecks, LogOut,
   MessageCircle, MessageCircleHeart, Megaphone, MessagesSquare, MonitorPlay, Plug, Moon, PanelLeftClose, PanelLeftOpen, Plus, Search, Send, Settings, Share2, ShoppingBag, Smartphone, Sparkles, Sun, TrendingUp, UserRound, Users, UsersRound, X,
 } from 'lucide-react';
 import './painel.css';
@@ -20,6 +20,8 @@ import Entrar from './nucleo/Entrar';
 
 const Inicio = lazy(() => import('./telas/Inicio'));
 const Plano = lazy(() => import('./telas/Plano'));
+const Escritorio = lazy(() => import('./telas/Escritorio'));
+const Colmeia = lazy(() => import('./telas/Colmeia'));
 const Recuperar = lazy(() => import('./telas/Recuperar'));
 const Followup = lazy(() => import('./telas/Followup'));
 const Fila = lazy(() => import('./telas/Fila'));
@@ -60,6 +62,7 @@ type Rota = { padrao: string; tela: any; aba: string; exige?: string };
 const ROTAS: Rota[] = [
   { padrao: '/', tela: Inicio, aba: 'inicio' },
   { padrao: '/plano', tela: Plano, aba: 'plano', exige: 'plano.ver' },
+  { padrao: '/escritorio', tela: Escritorio, aba: 'escritorio', exige: 'escritorio.ver' },
   // Posts: agenda (calendário e lista), novo post e cada peça. /fila continua valendo (links antigos).
   { padrao: '/posts', tela: Agenda, aba: 'posts', exige: 'pecas.ver' },
   { padrao: '/posts/novo', tela: NovoPost, aba: 'posts', exige: 'pecas.editar' },
@@ -81,6 +84,7 @@ const ROTAS: Rota[] = [
   { padrao: '/vendas', tela: Vendas, aba: 'vendas', exige: 'vendas.ver' },
   { padrao: '/recuperar', tela: Recuperar, aba: 'recuperar', exige: 'recuperar.ver' },
   { padrao: '/followup', tela: Followup, aba: 'followup', exige: 'followup.ver' },
+  { padrao: '/colmeia', tela: Colmeia, aba: 'colmeia', exige: 'colmeia.ver' },
   { padrao: '/alunos', tela: Alunos, aba: 'alunos', exige: 'alunos.ver' },
   { padrao: '/suporte', tela: Suporte, aba: 'suporte', exige: 'suporte.ver' },
   { padrao: '/area', tela: Area, aba: 'area', exige: 'cursos.ver' },
@@ -103,6 +107,7 @@ function itensDoMenu(pode: (a: string) => boolean, p: any): Item[] {
   return [
     { id: 'inicio', para: '/', t: 'Início', i: <House />, secao: 'Hoje' },
     ...(pode('plano.ver') ? [{ id: 'plano', para: '/plano', t: 'Plano', i: <Sparkles />, secao: 'Hoje' }] : []),
+    ...(pode('escritorio.ver') ? [{ id: 'escritorio', para: '/escritorio', t: 'Escritório', i: <Building2 />, secao: 'Hoje' }] : []),
     ...(pode('pecas.ver') ? [{ id: 'posts', para: '/posts', t: 'Posts e agenda', i: <CalendarDays />, secao: 'Redes sociais', n: posts || undefined }] : []),
     ...(pode('desempenho.ver') ? [{ id: 'resultados', para: '/resultados', t: 'Resultados', i: <BarChart3 />, secao: 'Redes sociais' }] : []),
     ...(pode('gatilhos.ver') ? [{ id: 'comenta', para: '/comenta', t: 'Automações', i: <MessageCircleHeart />, secao: 'Redes sociais' }] : []),
@@ -115,6 +120,7 @@ function itensDoMenu(pode: (a: string) => boolean, p: any): Item[] {
     ...(pode('vendas.ver') ? [{ id: 'celular', para: '/celular', t: 'App de vendas e avisos', i: <Smartphone />, secao: 'Vendas' }] : []),
     ...(pode('followup.ver') ? [{ id: 'followup', para: '/followup', t: 'Follow-up do direct', i: <Send />, secao: 'Vendas' }] : []),
     ...(pode('recuperar.ver') ? [{ id: 'recuperar', para: '/recuperar', t: 'Recuperar vendas', i: <MessageCircle />, secao: 'Vendas' }] : []),
+    ...(pode('colmeia.ver') ? [{ id: 'colmeia', para: '/colmeia', t: 'Colmeia', i: <Hexagon />, secao: 'Vendas' }] : []),
     ...(pode('numeros.ver') ? [{ id: 'numeros', para: '/numeros', t: 'Números do curso', i: <TrendingUp />, secao: 'Vendas' }] : []),
     ...(pode('suporte.ver') ? [{ id: 'suporte', para: '/suporte', t: 'Suporte', i: <Headset />, secao: 'Alunos' }] : []),
     ...(pode('alunos.ver') ? [{ id: 'alunos', para: '/alunos', t: 'Alunos', i: <UsersRound />, secao: 'Alunos' }] : []),

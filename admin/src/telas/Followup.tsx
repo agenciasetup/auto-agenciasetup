@@ -1,12 +1,13 @@
 // Follow-up do direct: cada pessoa do Instagram que pode comprar, na fase em que está, até vender. Quem comentou a
 // palavra de um post entra sozinho (Atualizar lista); quem chega pelo direct, a tarefa do Claude anota. A dúvida que o
 // Claude não sabe responder aparece em "Dúvida com você": a sua resposta vai para a pessoa e vira exemplo para as
-// próximas. Nada sai sozinho: a tarefa pede o seu ok antes de mandar. Lógica em worker/lib/followup.js.
+// próximas. Desde 09/11/2026 os toques e as respostas conhecidas saem sozinhos, dentro dos tetos; dúvida nova,
+// desconto e reclamação continuam vindo para o dono. Lógica em worker/lib/followup.js.
 import { useEffect, useState } from 'react';
 import { Check, Copy, ExternalLink, HelpCircle, MessageCircle, RefreshCw, Search, Send } from 'lucide-react';
 import { get, post } from '../nucleo/api';
 import { Abas, Carregando, ErroCarga, Etiqueta, Grupo, Titulo, Vazio, avisar, useCarregar, useSessao } from '../nucleo/ui';
-import { dataHora, haQuanto, numero } from '../nucleo/util';
+import { dataHora, dinheiro, haQuanto, numero } from '../nucleo/util';
 
 const VAZIOS: Record<string, { t: string; d: string }> = {
   na_hora: { t: 'Ninguém na hora do próximo toque', d: 'Quando chegar a hora de falar de novo com alguém, a pessoa aparece aqui. A tarefa do Claude passa às 9h, 10h, 12h, 16h, 18h, 19h, 20h, 21h e 22h.' },
@@ -39,7 +40,15 @@ export default function Followup() {
     catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
   };
   const responder = async (id: string, resposta: string) => {
-    try { await post(`/followup/${id}/responder`, { resposta }); avisar('Resposta salva. A próxima rodada da tarefa responde a pessoa com o seu ok.'); recarregar(); }
+    try { await post(`/followup/${id}/responder`, { resposta }); avisar('Resposta salva. A próxima rodada da tarefa responde a pessoa.'); recarregar(); }
+    catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
+  };
+  const atendente = async (corpo: any, ok: string) => {
+    try { await post('/followup/atendente', corpo); avisar(ok); recarregar(); }
+    catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
+  };
+  const mandar = async (id: string) => {
+    try { await post(`/followup/${id}/mandar`, {}); avisar('Mensagem enviada pelo sistema.'); recarregar(); }
     catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
   };
   const sincronizar = async () => {
@@ -66,7 +75,7 @@ export default function Followup() {
     <div className="tela">
       <Titulo
         titulo="Follow-up do direct"
-        sub="Quem pode comprar, na fase em que está. A tarefa do Claude lê o direct, anota aqui e pede o seu ok antes de mandar qualquer mensagem."
+        sub="Quem pode comprar, na fase em que está. A tarefa do Claude lê o direct, anota aqui e manda os toques e as respostas conhecidas. Dúvida nova, desconto e reclamação ficam esperando você."
         acoes={podeMexer && <button className="bt" onClick={sincronizar} disabled={sincronizando}><RefreshCw className={sincronizando ? 'girar' : ''} />{sincronizando ? 'Atualizando...' : 'Atualizar lista'}</button>}
       />
       {erro && <ErroCarga erro={erro} tentar={recarregar} />}
@@ -78,6 +87,37 @@ export default function Followup() {
           <div className="numero"><b>{numero(n.comprou)}</b><span>Compraram</span></div>
         </div>
       )}
+      {d?.atendente && (
+        <Grupo titulo="Atendente do direct" rodape="Responde quem escreve no direct, sem depender do computador. Espera a pessoa terminar de escrever, lê as últimas mensagens e responde com o que está na Colmeia. Desconto, reembolso, problema de acesso e pergunta nova vêm para você como dúvida, e a sua resposta entra na Colmeia.">
+          <div className="fu-atendente">
+            <span className={`esc-luz esc-luz-${d.atendente.ligado ? 'ativo' : 'pausado'}`} />
+            <b>{d.atendente.ligado ? 'Ligado' : 'Desligado'}</b>
+            <span className="mudo">{d.atendente.ligado ? d.atendente.modos[d.atendente.modo] : 'As mensagens que chegam são só anotadas na lista.'}</span>
+            {pode('followup.atendente') && (
+              <span className="rec-acoes">
+                <button className="bt bt-mini bt-tingido" onClick={() => atendente({ ligado: !d.atendente.ligado }, d.atendente.ligado ? 'Atendente desligado.' : 'Atendente ligado.')}>{d.atendente.ligado ? 'Desligar' : 'Ligar'}</button>
+                {d.atendente.ligado && d.atendente.modelos && <button className="bt bt-mini bt-texto" title={d.atendente.modelos[d.atendente.modelo]} onClick={() => atendente({ modelo: d.atendente.modelo === 'misto' ? 'claude-haiku-5-5' : d.atendente.modelo === 'claude-haiku-5-5' ? 'claude-sonnet-5-5' : 'misto' }, 'Modelo do Atendente trocado.')}>{d.atendente.modelo === 'misto' ? 'Modelo: misto' : d.atendente.modelo === 'claude-haiku-5-5' ? 'Modelo: só o barato' : 'Modelo: só o cuidadoso'}</button>}
+                {d.atendente.ligado && <button className="bt bt-mini bt-texto" onClick={() => atendente({ modo: d.atendente.modo === 'automatico' ? 'rascunho' : 'automatico' }, 'Modo do Atendente mudado.')}>{d.atendente.modo === 'automatico' ? 'Só preparar a resposta' : 'Responder sozinho'}</button>}
+              </span>
+            )}
+          </div>
+        </Grupo>
+      )}
+      {d?.placar?.length > 0 && (
+        <Grupo titulo="Placar dos vendedores" rodape="Cada pessoa fica com um vendedor (um jeito de conversar) do primeiro toque até o fim. As taxas aparecem a partir de 30 pessoas, e só vale decidir com umas 300 por vendedor.">
+          <div className="fu-placar">
+            {d.placar.map((v: any) => (
+              <div className="fu-vendedor" key={v.vendedor}>
+                <b>{v.nome}</b>
+                <span>{numero(v.pessoas)} {v.pessoas === 1 ? 'pessoa atendida' : 'pessoas atendidas'}</span>
+                <span>{numero(v.responderam)} {v.responderam === 1 ? 'respondeu' : 'responderam'}{v.taxa_resposta !== null ? ` (${String(v.taxa_resposta).replace('.', ',')}%)` : ''}</span>
+                <span>{numero(v.compraram)} {v.compraram === 1 ? 'comprou' : 'compraram'}{v.taxa_compra !== null ? ` (${String(v.taxa_compra).replace('.', ',')}%)` : ''}</span>
+                <span>{dinheiro(v.receita_centavos)} de receita{v.receita_por_100_centavos !== null ? ` · ${dinheiro(v.receita_por_100_centavos)} a cada 100 pessoas` : ''}</span>
+              </div>
+            ))}
+          </div>
+        </Grupo>
+      )}
       <Abas abas={abas} atual={fase} mudar={setFase} />
       <div className="filtros">
         <select value={interesse} onChange={(e) => setInteresse(e.target.value)} aria-label="Interesse">
@@ -88,7 +128,7 @@ export default function Followup() {
       </div>
       {carregando && !d && <Carregando />}
       {d && (d.itens.length ? (
-        <div className="rec-lista">{d.itens.map((p: any) => <Pessoa key={p.id} p={p} fases={d.fases} interesses={d.interesses} mudar={mudar} responder={responder} podeMexer={podeMexer} />)}</div>
+        <div className="rec-lista">{d.itens.map((p: any) => <Pessoa key={p.id} p={p} fases={d.fases} interesses={d.interesses} mudar={mudar} responder={responder} mandar={mandar} podeMexer={podeMexer} />)}</div>
       ) : (
         <Vazio icone={buscaFeita ? <Search /> : <MessageCircle />} titulo={buscaFeita ? 'Ninguém com esse @, nome ou e-mail nesta aba.' : VAZIOS[fase]?.t} texto={buscaFeita ? undefined : VAZIOS[fase]?.d} />
       ))}
@@ -97,7 +137,7 @@ export default function Followup() {
   );
 }
 
-function Pessoa({ p, fases, interesses, mudar, responder, podeMexer }: { p: any; fases: Record<string, string>; interesses: Record<string, string>; mudar: (id: string, corpo: any, ok?: string) => void; responder: (id: string, r: string) => void; podeMexer: boolean }) {
+function Pessoa({ p, fases, interesses, mudar, responder, mandar, podeMexer }: { p: any; fases: Record<string, string>; interesses: Record<string, string>; mudar: (id: string, corpo: any, ok?: string) => void; responder: (id: string, r: string) => void; mandar: (id: string) => void; podeMexer: boolean }) {
   const [nota, setNota] = useState(p.nota || '');
   const [resposta, setResposta] = useState('');
   useEffect(() => { setNota(p.nota || ''); setResposta(''); }, [p.id, p.nota]);
@@ -116,6 +156,7 @@ function Pessoa({ p, fases, interesses, mudar, responder, podeMexer }: { p: any;
         <div className="rec-valor">
           <Etiqueta cor={COR_INTERESSE[p.interesse] || 'cinza'}>{interesses[p.interesse] || p.interesse}</Etiqueta>
           {p.na_hora && <Etiqueta cor="laranja">Na hora</Etiqueta>}
+          {p.vendedor && <Etiqueta cor="cinza">Vendedor: {p.vendedor === 'pergunta' ? 'Pergunta antes' : 'Calango'}</Etiqueta>}
           {p.produto && <Etiqueta cor="verde">{p.fase === 'comprou' ? 'Comprou' : 'Já é aluno'}: {p.produto}</Etiqueta>}
         </div>
       </div>
@@ -151,6 +192,7 @@ function Pessoa({ p, fases, interesses, mudar, responder, podeMexer }: { p: any;
       <div className="rec-acoes">
         <a className="bt bt-mini bt-tingido" href={p.abrir} target="_blank" rel="noopener noreferrer"><ExternalLink />Abrir conversa</a>
         {p.proxima_mensagem && <button className="bt bt-mini bt-texto" onClick={() => copiar(p.proxima_mensagem)}><Copy />Copiar mensagem</button>}
+        {podeMexer && p.proxima_mensagem && p.pode_api && <button className="bt bt-mini bt-tinta" onClick={() => mandar(p.id)}><Send />Mandar pelo sistema</button>}
         {podeMexer && p.proxima_mensagem && <button className="bt bt-mini bt-texto" onClick={() => mudar(p.id, { mandei: p.proxima_mensagem }, 'Marcado como enviado.')}><Check />Já mandei</button>}
         {podeMexer && (
           <select className="fu-select" value={p.fase} onChange={(e) => mudar(p.id, { fase: e.target.value }, 'Fase mudada.')} aria-label="Fase">

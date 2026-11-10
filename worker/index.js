@@ -10,6 +10,7 @@ import { apiPainel } from './lib/api/painel.js';
 import { retornoConexao } from './plataformas/conexao.js';
 import { rodarMinuto, rodarRelogio } from './lib/relogio.js';
 import { ofertaAtiva, webhookMeta } from './lib/gatilhos.js';
+import { sinalPorCodigo } from './lib/escritorio.js';
 import { webhookResend } from './lib/emails.js';
 import { casca } from './render/casca.js';
 import * as P from './render/paginas.js';
@@ -528,6 +529,11 @@ export default {
       if (url.pathname === '/api/busca') return await apiBusca(env, url);
       if (url.pathname === '/api/lead' && request.method === 'POST') return await apiLead(request, env);
       // Aviso na hora da Meta (comentário novo): o "Comenta X" responde em segundos (lib/gatilhos.js).
+      if (url.pathname === '/api/batimento' && request.method === 'POST') {
+        // O sinal de vida de um computador (escritorio.js): só marca "estou ligado", com um código próprio.
+        const r = await sinalPorCodigo(env, request.headers.get('X-Maquina'), request.headers.get('X-Sinal'));
+        return new Response(JSON.stringify({ ok: true, maquina: r.maquina }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+      }
       if (url.pathname === '/api/redes/meta/webhook') return await webhookMeta(request, env, ctx, url);
       // Aviso do Resend (e-mail entregue, aberto, clicado, voltou, spam): a tela Suporte mostra (lib/emails.js).
       if (url.pathname === '/api/resend/webhook') return await webhookResend(request, env, ctx);

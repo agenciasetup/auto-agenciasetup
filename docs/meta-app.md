@@ -44,6 +44,21 @@ Igual ao Olhar de Fé: o comentário do Instagram chega pela Página ligada ao I
 - **Respostas:** o envio continua pelo token do login do Instagram.
 - **Se trocar a Página ou a configuração do login:** reconecte a Página e rode o script de novo.
 
+### Mensagens do direct pela Página (feito em 09/11/2026, à noite)
+
+Feito pelo Chrome do Mac com o ok do dono: (1) Casos de uso > Messenger from Meta > Permissões e recursos > `instagram_manage_messages` > Adicionar (ficou "Pronto para teste"; a permissão não aparecia na configuração do login enquanto não era adicionada aqui); (2) Login do Facebook para Empresas > Configurações > "Painel Agência Setup" > Permissões: 12 marcadas, com `instagram_manage_messages`; (3) painel > Contas conectadas > Facebook > Conectar outra conta, com as duas Páginas marcadas, a empresa Agência Setup e só as contas @agenciasetup e @setupagency_eng do Instagram (o login antigo liberava todas as contas do dono); (4) `node scripts/meta-webhook.mjs`. Conferência: `node scripts/meta-direct.mjs` (só leitura) devolve as conversas das duas contas, então "Permitir acesso às mensagens" já estava ligado. O passo 5 abaixo foi feito às 22h25: uma resposta "Eu quero" a um story gerou `aviso meta: instagram messaging; direct: material` e o link saiu em 3 segundos. A resposta sai pelo token do login do Instagram, sem ajuste.
+
+O texto de antes, para referência:
+
+O aviso de mensagem do direct (resposta de story, palavra mandada no direct, toque em botão) não chega ao Worker. Conferido em 09/11: uma resposta "Eu quero" a um story entrou no direct e o registro do Worker só mostrou `aviso meta: instagram comments`. A Página conectada tem `instagram_manage_comments` e `pages_messaging`, mas não `instagram_manage_messages`; o login do Instagram tem `instagram_business_manage_messages` no acesso padrão, que só avisa mensagem de quem tem cargo no app.
+
+Para ligar (o dono faz os três primeiros, porque pedem o login dele):
+1. App da Meta > Login do Facebook para Empresas > Configurações > "Painel Agência Setup" > editar > acrescentar `instagram_manage_messages`.
+2. Painel > Contas conectadas > reconectar o Facebook, marcando as duas Páginas (a que ficar desmarcada perde o acesso).
+3. No aplicativo do Instagram, na conta da agência: Configurações > Mensagens e respostas ao story > Controles de mensagens > Ferramentas conectadas > ligar "Permitir acesso às mensagens".
+4. `node scripts/meta-webhook.mjs` (religa os avisos) e `node scripts/meta-webhook.mjs situacao` (confere).
+5. Teste: de um perfil sem cargo no app, responder "Eu quero" a um story. No registro tem de aparecer `aviso meta: instagram messaging; direct: material`. Se aparecer `direct: erro`, a resposta precisa sair pelo token da Página (o id de quem escreveu pode ser diferente entre os dois logins): ajustar `mandarDirect`.
+
 ### Análise do app (Acesso Avançado): não é preciso
 
 Pedir o Acesso Avançado exige virar "Provedor de Tecnologia" (Tech Provider), que não tem volta. Em 26/10/2026 o dono preferiu o caminho da Página.

@@ -49,3 +49,6 @@ __pycache__/
 # Fotos do vídeo padrão do Filipe
 templates/video-padrao/base/
 /templates/carrossel/referencias/inspiracao/
+
+# Imagem gerada (o Calango da tela Escritório): fica fora do Git. Refaça com node scripts/escritorio-calango.mjs
+admin/src/img/*.webp
