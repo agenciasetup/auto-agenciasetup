@@ -765,6 +765,15 @@ Pedido do dono: "ao invés do MCP atual, construa o MCP estilo code mode do Clou
 - **Recusa do dono é lição, com o porquê dele.** Recusar uma peça pede onde está o problema (texto, imagem ou os dois) e o motivo. O motivo vai para o caderno de quem fez a parte (Redator ou Designer) e sempre para o do Revisor, que deixou passar; as tarefas de post leem as recusas antes de criar e passam a regra para a skill. O motivo fica num campo próprio da peça (`pecas.recusa`), porque as opções da peça são limpas a cada salvamento.
 - **Deploy de uma cópia limpa quando a pasta tem trabalho alheio pela metade.** O último commit mais só os arquivos da mudança, compilado à parte, com os mesmos arquivos do site conferidos antes de publicar.
 
+## Tomadas em 10/11/2026 (resposta ao Conciliador e revisão do Escritório)
+
+- **O dono responde, o Conciliador ajusta, o dono aprova.** Ele reclamou que o cartão do Salomão fazia uma pergunta e só oferecia Aprovar. Agora a pergunta aparece separada, com um campo; a resposta dele decide o conteúdo do item e a IA só reescreve. O texto ajustado NÃO passa a valer sozinho: ele lê e aprova, porque o texto entra na instrução do Atendente. Número ou link que não estava nos itens nem na resposta dele é avisado no cartão e o item deixa de ser "palavra do dono".
+- **Sem coluna nova para a pergunta.** Ela fica no fim de `colmeia.prova`, depois de "Pergunta:". Motivo: várias conversas publicam esta mesma pasta, e uma migration esperando deixaria o Conciliador quebrado se outra publicasse antes.
+- **Revisão do Escritório em lotes.** O dono pediu para olhar tudo e corrigir, com o limite semanal do plano em 90%. A leitura foi por três ajudantes num modelo mais barato; a lista (uns 40 achados) está em `docs/revisao-escritorio.md`. O lote 1 pegou o que protege a conta e a venda no direct e o que barrava o aprendizado sem precisar de banco. O que muda a rotina dele (agendar a Hubla, menos rodadas, quem executa o cartão aprovado) ficou como decisão dele.
+- **O Atendente responde, o vendedor puxa, e o código garante.** A resposta do Atendente não conta mais como toque de vendedor; a lista do follow-up diz quem está em `pausa` (conversa do dono ou fila do Atendente); a tarefa do direct não responde mais quem o Atendente já respondeu e sai cedo quando não há ninguém para puxar.
+- **Proposta não é regra.** Pelo conector a Colmeia devolve só o que vale. A resposta do dono a uma pessoa continua nascendo como proposta; o que estava errado era o vendedor ler a proposta como regra.
+- **Achado mais grave, ainda aberto:** os avisos "Direct" e "Escritório de IA" saem para 0 aparelhos (o iPad só tem os tipos de venda). É uma chave do dono no app Vendas.
+
 ## Em aberto
 
 - **Follow-up do direct:** no ar desde 08/11/2026 (versão `8267d516`) com a tarefa `direct-followup`. Falta a primeira rodada com o dono olhando e conferir na primeira semana se o "achado pelo nome" erra. Sete rodadas por dia lendo o direct gastam bastante do limite semanal do Claude: se apertar, ficar com 9h, 14h e 20h.

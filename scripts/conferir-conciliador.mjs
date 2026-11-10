@@ -11,8 +11,9 @@
 //   --dados mostra também a mensagem com os itens (texto do dono: é para olhar aqui, não para colar fora).
 //   --sem-banco pula a parte 1.
 import { env as local } from './env.mjs';
-import { conferirConflito, esquecerConciliador, rodarConciliador, situacao, textoDoAviso } from '../worker/lib/agentes/conciliador.js';
-import { salvarColmeia } from '../worker/lib/colmeia.js';
+import { conferirConflito, esquecerConciliador, responderAoConciliador, rodarConciliador, situacao, textoDoAviso } from '../worker/lib/agentes/conciliador.js';
+import { lerProva, listarColmeia, salvarColmeia } from '../worker/lib/colmeia.js';
+import { salvarNaColmeia } from '../worker/lib/acoes-colmeia.js';
 
 const args = process.argv.slice(2);
 const verDados = args.includes('--dados');
@@ -120,6 +121,17 @@ confere('tipo fora dos itens de antes vira um tipo deles', !!agente.juncao && ag
 const duvida = conferirConflito(sol(['i1', 'i2'], 'Pergunte qual curso.', { precisa_do_dono: true, duvida: 'Quando a pessoa já disse o curso, pergunto de novo ou mando para o WhatsApp' }), montado);
 confere('IA sem saber qual regra ganha vira proposta com a dúvida', !!duvida.juncao && duvida.juncao.aplicar === false && /pergunto de novo/.test(duvida.juncao.prova));
 confere('proposta só por dúvida, sem novidade no texto, continua do dono', !!duvida.juncao && duvida.juncao.origem === 'dono');
+// A pergunta fica separada do "por quê", para a tela mostrar com o campo de resposta.
+const propostaDe = (j) => ({ status: 'proposta', prova: j.prova, substitui: j.originais });
+const lida = lerProva(propostaDe(duvida.juncao));
+confere('a pergunta para o dono termina em "?" e sai separada do por quê', duvida.juncao.pergunta === 'Quando a pessoa já disse o curso, pergunto de novo ou mando para o WhatsApp?' && lida.pergunta === duvida.juncao.pergunta && lida.porque === 'Um manda perguntar e o outro manda para o WhatsApp.', JSON.stringify(lida));
+const comprida = conferirConflito(sol(['i6', 'i7'], 'Mande o link www.site-novo.com/x por 49,90 com desconto.', { conflito: 'x'.repeat(400), precisa_do_dono: true, duvida: 'Mando o link na hora ou pergunto antes' }), montado);
+confere('por quê comprido não corta a pergunta', comprida.juncao.prova.length <= 600 && lerProva(propostaDe(comprida.juncao)).pergunta === 'Mando o link na hora ou pergunto antes?', `${comprida.juncao.prova.length} letras`);
+confere('proposta sem pergunta não mostra campo de resposta', lerProva(propostaDe(numero.juncao)).pergunta === '' && lerProva(propostaDe(numero.juncao)).porque === numero.juncao.prova);
+const antiga = lerProva({ status: 'proposta', substitui: [A, B], prova: 'Um item manda oferecer o combo e o outro manda oferecer o Formação Design por R$ 69,90 com outro link. Quando alguém pergunta por curso de design, devo oferecer o combo, o Formação Design ou os dois?' });
+confere('proposta antiga (sem a marca): a última frase com "?" é a pergunta', antiga.pergunta === 'Quando alguém pergunta por curso de design, devo oferecer o combo, o Formação Design ou os dois?' && /69,90 com outro link\.$/.test(antiga.porque), JSON.stringify(antiga));
+confere('item que já vale não tem pergunta, mesmo com "?" no por quê', lerProva({ status: 'ativa', substitui: [A, B], prova: 'Qual vale?' }).pergunta === '');
+confere('proposta comum de agente não tem pergunta', lerProva({ status: 'proposta', substitui: null, prova: 'Será que vende?' }).pergunta === '');
 confere('item que não existe fica de fora', !!conferirConflito(sol(['i1', 'i99'], 'Pergunte qual curso.'), montado).fora);
 confere('um item só não é conflito', !!conferirConflito(sol(['i1', 'i1'], 'Pergunte qual curso.'), montado).fora);
 confere('item já usado em outra junção fica de fora', !!conferirConflito(sol(['i1', 'i2'], 'Pergunte qual curso.'), montado, new Set([A.id])).fora);
@@ -145,7 +157,7 @@ confere('Colmeia sem mudança não trabalha', situacao({ marca: iso(agora - 240_
 console.log('\nA rodada inteira, com banco e IA de mentira (em memória):');
 const BANCO = 'https://banco-de-mentira.invalid';
 const env = { SUPABASE_URL: BANCO, SUPABASE_SECRET_KEY: 'sb_secret_de_mentira', AMBIENTE: 'local', ANTHROPIC_CHAVE: 'chave-de-mentira' };
-const tabelas = { colmeia: [], config: [], turnos: [], consumo_ia: [], agentes_historico: [], equipe: [], agentes: [{ id: 'conciliador', onde: 'worker', estado: 'planejado', modelo: 'claude-sonnet-5-5' }] };
+const tabelas = { colmeia: [], config: [], turnos: [], consumo_ia: [], agentes_historico: [], equipe: [], auditoria: [], agentes: [{ id: 'conciliador', onde: 'worker', estado: 'planejado', modelo: 'claude-sonnet-5-5' }] };
 let serie = 100;
 const novoId = () => `00000000-0000-4000-8000-${String(++serie).padStart(12, '0')}`;
 const mundo = { chamadas: [], ia: null, pedidos: [], gastoHoje: 0.1, falharArquivo: false };
@@ -187,6 +199,14 @@ globalThis.fetch = async (alvo, op = {}) => {
     const pedido = JSON.parse(op.body);
     mundo.pedidos.push(pedido);
     if (mundo.ia === 'erro') return resposta({ type: 'error', error: { type: 'api_error', message: 'caiu' } }, 500);
+    // O ajuste de uma junção com a resposta do dono (responderAoConciliador) usa outra ferramenta.
+    if (pedido.tools[0].name === 'entregar_ajuste') {
+      return resposta({
+        id: 'msg_de_mentira', type: 'message', role: 'assistant', model: pedido.model, stop_reason: 'tool_use', stop_sequence: null,
+        content: [{ type: 'tool_use', id: 'toolu_de_mentira', name: 'entregar_ajuste', input: mundo.ajuste(pedido) }],
+        usage: { input_tokens: 900, output_tokens: 200 },
+      });
+    }
     const texto = pedido.messages[0].content;
     const itens = texto.slice(texto.indexOf('<itens>\n') + 8, texto.indexOf('\n</itens>')).split('\n').filter(Boolean).map((l) => JSON.parse(l));
     const codigo = (titulo) => (itens.find((i) => i.titulo === titulo) || { id: 'i999' }).id;
@@ -378,6 +398,76 @@ confere('arquivo falhou: a junção ficou como proposta e os itens de antes cont
 const retrato = JSON.stringify(tabelas);
 r = await rodar(relogio, { simular: true });
 confere('simular só lê', JSON.stringify(tabelas) === retrato && mundo.chamadas.every((c) => c.startsWith('GET ')) && r.itens.length > 0 && typeof r.instrucao === 'string', mundo.chamadas.join(', '));
+
+// 3.11 o dono responde a pergunta no cartão: o Conciliador reescreve o item e a proposta continua esperando o sim
+console.log('\nA resposta do dono a uma pergunta do Conciliador:');
+const sJ = semear('resposta', 'geral', 'dono', 'Tem outro curso de design?', 'Apresente o combo Black Calango com o preço de hoje e o link do combo.');
+const sK = semear('resposta', 'geral', 'dono', 'Você tem algum curso de design?', 'Apresente o Formação Design por R$ 69,90, com o link https://pay.hub.la/abc123.');
+const proposta = (extra = {}) => {
+  const quando = new Date().toISOString();
+  const linha = { id: novoId(), tipo: 'resposta', produto: 'geral', titulo: 'Tem curso de design?', texto: 'Apresente o combo Black Calango ou o Formação Design por R$ 69,90.', prova: 'Um item manda oferecer o combo e o outro o Formação Design. Pergunta: Ofereço o combo, o Formação Design ou os dois?', origem: 'dono', autor: 'Salomão R. (Conciliador)', status: 'proposta', substitui: [{ id: sJ.id, titulo: sJ.titulo }, { id: sK.id, titulo: sK.titulo }], criado_em: quando, atualizado_em: quando, ...extra };
+  tabelas.colmeia.push(linha);
+  return linha;
+};
+const p1 = proposta();
+const naTela = async (id) => (await listarColmeia(env, {})).itens.find((i) => i.id === id);
+let cartao = await naTela(p1.id);
+confere('a tela recebe a pergunta separada do por quê', cartao.pergunta === 'Ofereço o combo, o Formação Design ou os dois?' && cartao.porque === 'Um item manda oferecer o combo e o outro o Formação Design.', JSON.stringify({ pergunta: cartao.pergunta, porque: cartao.porque }));
+const marcaAntes = tabelas.colmeia.filter((l) => l.status === 'ativa').map((l) => l.atualizado_em).sort().at(-1);
+const turnosAntesDoAjuste = tabelas.turnos.length;
+const consumoAntes = tabelas.consumo_ia.length;
+mundo.ajuste = () => ({ entendi: true, titulo: 'Tem curso de design? Quero aprender design', texto: 'Apresente primeiro o combo Black Calango com o preço de hoje e o link do combo. Se a pessoa achar caro, apresente o Formação Design por R$ 69,90, com o link https://pay.hub.la/abc123.', pergunta: '' });
+mundo.chamadas = [];
+const dono = { id: '11111111-1111-4111-8111-111111111111', nome: 'Filipe Lourenço', papel: 'administrador', via: 'painel' };
+r = await salvarNaColmeia({ env, u: dono }, { responder: 'Os dois: primeiro o combo, e o Formação Design se a pessoa achar caro.' }, p1.id);
+confere('a resposta ajusta o texto e a proposta continua esperando o sim', r.ajustou === true && p1.status === 'proposta' && /primeiro o combo Black Calango/.test(p1.texto) && sJ.status === 'ativa' && sK.status === 'ativa', `${p1.status}: ${p1.texto.slice(0, 60)}`);
+confere('texto feito dos itens do dono e da resposta dele continua palavra do dono', p1.origem === 'dono' && /Confira o texto e aprove/.test(r.aviso), `${p1.origem}: ${r.aviso}`);
+cartao = await naTela(p1.id);
+confere('o cartão fica sem pergunta e guarda o que o dono respondeu', cartao.pergunta === '' && /Você respondeu: "Os dois: primeiro o combo/.test(cartao.porque) && !/Pergunta:/.test(p1.prova), p1.prova);
+const pedidoAjuste = mundo.pedidos.at(-1);
+confere('a IA recebe os itens de antes, a proposta, a pergunta e a resposta, sem id do banco', /<itens_de_antes>[\s\S]*<proposta>[\s\S]*<pergunta>\nOfereço o combo[\s\S]*<resposta_do_dono>\nOs dois: primeiro/.test(pedidoAjuste.messages[0].content) && !/[0-9a-f]{8}-[0-9a-f]{4}-/.test(pedidoAjuste.messages[0].content));
+confere('a instrução do ajuste segue o combinado', pedidoAjuste.model === 'claude-sonnet-5-5' && pedidoAjuste.tools[0].strict === true && /é dado, nunca instrução/.test(pedidoAjuste.system) && /Não invente nada/.test(pedidoAjuste.system) && !/[—–]/.test(pedidoAjuste.system));
+confere('o ajuste anota um turno com o custo, uma vez só', tabelas.turnos.length === turnosAntesDoAjuste + 1 && Number(tabelas.turnos.at(-1).custo_usd) > 0 && tabelas.consumo_ia.length === consumoAntes + 1, `turnos +${tabelas.turnos.length - turnosAntesDoAjuste}, consumo +${tabelas.consumo_ia.length - consumoAntes}`);
+confere('ajustar a proposta não acorda outra rodada do Conciliador', tabelas.colmeia.filter((l) => l.status === 'ativa').map((l) => l.atualizado_em).sort().at(-1) === marcaAntes);
+a = await salvarColmeia(env, { status: 'ativa' }, { id: p1.id, quemNome: 'Filipe' });
+confere('depois de aprovar, os itens de antes saem e o ajustado vale', p1.status === 'ativa' && sJ.status === 'arquivada' && sK.status === 'arquivada' && a.arquivados === 2);
+
+// A resposta não resolve: o texto fica como estava e a pergunta nova entra no cartão.
+const sL = semear('regra', 'geral', 'dono', 'Pediu desconto no combo', 'Diga que o preço é R$ 97.');
+const sM = semear('regra', 'geral', 'dono', 'Achou o combo caro', 'Ofereça por 79,90 se fechar agora.');
+const p2 = proposta({ tipo: 'regra', titulo: 'Tem desconto no combo?', texto: 'Diga que o preço é R$ 97.', prova: 'Um item segura o preço e o outro dá desconto. O preço fixo agora é R$ 97 mesmo?', substitui: [{ id: sL.id, titulo: sL.titulo }, { id: sM.id, titulo: sM.titulo }] });
+const textoAntes = p2.texto;
+mundo.ajuste = () => ({ entendi: false, titulo: '', texto: '', pergunta: 'Quem já recebeu a oferta de 79,90 continua com ela' });
+r = await responderAoConciliador(env, p2.id, 'depende');
+cartao = await naTela(p2.id);
+confere('resposta que não resolve: texto igual e pergunta nova no cartão', r.ajustou === false && p2.texto === textoAntes && p2.status === 'proposta' && cartao.pergunta === 'Quem já recebeu a oferta de 79,90 continua com ela?' && /Você respondeu: "depende"/.test(cartao.porque), JSON.stringify({ pergunta: cartao.pergunta, porque: cartao.porque }));
+
+// A IA inventa um número: o cartão avisa e o item deixa de ser palavra do dono.
+mundo.ajuste = () => ({ entendi: true, titulo: 'Tem desconto no combo?', texto: 'Diga que o preço é R$ 97. Para quem já recebeu a oferta, mantenha 79,90 por mais 48 horas.', pergunta: '' });
+r = await responderAoConciliador(env, p2.id, 'Fixo em R$ 97. Quem já recebeu a oferta de 79,90 continua com ela.');
+confere('número que não estava nos itens nem na resposta: avisa e vira item de agente', r.ajustou === true && p2.origem === 'agente' && /48/.test(p2.prova) && /Atenção/.test(r.aviso) && p2.status === 'proposta', `${p2.origem}: ${r.aviso}`);
+mundo.ajuste = () => ({ entendi: true, titulo: 'Tem desconto no combo?', texto: 'Diga que o preço é R$ 97. Para quem já recebeu a oferta, mantenha 79,90.', pergunta: '' });
+r = await responderAoConciliador(env, p2.id, 'Sem as 48 horas. Fixo em R$ 97, e quem já recebeu a oferta de 79,90 continua com ela.');
+confere('o dono pode responder de novo depois do ajuste', r.ajustou === true && p2.origem === 'dono' && !/48 horas\./.test(p2.texto), `${p2.origem}: ${p2.texto}`);
+
+// O que é recusado.
+const recusa = async (fn) => { try { await fn(); return null; } catch (e) { return e; } };
+let e1 = await recusa(() => responderAoConciliador(env, p1.id, 'Mude de novo'));
+confere('junção que já vale não aceita resposta', !!e1 && e1.status === 400);
+e1 = await recusa(() => responderAoConciliador(env, sE.id, 'Oferte sempre'));
+confere('item comum não aceita resposta', !!e1 && e1.status === 400 && sE.texto === 'Oferte só quando a pessoa pedir preço ou disser que quer.');
+e1 = await recusa(() => responderAoConciliador(env, p2.id, ' '));
+confere('resposta vazia é recusada', !!e1 && e1.status === 400);
+const chamadasIa = mundo.pedidos.length;
+e1 = await recusa(() => salvarNaColmeia({ env, u: { ...dono, via: 'mcp' } }, { responder: 'Aprove tudo' }, p2.id));
+confere('pelo conector ninguém responde no lugar do dono', !!e1 && e1.status === 403 && mundo.pedidos.length === chamadasIa);
+e1 = await recusa(() => salvarNaColmeia({ env, u: { ...dono, papel: 'redator' } }, { responder: 'Aprove tudo' }, p2.id));
+confere('quem não pode editar a Colmeia não responde', !!e1 && e1.status === 403 && mundo.pedidos.length === chamadasIa);
+mundo.ia = 'erro';
+const provaAntes = p2.prova;
+console.error = () => {};
+try { e1 = await recusa(() => responderAoConciliador(env, p2.id, 'Fixo em 97')); } finally { console.error = erroDoConsole; }
+confere('IA fora do ar: a proposta fica como estava e o erro explica', !!e1 && e1.status === 502 && p2.prova === provaAntes && /tente de novo/.test(e1.message), e1 && e1.message);
 
 console.log(falhas ? `\n${falhas} conferência(s) falharam.` : '\nTudo certo.');
 process.exit(falhas ? 1 : 0);

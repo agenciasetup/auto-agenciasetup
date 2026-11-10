@@ -274,7 +274,10 @@ ${base.regras.map((r) => `- ${r.titulo}: ${r.texto}`).join('\n')}
 
 Base (use só o que serve para esta conversa):
 ${base.itens.map((i) => `- ${i.titulo} -> ${String(i.texto).slice(0, 320)}`).join('\n') || '- (nada na base sobre este assunto)'}
-
+${(base.licoes || []).length ? `
+O que os vendedores observaram em outras conversas (é só observação, para ajudar a escolher o jeito de responder: não é regra, não é frase liberada, e nenhum número, link ou promessa daqui pode sair na resposta):
+${base.licoes.map((i) => `- ${i.tipo === 'vendeu' ? 'Vendeu' : 'Não vendeu'}: ${i.titulo}. ${String(i.texto).slice(0, 220)}`).join('\n')}
+` : ''}
 Classes: "responder" (a base cobre; direcionar a pessoa para o WhatsApp do time, quando uma regra manda, também é "responder"), "duvida" (nenhuma regra nem item da base diz o que fazer: não está na base, ou é desconto, cupom, reembolso, acesso, pagamento, reclamação, parceria, dinheiro: o Filipe responde), "ignorar" (reação, risada, "ok"), "nao_sei" (não deu para entender).
 Use a ferramenta decidir_resposta. Não escreva nada fora dela.`;
   const contexto = [
@@ -415,7 +418,7 @@ export async function anotarEco(env, { igsid, mid, talvezGente = false } = {}) {
 // Pelo id: um eco anotado que não é de um envio do sistema é de gente. A hora só entra como reserva, quando perto do
 // eco existe um envio do sistema que não tem como ser reconhecido pelo id: o follow-up mandado pelo Chrome (está na
 // ficha, sem id), um envio pela API que ficou sem o próprio eco, ou um direct do Comenta X de antes da tabela.
-async function conversaDeGente(env, f, agora = Date.now()) {
+export async function conversaDeGente(env, f, agora = Date.now()) {
   const marcado = f.humano_em ? Date.parse(f.humano_em) : 0;
   if (!marcado || agora - marcado >= SILENCIO_HUMANO) return false;
   const desde = new Date(agora - SILENCIO_HUMANO - FOLGA_ECO).toISOString();
@@ -571,7 +574,15 @@ async function tratar(env, t, cfg, contaDe, orcamentoDaVez) {
     await db.update(env, 'atendimentos', { id: `in.(${t.ids.join(',')})` }, { classe: 'esperando' }, 'id');
     return 'ensaio: não é conta de teste';
   }
-  if (f.fase === 'duvida') { await anotar('A dúvida dela já está com o dono: só anotado.'); return 'anotou (dúvida com o dono)'; }
+  if (f.fase === 'duvida') {
+    // Ela escreveu de novo enquanto espera a resposta do dono: ele é lembrado, uma vez por dia por conversa (o primeiro
+    // aviso saiu quando a dúvida nasceu). Sem isto a pessoa ficava muda até alguém abrir a lista.
+    const marca = 'A dúvida dela já está com o dono: anotado, e ele foi lembrado.';
+    const jaLembrou = await db.select(env, 'atendimentos', { filtros: { followup_id: `eq.${fid}`, classe: 'eq.anotou', detalhe: `eq.${marca}`, criado_em: `gte.${inicioDoDia()}` }, select: 'id', limite: 1 }).catch(() => [{}]);
+    await anotar(jaLembrou.length ? 'A dúvida dela já está com o dono: só anotado.' : marca);
+    if (!jaLembrou.length) await avisar(env, { titulo: `@${f.usuario} escreveu de novo e espera a sua resposta`, corpo: `A dúvida dela está com você: "${String(f.duvida || f.ultima_mensagem || '').slice(0, 110)}"`, url: '/admin/followup?fase=duvida' });
+    return 'anotou (dúvida com o dono)';
+  }
   const comprador = f.fase === 'comprou';
   // Conversa de gente: alguém da equipe escreveu para a pessoa pelo aplicativo nas últimas 12 horas. O Atendente fica
   // calado, e o dono é avisado (uma vez por conversa por dia) de que ela escreveu e ninguém respondeu.
@@ -630,7 +641,7 @@ async function tratar(env, t, cfg, contaDe, orcamentoDaVez) {
       return 'rascunho';
     }
     // Anota antes de mandar: se a execução for cortada no meio do envio, o registro já está feito.
-    await salvarFollowup(env, { ...base, ...interesseDe(d), mandei: linhas, ...(comprador ? {} : { fase: temLink(d.mensagens) ? 'ofertado' : 'conversando' }) }, { quemNome: 'Atendente' });
+    await salvarFollowup(env, { ...base, ...interesseDe(d), mandei: linhas, ...(comprador ? {} : { fase: temLink(d.mensagens) ? 'ofertado' : 'conversando' }) }, { quemNome: 'Atendente', atendente: true });
     await fechar('respondeu', { ...gasto, detalhe: d.motivo });
     t.tentouMandar = true;
     try { await mandar(env, c, credenciais, f.igsid, await comEtiqueta(f, d.mensagens, 'atendente')); } catch (e) {
@@ -647,11 +658,11 @@ async function tratar(env, t, cfg, contaDe, orcamentoDaVez) {
   if (d.classe === 'duvida') {
     await salvarFollowup(env, { ...base, ...interesseDe(d), duvida: d.motivo || agora.join(' / ') }, { quemNome: 'Atendente' });
     await fechar('duvida', { ...gasto, detalhe: d.motivo });
-    await avisar(env, { titulo: comprador ? `Aluno pediu ajuda no direct: @${f.usuario}` : `Dúvida no direct de @${f.usuario}`, corpo: String(d.motivo || agora[0]).slice(0, 140), url: '/admin/followup' });
+    await avisar(env, { titulo: comprador ? `Aluno pediu ajuda no direct: @${f.usuario}` : `Dúvida no direct de @${f.usuario}`, corpo: String(d.motivo || agora[0]).slice(0, 140), url: '/admin/followup?fase=duvida' });
     // Pergunta de verdade sobre os produtos: a pessoa fica sabendo que a resposta já vem, em vez de ficar no vácuo.
     // (No modo ensaio só as contas de teste chegam aqui, e para elas vale o mesmo que no automático.)
     if (d.espera && cfg.modo !== 'rascunho') {
-      await salvarFollowup(env, { ...base, mandei: AVISO_DE_ESPERA, fase: 'duvida' }, { quemNome: 'Atendente' }).catch(() => null);
+      await salvarFollowup(env, { ...base, mandei: AVISO_DE_ESPERA, fase: 'duvida' }, { quemNome: 'Atendente', atendente: true }).catch(() => null);
       t.tentouMandar = true;
       await mandar(env, c, credenciais, f.igsid, [AVISO_DE_ESPERA]).catch((e) => seTokenMorreu(env, c, e));
     }

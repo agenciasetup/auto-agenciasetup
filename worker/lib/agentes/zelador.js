@@ -170,9 +170,17 @@ export function tarefasQueNaoRodaram(turnos, agentes, agora) {
 
 // ---------------------------------------------------------------- 2) erros
 function turnosComErro(turnos, agentes, agora) {
+  // Erro que já foi seguido de um turno que deu certo (ou sem trabalho) do mesmo agente está resolvido: não é alarme.
+  const ultimoBom = new Map();
+  for (const t of turnos) {
+    if (t.status !== 'ok' && t.status !== 'sem_trabalho') continue;
+    const quando = Date.parse(t.inicio);
+    if (quando > (ultimoBom.get(t.agente_id) || 0)) ultimoBom.set(t.agente_id, quando);
+  }
   const porAgente = new Map();
   for (const t of turnos) {
     if (t.status !== 'erro' || agora - Date.parse(t.inicio) > DIA) continue;
+    if (Date.parse(t.inicio) < (ultimoBom.get(t.agente_id) || 0)) continue;
     porAgente.set(t.agente_id, [...(porAgente.get(t.agente_id) || []), t]);
   }
   return [...porAgente].map(([id, l]) => {

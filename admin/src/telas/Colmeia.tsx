@@ -5,7 +5,7 @@
 // Item que o Conciliador escreveu para juntar itens que se contradiziam (migration 40) mostra quem ele juntou e tem o
 // botão de desfazer: o item novo sai e os de antes voltam a valer.
 import { useEffect, useState } from 'react';
-import { Archive, Check, FlaskConical, Pencil, Plus, Search, Undo2, X } from 'lucide-react';
+import { Archive, Check, FlaskConical, Pencil, Plus, Search, Send, Undo2, X } from 'lucide-react';
 import { get, post } from '../nucleo/api';
 import { Carregando, ErroCarga, Etiqueta, Grupo, Titulo, Vazio, avisar, useCarregar, useSessao } from '../nucleo/ui';
 import { numero } from '../nucleo/util';
@@ -58,6 +58,15 @@ export default function Colmeia() {
     catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
   };
   const editar = (i: any) => { setF({ id: i.id, tipo: i.tipo, produto: i.produto, titulo: i.titulo, texto: i.texto }); document.getElementById('col-ensinar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  // A resposta do dono a uma pergunta do Conciliador: ele reescreve o item e o cartão volta com o texto novo.
+  const responder = async (id: string, texto: string) => {
+    try {
+      const r: any = await post(`/colmeia/${id}`, { responder: texto });
+      avisar(r?.aviso || 'Ajustado com a sua resposta. Confira o texto e aprove.');
+      recarregar();
+      return r?.ajustou !== false;
+    } catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); return false; }
+  };
 
   const termo = busca.trim().toLowerCase();
   const itens = (d?.itens || []).filter((i: any) => (!tipo || i.tipo === tipo) && (!termo || `${i.titulo} ${i.texto}`.toLowerCase().includes(termo)));
@@ -76,9 +85,9 @@ export default function Colmeia() {
       )}
 
       {d && propostas.length > 0 && (
-        <Grupo titulo="Esperando o seu sim" rodape="Sugestões dos agentes, junções de itens que se contradizem e respostas que você deu para uma pessoa só. Aprovou, passa a valer para todo mundo.">
+        <Grupo titulo="Esperando o seu sim" rodape="Sugestões dos agentes, junções de itens que se contradizem e respostas que você deu para uma pessoa só. Aprovou, passa a valer para todo mundo. Quando o cartão traz uma pergunta, responda ali mesmo: o texto é ajustado e volta para você aprovar.">
           <div className="col-lista">
-            {propostas.map((i: any) => <Item key={i.id} i={i} nomes={d.nomes} podeEditar={podeEditar} editar={editar} mudarStatus={mudarStatus} />)}
+            {propostas.map((i: any) => <Item key={i.id} i={i} nomes={d.nomes} podeEditar={podeEditar} editar={editar} mudarStatus={mudarStatus} responder={responder} />)}
           </div>
         </Grupo>
       )}
@@ -134,14 +143,25 @@ export default function Colmeia() {
   );
 }
 
-function Item({ i, nomes, podeEditar, editar, mudarStatus }: { i: any; nomes: any; podeEditar: boolean; editar: (i: any) => void; mudarStatus: (id: string, status: string, ok: string, extra?: Record<string, unknown>) => void }) {
+function Item({ i, nomes, podeEditar, editar, mudarStatus, responder }: { i: any; nomes: any; podeEditar: boolean; editar: (i: any) => void; mudarStatus: (id: string, status: string, ok: string, extra?: Record<string, unknown>) => void; responder?: (id: string, texto: string) => Promise<boolean> }) {
   const dono = i.origem === 'dono';
   const proposta = i.status === 'proposta';
+  // A pergunta do Conciliador (quando ele não sabe qual regra deve ganhar) e a resposta que o dono está escrevendo.
+  const pergunta: string = proposta && podeEditar && responder ? i.pergunta || '' : '';
+  const [fala, setFala] = useState('');
+  const [indo, setIndo] = useState(false);
+  const mandar = async () => {
+    if (!responder) return;
+    setIndo(true);
+    if (await responder(i.id, fala.trim())) setFala('');
+    setIndo(false);
+  };
+  const quemPergunta = String(i.autor || 'O Conciliador').replace(/\s*\(.*\)\s*$/, '');
   // Junção do Conciliador: o item guarda os itens que ele substitui.
   const juntou: any[] = Array.isArray(i.substitui) ? i.substitui : [];
   const juncao = juntou.length > 0;
   const quem = juncao
-    ? `${i.autor || 'Conciliador'} ${proposta ? 'propôs juntar e espera o seu sim' : 'juntou'}`
+    ? `${i.autor || 'Conciliador'} ${proposta ? (pergunta ? 'propôs juntar e espera a sua resposta' : 'propôs juntar e espera o seu sim') : 'juntou'}`
     : dono ? (proposta ? `Você respondeu assim${i.autor ? ` (${i.autor})` : ''}. Vale para todo mundo?` : 'Você ensinou') : i.origem === 'agente' ? `Agente${i.autor ? `: ${i.autor}` : ''}` : 'Já estava no roteiro';
   return (
     <article className="col-item">
@@ -158,12 +178,22 @@ function Item({ i, nomes, podeEditar, editar, mudarStatus }: { i: any; nomes: an
           {proposta ? 'Se você aprovar, eles são arquivados e este passa a valer no lugar.' : 'Eles estão arquivados. Se você desfizer a junção, eles voltam a valer e este sai.'}
         </p>
       )}
-      {i.prova && <p className="mudo col-prova"><b>{juncao ? 'Por quê:' : 'Prova:'}</b> {i.prova}</p>}
+      {(i.porque ?? i.prova) && <p className="mudo col-prova"><b>{juncao ? 'Por quê:' : 'Prova:'}</b> {i.porque ?? i.prova}</p>}
+      {pergunta && (
+        <div className="col-pergunta">
+          <label htmlFor={`col-fala-${i.id}`}><b>{quemPergunta} pergunta:</b> {pergunta}</label>
+          <textarea id={`col-fala-${i.id}`} rows={2} maxLength={1000} value={fala} disabled={indo} onChange={(e) => setFala(e.target.value)} placeholder="Responda do seu jeito, em poucas palavras." />
+          <div className="col-pergunta-pe">
+            <button type="button" className="bt bt-mini bt-tinta" disabled={indo || fala.trim().length < 2} onClick={mandar}><Send />{indo ? 'Ajustando o texto' : 'Responder'}</button>
+            <span className="mudo">{indo ? 'Leva uns 10 segundos.' : 'O texto acima é reescrito com a sua resposta e volta para você aprovar. Nada passa a valer antes disso.'}</span>
+          </div>
+        </div>
+      )}
       <div className="col-item-pe">
         <span className="mudo">{quem}{i.usos > 0 ? ` · entrou em ${numero(i.usos)} ${i.usos === 1 ? 'resposta' : 'respostas'}` : ''}{i.vendas > 0 ? ` · ${numero(i.vendas)} ${i.vendas === 1 ? 'venda depois' : 'vendas depois'}` : ''}</span>
         {podeEditar && (
           <span className="rec-acoes">
-            {proposta && <button type="button" className="bt bt-mini bt-tinta" onClick={() => mudarStatus(i.id, 'ativa', juncao ? 'Junção aprovada. Os itens de antes foram arquivados e este já vale.' : 'Aprovado. Já vale para todos os vendedores.')}><Check />{juncao ? 'Aprovar a junção' : 'Aprovar'}</button>}
+            {proposta && <button type="button" className={`bt bt-mini ${pergunta ? 'bt-texto' : 'bt-tinta'}`} disabled={indo} onClick={() => mudarStatus(i.id, 'ativa', juncao ? 'Junção aprovada. Os itens de antes foram arquivados e este já vale.' : 'Aprovado. Já vale para todos os vendedores.')}><Check />{pergunta ? 'Aprovar como está' : juncao ? 'Aprovar a junção' : 'Aprovar'}</button>}
             {juncao && !proposta && <button type="button" className="bt bt-mini bt-texto" onClick={() => mudarStatus(i.id, 'arquivada', 'Junção desfeita. Os itens de antes voltaram a valer.', { desfazer: true })}><Undo2 />Desfazer a junção</button>}
             <button type="button" className="bt bt-mini bt-texto" onClick={() => editar(i)}><Pencil />Mudar</button>
             <button type="button" className="bt bt-mini bt-texto" onClick={() => mudarStatus(i.id, 'arquivada', proposta ? (juncao ? 'Proposta descartada. Os itens de antes continuam valendo.' : 'Proposta descartada.') : juncao ? 'Arquivado. Os itens de antes continuam arquivados.' : 'Arquivado. Os vendedores param de usar.')}>{proposta ? <X /> : <Archive />}{proposta ? 'Descartar' : 'Arquivar'}</button>

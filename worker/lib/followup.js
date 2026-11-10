@@ -85,7 +85,32 @@ const ORDEM = {
 
 // numeros: quantas pessoas em cada fase e quantas estão na hora do próximo toque. A lista da fase vem com o histórico
 // curto (as últimas 8 coisas) e os links de abrir a conversa.
-export async function listaFollowup(env, { fase = 'novo', interesse = '', busca = '', perfil = 'br', limite = 50, agora = Date.now() } = {}) {
+// pausa: quem a rodada do direct não deve tocar agora, com o motivo. "atendente": a mensagem dela está na fila do
+// Atendente (ele responde no próximo minuto) ou a resposta que ele preparou espera o ok do dono (modo rascunho).
+// "dono": ele conversou com a pessoa pelo aplicativo nas últimas 12 horas. conversaDeGente vem de fora (atendente.js),
+// para este arquivo não depender do Atendente.
+async function pausasDe(env, linhas, agora, conversaDeGente) {
+  const mapa = new Map();
+  if (!linhas.length) return mapa;
+  const fila = await db.select(env, 'atendimentos', {
+    filtros: { followup_id: `in.(${linhas.map((l) => l.id).join(',')})`, classe: 'in.(esperando,rascunho)', criado_em: `gte.${new Date(agora - DIA).toISOString()}` },
+    select: 'followup_id,classe,criado_em', ordem: 'criado_em.desc', limite: 400,
+  }).catch(() => []);
+  for (const a of fila) {
+    const l = linhas.find((x) => x.id === a.followup_id);
+    if (!l || mapa.has(l.id)) continue;
+    if (a.classe === 'esperando' && agora - Date.parse(a.criado_em) < 6 * 3600_000) mapa.set(l.id, { pausa: 'atendente', pausa_motivo: 'A mensagem dela está na fila do Atendente: ele responde no próximo minuto.' });
+    else if (a.classe === 'rascunho' && (!l.nosso_em || Date.parse(a.criado_em) > Date.parse(l.nosso_em))) mapa.set(l.id, { pausa: 'atendente', pausa_motivo: 'A resposta que o Atendente preparou espera o ok do dono.' });
+  }
+  if (conversaDeGente) {
+    const suspeitos = linhas.filter((l) => !mapa.has(l.id) && l.igsid && l.humano_em && agora - Date.parse(l.humano_em) < 12 * 3600_000).slice(0, 20);
+    const gente = await Promise.all(suspeitos.map((l) => conversaDeGente(env, l, agora).catch(() => false)));
+    suspeitos.forEach((l, k) => { if (gente[k]) mapa.set(l.id, { pausa: 'dono', pausa_motivo: 'O dono conversou com essa pessoa pelo aplicativo nas últimas 12 horas. Não mande por cima.' }); });
+  }
+  return mapa;
+}
+
+export async function listaFollowup(env, { fase = 'novo', interesse = '', busca = '', perfil = 'br', limite = 50, agora = Date.now(), conversaDeGente = null } = {}) {
   const p = PERFIS.includes(perfil) ? perfil : 'br';
   const n = (await db.rpc(env, 'followup_numeros', { p_perfil: p })) || {};
   const numeros = Object.fromEntries(Object.keys(FASES).map((k) => [k, Number((n.fases || {})[k]) || 0]));
@@ -106,8 +131,10 @@ export async function listaFollowup(env, { fase = 'novo', interesse = '', busca 
     db.rpc(env, 'followup_placar', { p_perfil: p }).catch(() => []),
   ]);
   const linhas = r.linhas || r;
+  const pausas = await pausasDe(env, linhas, agora, conversaDeGente);
   const itens = await Promise.all(linhas.map(async (l) => ({
     ...l, quem: undefined, respondida_por: l.quem ? l.quem.nome : null,
+    ...(pausas.get(l.id) || { pausa: null, pausa_motivo: null }),
     historico: (l.historico || []).slice(-8),
     na_hora: !!(l.proximo_em && Date.parse(l.proximo_em) <= agora && ['novo', 'ofertado', 'conversando'].includes(l.fase)),
     // O vendedor de quem já foi tocado é fixo; o de quem ainda não foi é o do sorteio.
@@ -154,7 +181,10 @@ export async function lerFollowup(env, { id, usuario, perfil = 'br' }) {
 // ---------------------------------------------------------------- salvar
 // Cria (pelo @) ou muda uma pessoa. Só os campos enviados mudam. mandei: a mensagem que acabou de sair (conta um toque e
 // entra no histórico). evento: uma linha no histórico. duvida: a pergunta que só o dono responde (vai para a fase duvida).
-export async function salvarFollowup(env, d = {}, { id, quem = null, quemNome = '' } = {}) {
+// atendente: quem mandou foi o Atendente (resposta a quem escreveu). Não conta como toque de vendedor: não soma em
+// "toques", não marca o primeiro toque e não fixa o vendedor da pessoa, para o placar dos vendedores medir só o que
+// os vendedores fizeram.
+export async function salvarFollowup(env, d = {}, { id, quem = null, quemNome = '', atendente = false } = {}) {
   let atual = null;
   if (id) {
     if (!UUID.test(String(id))) throw new Erro(404, 'Não encontrado.');
@@ -197,13 +227,13 @@ export async function salvarFollowup(env, d = {}, { id, quem = null, quemNome = 
   if (d.mandei) {
     const t = texto(typeof d.mandei === 'string' ? d.mandei : atual.proxima_mensagem, 1000);
     m.nosso_em = agora;
-    m.toques = (atual.toques || 0) + 1;
+    if (!atendente) m.toques = (atual.toques || 0) + 1;
     m.proxima_mensagem = d.proxima_mensagem !== undefined ? texto(d.proxima_mensagem, 1000) : null;
     if (d.proximo_em === undefined) m.proximo_em = new Date(Date.now() + DIA).toISOString();
     if (d.fase === undefined && (atual.fase === 'novo' || atual.novo)) d.fase = 'ofertado';
     // O primeiro toque fixa o vendedor da pessoa: o que veio no pedido (se for um dos ativos) ou o do sorteio pelo @.
-    if (!atual.tocado_em) m.tocado_em = agora;
-    if (!atual.vendedor) {
+    if (!atendente && !atual.tocado_em) m.tocado_em = agora;
+    if (!atendente && !atual.vendedor) {
       const ativos = await vendedoresAtivos(env);
       m.vendedor = ativos.includes(d.vendedor) ? d.vendedor : vendedorDe(atual.usuario, ativos);
     }

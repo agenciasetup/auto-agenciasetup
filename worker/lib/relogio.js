@@ -14,6 +14,7 @@ import { fecharODia } from './push.js';
 import { importarDaVez } from './searchconsole.js';
 import { prepararIntegracoes } from './integracoes.js';
 import { responderPendentes } from './atendente.js';
+import { sincronizarFollowup } from './followup.js';
 import { rodarChefeDeGabinete } from './agentes/chefe-de-gabinete.js';
 import { rodarZelador } from './agentes/zelador.js';
 import { rodarConciliador } from './agentes/conciliador.js';
@@ -125,10 +126,18 @@ export async function rodarMinuto(envDoWorker, quando = Date.now()) {
 export async function rodarRelogio(env, quando = Date.now()) {
   const vez = tarefaDaVez(quando);
   const etapas = [
+    // O Atendente também responde nesta volta: ela roda no lugar da de minuto, e sem isto quem parava de escrever perto
+    // de um minuto terminado em 0 esperava um minuto a mais.
+    ['atendente', () => atenderODirect(env)],
     ['fila', () => processarFila(env)],
     ['comenta', async () => ({ varrer: await varrerComentarios(env), enviar: await enviarRespostas(env) })],
     // Pix vencido sai da espera; aviso de pagamento que falhou tenta de novo; reembolso agendado que chegou no dia sai.
     ['pedidos', () => cuidarDosPedidos(env)],
+    // Quem comentou a palavra entra na lista de follow-up e quem pagou vai para "Comprou" sem esperar a rodada do
+    // computador: o Atendente não oferta para quem já comprou e o vendedor não toca de novo.
+    ['followup', () => sincronizarFollowup(env)],
+    // O Conciliador da Colmeia (nos outros minutos ele roda na volta de minuto).
+    ['conciliador', () => rodarConciliador(env, quando)],
     // Área de membros: lembrete de evento, recuperação de compra, "você parou" e o resumo da semana.
     ['area', () => cuidarDaArea(env, quando)],
     [vez, () => TAREFAS[vez](env)],

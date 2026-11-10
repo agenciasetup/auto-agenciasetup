@@ -224,7 +224,7 @@ export async function lerAgente(env, id) {
   if (!a) return null;
   const [turnos, propostas, historico] = await Promise.all([
     db.select(env, 'turnos', { filtros: { agente_id: `eq.${a.id}` }, select: 'id,onde,status,resumo,custo_usd,inicio,fim', ordem: 'inicio.desc', limite: 20 }),
-    db.select(env, 'propostas', { filtros: { agente_id: `eq.${a.id}` }, select: 'id,titulo,status,ganho,resultado,criado_em,decidida_em,feita_em', ordem: 'criado_em.desc', limite: 30 }),
+    db.select(env, 'propostas', { filtros: { agente_id: `eq.${a.id}` }, select: 'id,titulo,status,ganho,resultado,motivo,criado_em,decidida_em,feita_em', ordem: 'criado_em.desc', limite: 30 }),
     db.select(env, 'agentes_historico', { filtros: { agente_id: `eq.${a.id}` }, select: 'id,tipo,de,para,motivo,por_nome,criado_em', ordem: 'criado_em.desc', limite: 40 }).catch(() => []),
   ]);
   return { ...a, controla: CONTROLA[a.id] || null, sala_nome: SALAS[a.sala], nivel_nome: NIVEIS[a.nivel] || NIVEIS[1], turnos, propostas, historico };

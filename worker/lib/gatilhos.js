@@ -537,15 +537,28 @@ export async function aoDirect(env, rede, m, conta, ctx) {
   // 2) A palavra mandada no direct (de um story ou de um Reels): o material vai na hora.
   if (!texto || !msg.mid) return 'conversa';
   const r = await palavraNoDirect(env, c, credenciais, rede, igsid, msg.mid, texto);
-  if (r !== 'conversa' || rede !== 'instagram') return r;
+  if (rede !== 'instagram') return r;
+  // A palavra veio dentro de uma pergunta ("quanto custa o POSTS?"): o material saiu (ou já tinha saído nas últimas 24
+  // horas) e a pergunta também precisa de resposta. Ela segue para o Atendente, como conversa comum.
+  const comPergunta = r !== 'conversa' && ['material', 'pergunta', 'repetido'].includes(r) && temPergunta(texto);
+  if (r !== 'conversa' && !comPergunta) return r;
   // 3) Conversa comum: o Atendente anota na lista de follow-up e responde o que o dono já liberou (atendente.js).
   // Roda depois da resposta à Meta, para o aviso não estourar o tempo.
   const quem = await perfilDe(c, credenciais, igsid);
   const tarefa = atender(env, { conta: c, credenciais, igsid, mid: msg.mid, texto, deStory: !!(msg.reply_to && msg.reply_to.story), perfilDaPessoa: quem })
     .then((x) => { console.log(`atendente: ${x}`); return x; })
     .catch((e) => { console.error('atendente', e && e.message); return 'erro'; });
-  if (ctx && ctx.waitUntil) { ctx.waitUntil(tarefa); return 'atendente'; }
-  return tarefa;
+  if (ctx && ctx.waitUntil) { ctx.waitUntil(tarefa); return comPergunta ? `${r} e atendente` : 'atendente'; }
+  return comPergunta ? tarefa.then((x) => `${r} e ${x}`) : tarefa;
+}
+
+// A mensagem com a palavra traz também uma pergunta? Vale o "?" ou uma palavra de quem quer saber preço, forma de
+// pagar ou como funciona. Só a palavra, ou a palavra com um "quero", não é pergunta.
+const PERGUNTA = new Set('quanto quanta valor valores preco precos custa custam custo como funciona funcionam parcela parcelas parcelar parcelado serve servem qual quais duvida duvidas pix cartao boleto desconto garantia'.split(' '));
+export function temPergunta(texto) {
+  const palavras = normalPalavra(texto).split(' ').filter(Boolean);
+  if (palavras.length < 2) return false;
+  return String(texto).includes('?') || palavras.some((p) => PERGUNTA.has(p));
 }
 
 async function perfilDe(c, credenciais, igsid) {

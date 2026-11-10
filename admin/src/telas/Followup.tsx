@@ -34,7 +34,8 @@ const proximoModo = (modo: string) => MODOS_ATENDENTE[(MODOS_ATENDENTE.indexOf(m
 export default function Followup() {
   useEffect(() => { document.title = 'Follow-up do direct | Painel Agência Setup'; }, []);
   const { pode } = useSessao();
-  const [fase, setFase] = useState('na_hora');
+  // O aviso do celular abre a aba certa: /admin/followup?fase=duvida.
+  const [fase, setFase] = useState(() => { try { return new URLSearchParams(window.location.search).get('fase') || 'na_hora'; } catch { return 'na_hora'; } });
   const [interesse, setInteresse] = useState('');
   const [busca, setBusca] = useState('');
   const [buscaFeita, setBuscaFeita] = useState('');
@@ -49,7 +50,13 @@ export default function Followup() {
     catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
   };
   const responder = async (id: string, resposta: string) => {
-    try { await post(`/followup/${id}/responder`, { resposta }); avisar('Resposta salva. A próxima rodada da tarefa responde a pessoa.'); recarregar(); }
+    try {
+      const r: any = await post(`/followup/${id}/responder`, { resposta });
+      avisar(r?.atendente_leva
+        ? 'Resposta salva. O Atendente leva para a pessoa no próximo minuto. Ela também foi para a Colmeia, esperando você dizer se vale para todo mundo.'
+        : 'Resposta salva. A pessoa recebe na próxima rodada do direct (já passou das 24 horas do Instagram ou o Atendente não está respondendo sozinho). Ela também foi para a Colmeia, esperando você dizer se vale para todo mundo.');
+      recarregar();
+    }
     catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
   };
   const atendente = async (corpo: any, ok: string) => {

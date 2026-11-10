@@ -36,7 +36,8 @@ export async function listarColmeia(env, { tipo, produto, status, busca, limite 
   ]);
   const p = placar || {};
   return {
-    itens: itens.map((i) => ({ ...i, usos: (p[i.id] || {}).usos || 0, vendas: (p[i.id] || {}).vendas || 0 })),
+    // porque e pergunta: o "por quê" da junção sem a pergunta, e a pergunta que o Conciliador fez ao dono (lerProva).
+    itens: itens.map((i) => ({ ...i, ...lerProva(i), usos: (p[i.id] || {}).usos || 0, vendas: (p[i.id] || {}).vendas || 0 })),
     numeros: { ativas: itens.filter((i) => i.status === 'ativa').length, propostas: itens.filter((i) => i.status === 'proposta').length },
     nomes: { tipos: TIPOS, produtos: PRODUTOS, status: STATUS_COLMEIA },
   };
@@ -104,6 +105,32 @@ export async function aprenderResposta(env, { pergunta, resposta, produto = 'ger
 // O item que junta outros guarda em "substitui" a lista de quem ele substitui: [{ id, titulo }]. Enquanto ele vale, os
 // itens de antes ficam arquivados. Nada é apagado: desfazer arquiva o novo e devolve os de antes.
 export const idsDaJuncao = (i) => (Array.isArray(i && i.substitui) ? i.substitui : []).map((s) => String((s && s.id) || '')).filter((id) => UUID.test(id));
+
+// A pergunta do Conciliador ao dono. Quando ele não sabe qual regra deve ganhar, a junção nasce como proposta e a
+// pergunta vai no fim do "por quê" (coluna prova), depois de "Pergunta:". A tela mostra a pergunta separada, com um
+// campo para o dono responder; a resposta volta para o Conciliador, que reescreve o item (responderAoConciliador).
+// Sem coluna nova: assim o Worker e o banco não dependem de ordem de publicação.
+const MARCA_PERGUNTA = 'Pergunta:';
+const LIMITE_PROVA = 600;
+const encurtar = (t, max) => (t.length <= max ? t : `${t.slice(0, Math.max(0, max - 1)).trimEnd()}…`);
+// Monta o "por quê" com a pergunta no fim, sem deixar o corte de tamanho comer a pergunta.
+export function provaComPergunta(porque, pergunta) {
+  const p = limpo(pergunta, 260).split(MARCA_PERGUNTA).join(' ').trim();
+  const q = limpo(porque, LIMITE_PROVA).split(MARCA_PERGUNTA).join(' ').trim();
+  if (!p) return encurtar(q, LIMITE_PROVA);
+  return `${encurtar(q, LIMITE_PROVA - p.length - MARCA_PERGUNTA.length - 2)} ${MARCA_PERGUNTA} ${p}`.trim();
+}
+// Lê de volta: { porque, pergunta }. Só junção que ainda espera o dono tem pergunta. As propostas gravadas antes da
+// marca (até 10/11/2026) trazem a pergunta como última frase do "por quê", terminada em "?".
+export function lerProva(i) {
+  const prova = String((i && i.prova) || '').trim();
+  if (!i || i.status !== 'proposta' || !idsDaJuncao(i).length || !prova) return { porque: prova, pergunta: '' };
+  const k = prova.lastIndexOf(MARCA_PERGUNTA);
+  if (k >= 0) return { porque: prova.slice(0, k).trim(), pergunta: prova.slice(k + MARCA_PERGUNTA.length).trim() };
+  if (!prova.endsWith('?')) return { porque: prova, pergunta: '' };
+  const m = prova.match(/^([\s\S]*[.!?])\s+(\S[\s\S]*\?)$/);
+  return m ? { porque: m[1].trim(), pergunta: m[2].trim() } : { porque: '', pergunta: prova };
+}
 
 // A hora da última mudança no que está valendo. É o que o Conciliador olha todo minuto para saber se tem trabalho.
 export async function marcaDaColmeia(env) {
@@ -182,10 +209,18 @@ export async function desfazerJuncao(env, id) {
 let guardado = { quando: 0, itens: [] };
 const VALIDADE = 90_000;
 export function esquecerColmeia() { guardado.quando = 0; }
+// Duas leituras: o que o dono ensinou (regra, resposta, objeção, produto) e as lições dos vendedores. Separadas para
+// as lições, que chegam várias por dia, nunca empurrarem para fora o que o dono escreveu.
+const LICOES = ['vendeu', 'nao_vendeu'];
+const ehLicao = (i) => LICOES.includes(i.tipo);
 async function ativos(env) {
   if (Date.now() - guardado.quando > VALIDADE) {
-    const itens = await db.select(env, 'colmeia', { filtros: { status: 'eq.ativa' }, select: 'id,tipo,produto,titulo,texto,origem', ordem: 'atualizado_em.desc', limite: 400 });
-    guardado = { quando: Date.now(), itens: itens.map((i) => ({ ...i, pt: palavras(i.titulo), px: palavras(i.texto) })) };
+    const campos = 'id,tipo,produto,titulo,texto,origem';
+    const [base, licoes] = await Promise.all([
+      db.select(env, 'colmeia', { filtros: { status: 'eq.ativa', tipo: `not.in.(${LICOES.join(',')})` }, select: campos, ordem: 'atualizado_em.desc', limite: 400 }),
+      db.select(env, 'colmeia', { filtros: { status: 'eq.ativa', tipo: `in.(${LICOES.join(',')})` }, select: campos, ordem: 'atualizado_em.desc', limite: 60 }).catch(() => []),
+    ]);
+    guardado = { quando: Date.now(), itens: [...base, ...licoes].map((i) => ({ ...i, pt: palavras(i.titulo), px: palavras(i.texto) })) };
   }
   return guardado.itens;
 }
@@ -198,17 +233,21 @@ function palavras(t) {
 // As regras entram sempre (são poucas e curtas). Dos outros tipos, só os que têm a ver com o que a pessoa escreveu:
 // o "quando" pesa o dobro do "o que fazer"; o produto do interesse dela desempata. Sem nada a ver, vão os fatos dos
 // produtos. Devolve também os ids usados, para o placar de cada item.
+// licoes: até 3 lições dos vendedores que têm a ver com a conversa. Vão separadas dos itens porque são observação de
+// agente, escrita a partir de conversa de cliente: quem usa precisa mostrar como dado, nunca como resposta liberada.
 export async function conhecimentoPara(env, texto, { interesse = '', max = 7 } = {}) {
   const todos = await ativos(env).catch(() => []);
   const alvo = palavras(texto);
-  const regras = todos.filter((i) => i.tipo === 'regra').slice(0, 12);
-  const pontuados = todos.filter((i) => i.tipo !== 'regra').map((i) => {
+  const regras = todos.filter((i) => i.tipo === 'regra').slice(0, 30);
+  const pontuar = (lista, n) => lista.map((i) => {
     let p = 0;
     for (const w of alvo) { if (i.pt.has(w)) p += 2; else if (i.px.has(w)) p += 1; }
     if (p && interesse && i.produto === interesse) p += 1;
     return { i, p };
-  }).filter((x) => x.p > 0).sort((a, b) => b.p - a.p).slice(0, max).map((x) => x.i);
+  }).filter((x) => x.p > 0).sort((a, b) => b.p - a.p).slice(0, n).map((x) => x.i);
+  const pontuados = pontuar(todos.filter((i) => i.tipo !== 'regra' && !ehLicao(i)), max);
   const fatos = todos.filter((i) => i.tipo === 'produto' && !pontuados.includes(i) && (pontuados.length < 2 || pontuados.some((q) => q.produto === i.produto)));
   const itens = [...pontuados, ...fatos].slice(0, max + 2);
-  return { regras, itens, ids: [...regras, ...itens].map((i) => i.id) };
+  const licoes = pontuar(todos.filter(ehLicao), 3);
+  return { regras, itens, licoes, ids: [...regras, ...itens, ...licoes].map((i) => i.id) };
 }

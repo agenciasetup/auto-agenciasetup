@@ -187,7 +187,7 @@ function SalaIso({ s, imagem, bonecos, abrir, expandir, grande = false }: { s: a
   const trabalhando = vivos.filter((a: any) => a.estado === 'ativo').length;
   // Na visão geral do celular a sala é pequena demais para acertar um Calango com o dedo: o toque abre a sala.
   const tocar = (a: any) => { if (expandir && (chao.current?.clientWidth || 999) < 250) expandir(); else abrir(a); };
-  const naSala = trabalhando === 0 ? 'Sala vazia' : trabalhando === 1 ? '1 trabalhando' : `${trabalhando} trabalhando`;
+  const naSala = trabalhando === 0 ? 'Sala vazia' : trabalhando === 1 ? '1 ativo' : `${trabalhando} ativos`;
   return (
     <section className={`pl-sala esc-${s.id}${grande ? ' pl-grande' : ' pl-cartao'}`} aria-label={`Sala ${s.nome}`}>
       {!grande && (

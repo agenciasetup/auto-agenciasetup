@@ -471,6 +471,38 @@ try {
   ok(pagos.every((u) => ultimaDe(u).classe === 'respondeu'), 'as 2 conversas que sobraram são respondidas no minuto seguinte', pagos.map((u) => ultimaDe(u).classe).join(','));
   esquecerAjustesComenta();
 
+  // ---------------------------------------------------------------- item 9: achados da revisão do Escritório (10/11)
+  secao('9. Revisão de 10/11: palavra com pergunta, toque do Atendente e dúvida com o dono');
+  await novoCenario();
+  tab('gatilhos').push({ id: crypto.randomUUID(), rede: 'instagram', perfil: 'br', palavra: 'POSTS', ativo: true, posts: [], modo: 'direto', estrategia: 'melhor', link: null, mensagem: null, respostas: [], responder_publico: true, resposta_ia: true, enviados: 0, variantes: [{ id: 'a', nome: 'A', dm: 'Toma o material {link}', pergunta: '', depois: '', lembrete: '', botao: '', publico: ['Mandei no direct!'], ativa: true }], recurso: { slug: 'material', titulo: 'Material', status: 'publicado', perfil: 'br' } });
+  meta.perfis['400000001'] = { username: 'nove.um', name: 'Nove Um' };
+  meta.perfis['400000002'] = { username: 'nove.dois', name: 'Nove Dois' };
+  const direto = (igsid, mid, text) => aoDirect(ENV, 'instagram', { sender: { id: igsid }, recipient: { id: NOSSO_ID }, message: { mid, text } }, { conexao, m: ig });
+  const naFilaDoAtendente = (mid) => tab('atendimentos').some((x) => x.mid === mid);
+  let r9 = await direto('400000001', 'mid.nove.1', 'POSTS');
+  ok(r9 === 'material' && !naFilaDoAtendente('mid.nove.1'), 'só a palavra no direct: vai o material e o Atendente não é chamado', r9);
+  r9 = await direto('400000002', 'mid.nove.2', 'quanto custa o POSTS?');
+  ok(/^material e /.test(r9) && naFilaDoAtendente('mid.nove.2') && enviadasPara('400000002').length === 1, 'a palavra dentro de uma pergunta: vai o material e a pergunta segue para o Atendente', r9);
+  r9 = await direto('400000002', 'mid.nove.3', 'e o posts parcela?');
+  ok(/^repetido e /.test(r9) && naFilaDoAtendente('mid.nove.3') && enviadasPara('400000002').length === 1, 'material já mandado nas últimas 24 horas: a pergunta nova não é jogada fora, e o material não sai de novo', r9);
+  r9 = await direto('400000001', 'mid.nove.4', 'posts');
+  ok(r9 === 'repetido' && !naFilaDoAtendente('mid.nove.4'), 'a palavra sozinha repetida continua sendo ignorada', r9);
+
+  await novoCenario();
+  await escreve('toque.teste', '400000009', 'quanto custa o curso de posts?');
+  await rodar();
+  const ft = ficha('toque.teste');
+  ok(ultimaDe('toque.teste').classe === 'respondeu' && !ft.vendedor && !ft.tocado_em && !(ft.toques > 0) && !!ft.nosso_em, 'a resposta do Atendente não conta como toque de vendedor nem fixa o vendedor da pessoa', JSON.stringify({ vendedor: ft.vendedor || null, tocado_em: ft.tocado_em || null, toques: ft.toques || 0 }));
+  Object.assign(ft, { fase: 'duvida', duvida: 'Parcela em quantas vezes?' });
+  await escreve('toque.teste', '400000009', 'e ai, conseguiu ver?');
+  zerarRede();
+  let r9b = await rodar();
+  ok(/dúvida com o dono/.test(r9b.feitos[0]) && rede.push === 1, 'quem espera a resposta do dono escreve de novo: ele é lembrado no celular', `${r9b.feitos[0]}, avisos ${rede.push}`);
+  await escreve('toque.teste', '400000009', 'oi?');
+  zerarRede();
+  r9b = await rodar();
+  ok(/dúvida com o dono/.test(r9b.feitos[0]) && rede.push === 0, 'o lembrete sai uma vez por dia por conversa', `avisos ${rede.push}`);
+
   // ---------------------------------------------------------------- item 3: erro no meio não deixa órfã
   secao('3. Erro no meio de responder');
   await novoCenario();

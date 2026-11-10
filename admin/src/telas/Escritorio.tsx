@@ -28,8 +28,9 @@ export default function Escritorio() {
   // A planta se atualiza sozinha a cada minuto, para os balões falarem do que acabou de acontecer.
   useEffect(() => { const t = setInterval(() => { if (!document.hidden) recarregar(); }, 60_000); return () => clearInterval(t); }, []);
   const naPlanta = vista === 'planta' && !!d?.arte?.salas;
-  const decidir = async (id: string, decisao: string, ok: string) => {
-    try { await post(`/escritorio/propostas/${id}/decidir`, { decisao }); avisar(ok); recarregar(); }
+  // motivo: o recado do dono para o agente (por que não, ou o que mudar). Fica no cartão e o agente lê antes de propor de novo.
+  const decidir = async (id: string, decisao: string, ok: string, motivo = '') => {
+    try { await post(`/escritorio/propostas/${id}/decidir`, { decisao, ...(motivo.trim() ? { motivo: motivo.trim() } : {}) }); avisar(ok); recarregar(); }
     catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
   };
   const fechar = async (id: string, resultado: string) => {
@@ -45,7 +46,7 @@ export default function Escritorio() {
       {n && (
         <div className="numeros">
           <div className={`numero grande ${n.na_mesa ? 'destaque' : ''}`}><b>{numero(n.na_mesa)}</b><span>{n.na_mesa === 1 ? 'proposta esperando você' : 'propostas esperando você'}</span></div>
-          <div className="numero"><b>{numero(n.trabalhando)}</b><span>{n.trabalhando === 1 ? 'agente trabalhando' : 'agentes trabalhando'}</span></div>
+          <div className="numero"><b>{numero(n.trabalhando)}</b><span>{n.trabalhando === 1 ? 'agente ativo' : 'agentes ativos'}</span></div>
           <div className="numero"><b>{dolar(n.custo_hoje_usd)}</b><span>Gasto de hoje · teto de {dolar(n.teto_dia_usd)}</span>{pode('escritorio.editar') && <Teto atual={n.teto_dia_usd} salvo={recarregar} />}</div>
           <div className="numero"><b>{numero(n.planejados)}</b><span>Ainda não contratados</span></div>
         </div>
@@ -74,7 +75,7 @@ export default function Escritorio() {
               <header className="esc-parede">
                 <span className="esc-placa">{s.nome}</span>
                 {s.id === 'direcao' && <span className="esc-cruz" title="Cruz na parede da sala principal"><Cross /></span>}
-                <span className="esc-conta">{s.agentes.filter((a: any) => a.estado === 'ativo').length} de {s.agentes.length} trabalhando</span>
+                <span className="esc-conta">{s.agentes.filter((a: any) => a.estado === 'ativo').length} de {s.agentes.length} ativos</span>
               </header>
               <div className="esc-chao">
                 {s.id === 'direcao' && (
@@ -96,6 +97,11 @@ export default function Escritorio() {
         </div>
       )}
 
+      {d && d.aprovadas.length > 0 && (
+        <Grupo titulo="Aprovadas, falta fazer" rodape="Aprovar não põe ninguém para trabalhar sozinho: peça ao Claude para fazer. Quando estiver pronto, anote o resultado aqui: é ele que entra no placar do agente.">
+          {d.aprovadas.map((p: any) => <Aprovada key={p.id} p={p} podeDecidir={podeDecidir} fechar={fechar} voltar={() => decidir(p.id, 'nova', 'Voltou para a mesa.')} />)}
+        </Grupo>
+      )}
       {d && (d.movimentos?.length > 0 || d.demitidos?.length > 0) && (
         <Grupo titulo="Quadro de pessoal" rodape="Quem entrou, quem subiu, quem parou e quem saiu, com o motivo. Promover, rebaixar, pausar e demitir ficam no perfil de cada agente.">
           {d.movimentos.slice(0, 12).map((h: any) => (
@@ -118,11 +124,6 @@ export default function Escritorio() {
       )}
       {d && perfil && <Perfil a={perfil} nomes={d.nomes} foto={d.arte?.bonecos?.[perfil.id]} fechar={() => setPerfil(null)} mudou={recarregar} podeEditar={pode('escritorio.editar')} />}
       {d?.maquinas && <Computadores maquinas={d.maquinas} podeEditar={pode('escritorio.editar')} />}
-      {d && d.aprovadas.length > 0 && (
-        <Grupo titulo="Aprovadas, falta fazer">
-          {d.aprovadas.map((p: any) => <Aprovada key={p.id} p={p} podeDecidir={podeDecidir} fechar={fechar} voltar={() => decidir(p.id, 'nova', 'Voltou para a mesa.')} />)}
-        </Grupo>
-      )}
       {d && d.depois.length > 0 && (
         <Grupo titulo="Para depois">
           {d.depois.map((p: any) => (
@@ -140,7 +141,9 @@ export default function Escritorio() {
               <div>
                 <b>{p.titulo}</b> <Etiqueta cor={p.status === 'feita' ? 'verde' : 'cinza'}>{d.nomes.status[p.status]}</Etiqueta>
                 {p.resultado && <p className="mudo linha-pequena">{p.resultado}</p>}
+                {p.status === 'descartada' && p.motivo && <p className="mudo linha-pequena">Seu motivo: {p.motivo}</p>}
               </div>
+              {podeDecidir && p.status === 'descartada' && <button className="bt bt-mini bt-texto" onClick={() => decidir(p.id, 'nova', 'Voltou para a mesa.')}>Voltar para a mesa</button>}
             </div>
           ))}
         </Grupo>
@@ -234,7 +237,9 @@ function Agente({ a, nomes, perfil, foto }: { a: any; nomes: any; perfil: (a: an
   );
 }
 
-function Cartao({ p, nomes, podeDecidir, decidir }: { p: any; nomes: any; podeDecidir: boolean; decidir: (id: string, decisao: string, ok: string) => void }) {
+function Cartao({ p, nomes, podeDecidir, decidir }: { p: any; nomes: any; podeDecidir: boolean; decidir: (id: string, decisao: string, ok: string, motivo?: string) => void }) {
+  // O recado do dono para o agente vale para os três botões: o que mudar (ao aprovar) ou por que não (depois, descartar).
+  const [recado, setRecado] = useState('');
   return (
     <article className="esc-cartao">
       <div className="esc-cartao-topo">
@@ -243,15 +248,21 @@ function Cartao({ p, nomes, podeDecidir, decidir }: { p: any; nomes: any; podeDe
       </div>
       <h3>{p.titulo}</h3>
       <p><b>Prova:</b> {p.prova}</p>
-      <p><b>O que fazer:</b> {p.acao}</p>
+      <p><b>O que o agente propõe:</b> {p.acao}</p>
       {p.ganho && <p><b>Ganho esperado:</b> {p.ganho}</p>}
       {p.links?.length > 0 && <p className="esc-links">{p.links.map((l: any, i: number) => <a key={i} href={l.url} target="_blank" rel="noopener noreferrer"><ExternalLink />{l.t}</a>)}</p>}
       {podeDecidir && (
-        <div className="rec-acoes">
-          <button className="bt bt-mini bt-tinta" onClick={() => decidir(p.id, 'aprovada', 'Aprovada. Foi para a lista do que falta fazer.')}><Check />Aprovar</button>
-          <button className="bt bt-mini bt-tingido" onClick={() => decidir(p.id, 'depois', 'Guardada para depois.')}><Clock />Depois</button>
-          <button className="bt bt-mini bt-texto" onClick={() => decidir(p.id, 'descartada', 'Descartada.')}><X />Descartar</button>
-        </div>
+        <>
+          <div className="campo esc-recado">
+            <label htmlFor={`esc-recado-${p.id}`}>Recado para o agente (opcional)</label>
+            <input id={`esc-recado-${p.id}`} type="text" maxLength={500} value={recado} onChange={(e) => setRecado(e.target.value)} placeholder="O que mudar, ou por que não. Ele lê antes de propor de novo." />
+          </div>
+          <div className="rec-acoes">
+            <button className="bt bt-mini bt-tinta" onClick={() => decidir(p.id, 'aprovada', 'Aprovada. Foi para "Aprovadas, falta fazer". Ninguém começa sozinho: peça ao Claude para fazer.', recado)}><Check />Aprovar</button>
+            <button className="bt bt-mini bt-tingido" onClick={() => decidir(p.id, 'depois', 'Guardada em "Para depois".', recado)}><Clock />Depois</button>
+            <button className="bt bt-mini bt-texto" onClick={() => decidir(p.id, 'descartada', recado.trim() ? 'Descartada. O agente vai ler o motivo.' : 'Descartada.', recado)}><X />Descartar</button>
+          </div>
+        </>
       )}
     </article>
   );
