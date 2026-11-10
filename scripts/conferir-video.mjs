@@ -55,6 +55,8 @@ barra('link nas falas', { falas: [...bom.falas.slice(0, 4), 'Entra em www.site.c
 barra('última fala sem a palavra', { falas: [...bom.falas.slice(0, 4), 'Me segue para mais.'] }, 'última fala');
 barra('preço inventado', { falas: ['Hoje sai por R$ 19,90.', ...bom.falas.slice(1)] }, 'valor');
 barra('promessa de dinheiro', { vende: 'Você ganha R$ 5.000 por mês com isso.' }, 'valor');
+barra('diminui o design do dono', { gancho: 'Pedi pro Claude reinventar o meu feed inteiro.' }, 'Diminui');
+barra('chama o feed de sem graça', { falas: ['Esse era o meu feed ontem, sem graça.', ...bom.falas.slice(1)] }, 'Diminui');
 barra('poucas falas', { falas: ['Comenta POSTS.'] }, 'Faltam falas');
 barra('gancho comprido demais', { gancho: 'Eu pedi para o Claude fazer todos os meus posts da semana inteira e ele fez tudo sozinho mesmo viu' }, 'Gancho');
 ok('sem preço na oferta, qualquer valor é barrado', typeof conferirRoteiro(bom, { ...ctx, preco: null }) === 'string');

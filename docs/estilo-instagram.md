@@ -57,6 +57,8 @@ Leitura feita em 22/10/2026 no @agenciasetup (128 mil seguidores), pelo Chrome l
 - 1ª linha: o gancho ou o pedido de comentário.
 - 2 a 4 linhas curtas. Emojis pontuais (🦎 🔥 💛 👀), nunca lista de emojis.
 - Pontos de respiro (".") antes das hashtags. Hashtags: #boracalango e 2 ou 3 do tema (2026 usa menos).
+
+**O Claude clona o estilo, não reinventa** (regra do dono, 10/11/2026). O feed da agência é a referência: padrão de mercado em design. Em post, vídeo, legenda e direct, o Claude aprende esse padrão e repete ("no meu estilo", "no meu padrão"). Nunca diga que ele reinventou, melhorou, consertou ou deixou mais bonito o design, nem que o feed antigo era feio, sem padrão ou sem graça, e não faça "antes e depois" como se a IA tivesse melhorado o trabalho. Também não prometa igual: o Claude chega perto do padrão. A promessa é tempo, não design melhor.
 - Rodapé dos slides em 2024: "Seja um Calango PRO, não seja apenas um copiador! © Agência Setup".
 
 ## 3. Estrutura do carrossel

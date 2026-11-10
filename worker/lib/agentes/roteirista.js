@@ -29,6 +29,8 @@ const MAX_TENTATIVAS = 3;
 const RESERVA_USD = 0.3;
 const FOLGA = 30; // chamadas externas que a rodada inteira gasta no pior caso
 const TRAVESSAO = /[—–]/;
+// O que diz que o Claude melhorou o design do dono, ou que o trabalho dele era ruim.
+const DIMINUI = /reinvent|sem padr[aã]o|sem gra[cç]a|(?:feed|design|arte|post)s? (?:feio|ruim)|mais bonit[oa] que|melhor que o (?:meu|seu|dele)|consert(?:ou|ar) (?:o )?(?:meu|seu) (?:feed|design)/i;
 export const FORMATOS = {
   tela: 'Gravação de tela do Claude trabalhando, com zoom no que importa e o resultado pronto no começo',
   filminho: 'Filminho em pixel com o Calango: troca de cena, close, o celular na mão, frases curtas',
@@ -84,6 +86,7 @@ Como escrever:
 - A última fala vende: pede para comentar a palavra ("Comenta PALAVRA que eu te mando"). Use só uma palavra da lista de palavras ligadas.
 - Inspire-se no PADRÃO do viral (o formato e o tipo de gancho). Nunca copie frase, título nem a ideia inteira. Adapte para quem faz posts.
 - Julgue o PADRÃO do viral, não o assunto dele. Lista de 3 coisas para copiar, antes e depois, desafio com tempo marcado, "montei meu sistema de": esses padrões servem mesmo quando o vídeo original fala de outra coisa (programação, por exemplo), porque dá para trocar o assunto pelo nosso. Marque serve como falso só quando o padrão depende de algo que não temos: a fama de quem aparece, humor pessoal, notícia que não interessa a quem faz posts.
+- O Claude CLONA o estilo do Filipe; nunca reinventa, melhora, conserta ou deixa mais bonito. O feed dele é a referência, padrão de mercado em design, e o Claude aprende esse padrão e repete, chegando perto dele. Nunca diga nem mostre que o feed ou o design dele era feio, sem padrão, sem graça ou pior, e não use "antes e depois" como se o Claude tivesse melhorado o trabalho dele. Também não prometa resultado idêntico: diga "no meu estilo", "no meu padrão". A promessa é tempo: o post sai no padrão dele sem ele abrir editor.
 - O ASSUNTO do nosso roteiro é sempre algo que o mini curso ensina a fazer: achar a pauta, escrever no estilo da pessoa, fazer a arte, deixar os posts rodando sozinhos.
 - Melhor 1 roteiro bom do que 3 fracos. Zero roteiros também vale.
 - Cada roteiro num formato diferente. Não repita formato nem gancho dos roteiros anteriores.
@@ -138,6 +141,8 @@ export function conferirRoteiro(r, { virais, palavras, preco }) {
   const vende = limpar(r.vende, 220);
   const tudo = [gancho, ...falas, tela, vende];
   if (tudo.some((t) => TRAVESSAO.test(t))) return 'Tem travessão.';
+  // O Claude clona o estilo do dono; não melhora o trabalho dele (regra do dono, 10/11/2026).
+  if (tudo.some((t) => DIMINUI.test(t))) return 'Diminui o design do dono (o Claude clona o estilo, não reinventa nem melhora).';
   if (tudo.some((t) => /https?:|www[.]|[.]com\b/i.test(t))) return 'Tem link.';
   if (!falas[falas.length - 1].toUpperCase().includes(palavra)) return 'A última fala não pede a palavra.';
   // Dinheiro só o preço da oferta: qualquer outro valor em reais é promessa ou preço inventado.
