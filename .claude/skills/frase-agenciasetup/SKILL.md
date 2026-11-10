@@ -25,6 +25,16 @@ O carrossel com o Filipe, o material grátis e a palavra continua na skill `carr
 
 Sem o repositório (só o app do Claude com o conector), faça as fases 1 e 2 e entregue as frases e a direção de arte em texto. A arte precisa do repositório.
 
+## Quem faz o quê no Escritório (desde 10/11/2026)
+
+O Conteúdo cuida das palavras e dos números; o Design cuida da imagem. Todo post de frase passa pelos dois, nessa ordem:
+
+- **Redator** (sala Conteúdo): fases 1 e 2 (a frase, o texto final, a legenda e o card de oferta). Entrega a **pauta pronta** ao Design.
+- **Designer** (sala Design): fase 3 (a janela, a imagem, as 5 etapas) e o primeiro card animado. A leitura do Olheiro visual (`design_leitura` no conector) serve de referência; o teste de estilo da semana vale só para as capas de carrossel.
+- **Revisor** (sala Design): o passo 0 da fase 4. Reprovou o texto, volta ao Redator; reprovou a imagem, volta ao Designer.
+
+As decisões do Filipe valem mais que a leitura do Olheiro. Na tarefa agendada, cada um registra o seu turno (veja a tarefa).
+
 ## O fluxo
 
 Cada fase termina numa verificação. O que falhar, conserte antes de seguir.

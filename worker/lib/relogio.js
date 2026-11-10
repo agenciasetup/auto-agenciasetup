@@ -19,6 +19,8 @@ import { rodarZelador } from './agentes/zelador.js';
 import { rodarConciliador } from './agentes/conciliador.js';
 import { rodarCacadorDeVirais } from './agentes/cacador-de-virais.js';
 import { rodarRoteirista } from './agentes/roteirista.js';
+import { rodarOlheiroVisual } from './agentes/olheiro-visual.js';
+import { rodarDiretorDeArte } from './agentes/diretor-de-arte.js';
 import { rodarOlheiroDeFerramentas } from './agentes/olheiro-de-ferramentas.js';
 import { contaAtiva, credenciaisAtivas } from '../plataformas/credenciais.js';
 import { chamadasFeitas, comContador, folgaDeChamadas, reservarChamadas } from '../nucleo/db.js';
@@ -49,7 +51,7 @@ async function atenderODirect(env) {
 // Chamadas externas que cada etapa do minuto precisa ter garantidas (estimativa por cima). Ficam reservadas desde o
 // começo, para o Atendente e o Comenta X não gastarem tudo antes; a reserva é solta quando a etapa começa.
 // fila: só a conferência de todo minuto (publicar uma peça gasta mais, e a fila ainda não olha o contador).
-const RESERVA = { fila: 2, fechamento: 8, seo: 12, chefe: 18, zelador: 18, 'olheiro-de-ferramentas': 12, 'cacador-de-virais': 12, roteirista: 32 };
+const RESERVA = { fila: 2, fechamento: 8, seo: 12, chefe: 18, zelador: 18, 'olheiro-de-ferramentas': 12, 'cacador-de-virais': 12, roteirista: 32, 'olheiro-visual': 14, 'diretor-de-arte': 16 };
 // O Comenta X lê os comentários (a reserva do aviso da Meta) deixando lugar para um envio da fila: o fixo e um item.
 const RESERVA_ENVIO = 17;
 // Os números dos posts recentes são só para o painel e gastam umas 6 chamadas por conta (4 contas): num minuto cheio
@@ -93,6 +95,10 @@ export async function rodarMinuto(envDoWorker, quando = Date.now()) {
   // mesma não repete no dia) escreve até 3 roteiros e põe na mesa.
   if (new Date(quando).getUTCMinutes() === 37) etapas.push(['cacador-de-virais', () => rodarCacadorDeVirais(env, quando)]);
   if (h === 9 && [31, 41, 51].includes(new Date(quando).getUTCMinutes())) etapas.push(['roteirista', () => rodarRoteirista(env, quando)]);
+  // O setor de Design, toda segunda (eles mesmos conferem o dia e não repetem): o Olheiro visual às 9h03 (de novo às
+  // 9h13 e 9h43 se falhar) lê as capas fora da curva; o Diretor de arte às 10h03 (10h13, 10h43) anda o teste de estilo.
+  if (h === 9 && [3, 13, 43].includes(new Date(quando).getUTCMinutes())) etapas.push(['olheiro-visual', () => rodarOlheiroVisual(env, quando)]);
+  if (h === 10 && [3, 13, 43].includes(new Date(quando).getUTCMinutes())) etapas.push(['diretor-de-arte', () => rodarDiretorDeArte(env, quando)]);
   // O Conciliador da Colmeia: só trabalha quando a Colmeia mudou e está quieta há 3 minutos (nos outros minutos, 1 leitura).
   etapas.push(['conciliador', () => rodarConciliador(env, quando)]);
   // O resumo do dia só trabalha a partir das 23h58: fora disso não precisa de reserva.

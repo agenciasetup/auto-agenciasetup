@@ -87,11 +87,13 @@ Magnific de graça, toque para quem não respondeu e Hubla. Duas saídas:
 | Conteúdo | Olheiro de concorrentes e virais | Segue uns 20 perfis de referência e marca o post que saiu da curva do próprio perfil | Worker | novo |
 | Conteúdo | Analista | O que engajou e por quê, e as lições da semana | Worker | existe em parte (Desempenho) |
 | Conteúdo | Editor-chefe | Escolhe as 3 pautas do dia pelos números e pela voz da marca | Worker | existe em parte (Plano) |
-| Conteúdo | Redator e revisor | Monta carrossel e frase, e revisa antes de mostrar | computador, reserva na nuvem | já existe (skills e revisor) |
+| Conteúdo | Redator | O texto de todo post, de frase e de carrossel: tese, slides, legenda e Comenta X (a pauta pronta) | computador, reserva na nuvem | já existe (skills); desde 10/11 é só o texto |
+| Design | Designer | A arte de todo post: ficha da capa, imagem, montagem nas 5 etapas e capa animada | computador | já existe (skills); veio do Conteúdo em 10/11 |
+| Design | Revisor | A última porta antes do dono: o texto primeiro, depois a arte | computador | já existe (revisor-de-capa); veio do Conteúdo em 10/11 |
 | Vídeo | Caçador de ganchos | As primeiras frases dos Reels e Shorts que explodiram no nicho | Worker | novo |
 | Vídeo | Roteirista | 3 roteiros de gravação de tela por semana | Worker | novo |
-| Design | Olheiro visual | Lê as capas fora da curva (cor, composição, assunto) e alimenta as referências | Worker, com visão | novo |
-| Design | Diretor de arte | 1 teste de estilo por semana, medido por nota e salvos | Worker | novo |
+| Design | Olheiro visual | Toda segunda, as capas fora da curva em nota e salvos e o que elas têm em comum | Worker, com visão | código pronto em 10/11 |
+| Design | Diretor de arte | 1 teste de estilo por semana para o Designer, medido por nota e salvos | Worker | código pronto em 10/11 |
 | Sistema | Olheiro de ferramentas | Repositórios, skills e novidades que melhorariam o sistema. No máximo 3 por semana | nuvem | novo |
 | Sistema | Zelador | Confere se cada turno rodou, o gasto e os erros. É quem aciona o plantão | Worker | novo |
 | Produto | Ouvinte | Lê dúvidas do direct, dos alunos e os comentários, e monta o mapa do que pedem | Worker, semanal | novo |
@@ -103,6 +105,18 @@ Magnific de graça, toque para quem não respondeu e Hubla. Duas saídas:
 Modelos: Haiku 5.5 para coletar e classificar, Sonnet 5.5 para escrever e analisar, Opus 5.5 só no fechamento da semana.
 
 De onde o olheiro tira os posts dos outros: a API oficial do Instagram tem a consulta de perfis profissionais públicos (Business Discovery), que devolve os posts com curtidas e comentários, e a do YouTube tem busca por visualização. Sem raspar site. Falta confirmar se o Instagram devolve as visualizações dos Reels.
+
+### Conteúdo e Design (10/11/2026)
+
+O dono achava as duas salas iguais, e eram: os dois redatores do Conteúdo faziam o post inteiro (texto, capa, imagem, montagem e capa animada) e a sala de Design só tinha vagas. A divisão aprovada por ele ("Pode aplicar"):
+
+- **A regra:** o Conteúdo cuida das palavras e dos números (o que dizer, quando postar e se deu certo); o Design cuida da imagem (como o post fica, até estar pronto para o dono aprovar). Todo post passa pelos dois, nessa ordem.
+- **Conteúdo:** Pesquisador, Analista, Editor-chefe, Redator (a Lídia G., id `redator-de-frase`, que escreve o texto dos dois formatos), Publicador e o Olheiro de concorrentes (vaga).
+- **Design:** Olheiro visual (Sara L.), Diretor de arte (Davi C.), Designer (o Marcos T., id `redator-de-carrossel`, que faz a arte dos dois formatos) e Revisor (Rute V.). Os ids ficaram os de antes para não perder turnos, carreira e Calangos.
+- **A passagem:** o Redator entrega a pauta pronta (tese, texto de cada slide, legenda, palavra e material); o Designer devolve a peça pronta na fila, como rascunho, com a capa animada e o Revisor aprovando. Reprovou o texto, volta ao Redator; a imagem, ao Designer. Depois de publicado, a nota da Analista serve aos dois: o Editor-chefe vê o que dizer, e o Olheiro visual vê o que funcionou na capa.
+- **Deixou de existir:** a divisão por formato (um redator de frase e um de carrossel fazendo tudo). A capa animada é do Design; os Reels continuam no Vídeo.
+- **Honesto:** as tarefas das 8h (frase) e das 10h (carrossel) continuam sendo uma sessão só no computador. Cada uma registra três turnos (Redator, Designer e Revisor) com `dados.tarefa`, e o Zelador usa essa marca para saber qual tarefa rodou. Separar de verdade, com o texto saindo do Worker sem computador, é um passo possível depois.
+- **O laço do Design:** o Olheiro visual (segunda, 9h03) guarda a leitura em `config.design_leitura` e põe o cartão na mesa; o Diretor de arte (segunda, 10h03) propõe 1 teste por semana (`config.design_teste`), o dono aprova, o Designer lê `design_leitura` antes da ficha da capa, segue a regra e marca o turno com `dados.design_teste` e `dados.peca_id`; uma semana depois o Diretor mede, só com código, a nota e os salvos das capas do teste contra as outras capas de carrossel do período, e põe o resultado na mesa (virar regra, descartar ou inconclusivo).
 
 ### A Colmeia e quem faz o quê nas vendas (10/11/2026)
 
@@ -186,6 +200,7 @@ Pronto quando: um dia inteiro com o computador desligado termina com os posts do
 - [ ] Editor-chefe (as 3 pautas do dia) e o caderno de lições da semana.
 - [ ] Chefe de gabinete: resumo das 8h no celular com as 3 decisões do dia.
 - [ ] Caçador de ganchos, roteirista, olheiro visual e diretor de arte.
+- [x] Divisão entre Conteúdo e Design aplicada (10/11/2026, migration 44, com o ok do dono). Olheiro visual e Diretor de arte com código pronto e conferido (`node scripts/conferir-design.mjs`); rodam no ar depois do deploy.
 
 Pronto quando: você passa uma semana decidindo só pelo resumo das 8h, e pelo menos um post nasceu de um cartão do olheiro.
 

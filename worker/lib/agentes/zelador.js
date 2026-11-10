@@ -44,6 +44,8 @@ const GUARDAR = 3 * DIA;
 // Agendadas: direct-followup, posts-de-frase-do-dia e carrossel-em-alta-do-dia). agentes: basta um deles ter turno.
 // horas: uma rodada em cada hora marcada. diaria: uma vez por dia. Para as diárias a hora é só o ponto de partida: o
 // Zelador aprende, nos turnos, a que horas o turno costuma chegar (horaDeCostume).
+// tarefa: desde 10/11/2026 o Redator e o Designer trabalham nas duas tarefas de post (frase às 8h, carrossel às 10h), e
+// cada turno diz de qual tarefa veio (dados.tarefa). Turno antigo, sem tarefa, conta pelo agente de antes (legado).
 const TAREFAS = [
   {
     tipo: 'nao-rodou:direct', nome: 'A rodada do direct', problema: 'A rodada do direct está falhando',
@@ -53,13 +55,13 @@ const TAREFAS = [
   },
   {
     tipo: 'nao-rodou:redator-de-frase', nome: 'A tarefa dos posts de frase', problema: 'A tarefa dos posts de frase está falhando',
-    agentes: ['redator-de-frase'], diaria: 8,
+    agentes: ['redator-de-frase', 'redator-de-carrossel'], tarefa: 'posts-de-frase-do-dia', legado: 'redator-de-frase', diaria: 8,
     acao: 'Ver se o computador ficou ligado de manhã e rodar a tarefa "posts-de-frase-do-dia" à mão. Se a agenda estiver com menos de 3 dias de posts, fazer hoje.',
     ganho: 'A agenda continua com 3 dias de posts de frase prontos para aprovar.',
   },
   {
     tipo: 'nao-rodou:redator-de-carrossel', nome: 'A tarefa do carrossel do dia', problema: 'A tarefa do carrossel do dia está falhando',
-    agentes: ['redator-de-carrossel'], diaria: 10,
+    agentes: ['redator-de-frase', 'redator-de-carrossel'], tarefa: 'carrossel-em-alta-do-dia', legado: 'redator-de-carrossel', diaria: 10,
     acao: 'Ver se o computador ficou ligado de manhã e rodar a tarefa "carrossel-em-alta-do-dia" à mão.',
     ganho: 'O tema quente do dia não passa sem carrossel.',
   },
@@ -116,7 +118,10 @@ function horaDeCostume(turnos, agendada, agora) {
   return { min: Math.max(agendada, l[Math.floor(l.length / 2)]), aprendeu: true };
 }
 
-function tarefasQueNaoRodaram(turnos, agentes, agora) {
+// O turno é desta tarefa? Sem tarefa marcada (a rodada do direct), qualquer turno dos agentes dela vale.
+export const daTarefa = (t, x) => t.agentes.includes(x.agente_id) && (!t.tarefa || (x.tarefa ? x.tarefa === t.tarefa : x.agente_id === t.legado));
+
+export function tarefasQueNaoRodaram(turnos, agentes, agora) {
   const alertas = [];
   const hoje = meiaNoiteBR(agora);
   const dia = diaBR(agora);
@@ -124,7 +129,7 @@ function tarefasQueNaoRodaram(turnos, agentes, agora) {
   const ativo = (id) => !agentes[id] || agentes[id].estado === 'ativo';
   for (const t of TAREFAS) {
     if (!t.agentes.some(ativo)) continue;
-    const dele = turnos.filter((x) => t.agentes.includes(x.agente_id)).map((x) => Date.parse(x.inicio));
+    const dele = turnos.filter((x) => daTarefa(t, x)).map((x) => Date.parse(x.inicio));
     const ultimo = dele.length ? Math.max(...dele) : 0;
     const ultimoTxt = ultimo ? `O último turno foi ${quandoFoi(ultimo, agora)}.` : `Nenhum turno nos últimos ${COSTUME_DIAS} dias.`;
     if (t.horas) {
@@ -147,7 +152,7 @@ function tarefasQueNaoRodaram(turnos, agentes, agora) {
         acao: t.acao, ganho: t.ganho,
       });
     } else {
-      const costume = horaDeCostume(turnos.filter((x) => t.agentes.includes(x.agente_id)), t.diaria * 60, agora);
+      const costume = horaDeCostume(turnos.filter((x) => daTarefa(t, x)), t.diaria * 60, agora);
       if (hoje + costume.min * MINUTO + TOLERANCIA > agora) continue;
       if (dele.some((em) => em >= hoje)) continue; // qualquer turno de hoje vale, mesmo antes da hora de costume
       const esperado = costume.aprendeu ? `O turno dela costuma chegar por volta das ${horaDoDia(costume.min)}` : `Ela está agendada para as ${horaDoDia(costume.min)}`;
@@ -351,7 +356,7 @@ export async function rodarZelador(env, quando = Date.now(), { simular = false }
   const [linhaEstado, listaAgentes, turnosLidos, atendimentos, gasto, comentarios, cfgAtendente] = await Promise.all([
     db.um(env, 'config', { chave: `eq.${CHAVE}` }),
     db.select(env, 'agentes', { select: 'id,nome,apelido,estado', limite: 300 }).catch(pular('agentes')),
-    db.select(env, 'turnos', { filtros: { inicio: `gte.${new Date(quando - COSTUME_DIAS * DIA).toISOString()}` }, select: 'id,agente_id,status,inicio', ordem: 'inicio.desc', limite: 1000 }).catch(pular('turnos')),
+    db.select(env, 'turnos', { filtros: { inicio: `gte.${new Date(quando - COSTUME_DIAS * DIA).toISOString()}` }, select: 'id,agente_id,status,inicio,tarefa:dados->>tarefa', ordem: 'inicio.desc', limite: 1000 }).catch(pular('turnos')),
     lerAtendimentos(env, quando).catch(pular('atendimentos')),
     orcamento(env).catch(pular('gasto')),
     lerComentarios(env, quando).catch(pular('comentarios')),

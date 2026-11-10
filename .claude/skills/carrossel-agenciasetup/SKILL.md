@@ -26,6 +26,16 @@ Esta skill junta tudo o que o Filipe aprovou e tudo o que ele corrigiu. Cada cor
 
 Sem o repositório (só o app do Claude com o conector), dá para fazer as fases 0 a 4 (pauta, texto, direção de arte e foto pelo Magnific). A montagem (fase 5) precisa do repositório: diga isso e entregue a ficha e os textos prontos.
 
+## Quem faz o quê no Escritório (desde 10/11/2026)
+
+O Conteúdo cuida das palavras e dos números; o Design cuida da imagem. Todo carrossel passa pelos dois, nessa ordem:
+
+- **Redator** (sala Conteúdo): fases 0, 1 e 2, e a legenda e o Comenta X da fase 6. Entrega a **pauta pronta**: a tese em uma frase, o texto de cada slide, a legenda, a palavra e o material.
+- **Designer** (sala Design): fases 3, 4, 5 e 5e. Antes da ficha da capa, lê `design_leitura` no conector: o teste de estilo da semana do Diretor de arte e a leitura do Olheiro visual (as capas que saíram da curva, para cima e para baixo). Com teste rodando, a capa segue a regra do teste e o turno do Designer leva `design_teste` com o id dele.
+- **Revisor** (sala Design): a verificação 5d. Reprovou o texto, volta ao Redator; reprovou a imagem, volta ao Designer.
+
+As decisões do Filipe valem mais que a leitura e que o teste. Na tarefa agendada, cada um registra o seu turno (veja a tarefa).
+
 ## O fluxo (sempre nesta ordem)
 
 Cada fase termina numa verificação. Só avance quando tudo estiver marcado; o que falhar, conserte antes. Mostre ao Filipe a ficha da capa (fase 3) quando a ideia for nova: errar a ideia custa mais caro que perguntar.
