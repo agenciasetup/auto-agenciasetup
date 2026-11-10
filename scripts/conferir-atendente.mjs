@@ -441,6 +441,36 @@ try {
   ok(ultimaDe('duda.teste').classe === 'respondeu', 'a segunda conversa foi respondida até o minuto seguinte');
   console.log(`       depois de 3 minutos: ${tab('respostas_gatilho').filter((x) => x.status === 'enviada').length} de 6 directs do Comenta X enviados, ${tab('respostas_gatilho').filter((x) => x.status === 'pendente').length} na fila (minutos: ${cheio}, ${m2}, ${m3} chamadas)`);
 
+  // ---------------------------------------------------------------- item 2b: o mesmo minuto no Workers pago
+  // Desde 10/11/2026 o Worker roda com WORKERS_PAGO=1: o minuto faz mais por vez, e os tetos para as pessoas continuam.
+  secao('2b. Workers pago (WORKERS_PAGO=1): mais por minuto, os mesmos tetos');
+  const ENV_PAGO = { ...ENV, WORKERS_PAGO: '1' };
+  await novoCenario();
+  const gp = crypto.randomUUID();
+  tab('gatilhos').push({ id: gp, rede: 'instagram', perfil: 'br', palavra: 'POSTS', ativo: true, posts: ['p1'], modo: 'direto', estrategia: 'melhor', link: null, mensagem: null, respostas: [], responder_publico: true, resposta_ia: true, enviados: 0, variantes: [{ id: 'a', nome: 'A', dm: 'Toma o material {link}', pergunta: '', depois: '', lembrete: '', botao: '', publico: ['Mandei no direct!'], ativa: true }], recurso: { slug: 'material', titulo: 'Material', status: 'publicado', perfil: 'br' } });
+  tab('posts_redes').push({ id: crypto.randomUUID(), rede: 'instagram', perfil: 'br', id_na_rede: 'p1', palavra_chave: 'POSTS', publicado_em: iso(Date.now() - 2 * HORA), comentarios_ate: null, comentarios_lidos_em: null });
+  for (let i = 1; i <= 15; i++) tab('respostas_gatilho').push({ ...padrao('respostas_gatilho'), gatilho_id: gp, rede: 'instagram', comentario_id: `pc${i}`, post_id: 'p1', usuario: `pessoa${i}`, pessoa_id: `7100000${String(i).padStart(2, '0')}`, texto: 'POSTS', comentado_em: iso(), criado_em: iso(Date.now() - (30 - i) * 1000) });
+  const pagos = Array.from({ length: 8 }, (_, i) => `pago${i + 1}.teste`);
+  for (const [i, u] of pagos.entries()) await escreve(u, `30000000${i + 1}`, 'quanto custa o curso de posts?', { haSegundos: 60 - i });
+  const contarStatus = (s) => tab('respostas_gatilho').filter((x) => x.status === s).length;
+  zerarRede();
+  const fp = await rodarMinuto(ENV_PAGO, quando);
+  console.log(`       minuto pago: ${rede.total} chamadas externas (banco ${rede.banco}, Meta ${rede.meta}, Claude ${rede.claude}); o contador marcou ${fp.chamadas}`);
+  ok(!Object.values(fp).some((v) => v && v.erro), 'nenhuma etapa deu erro', JSON.stringify(Object.fromEntries(Object.entries(fp).filter(([, v]) => v && v.erro))));
+  ok(pagos.filter((u) => ultimaDe(u).classe === 'respondeu').length === 6, 'o Atendente responde até 6 conversas no minuto (no grátis, 2)', pagos.map((u) => ultimaDe(u).classe).join(','));
+  ok(pagos.filter((u) => ultimaDe(u).classe === 'esperando').length === 2, 'as outras 2 continuam esperando, sem ser pegas');
+  ok(contarStatus('enviada') === 10 && contarStatus('pendente') === 5, 'o Comenta X manda até 10 directs por execução (no grátis, 5) e o resto espera na fila', tab('respostas_gatilho').map((x) => x.status).join(','));
+  ok(contarStatus('enviando') === 0, 'nenhum direct ficou preso em "enviando"');
+  ok(fp.chamadas <= 996 && rede.total <= 1000, 'o minuto fica dentro do teto de 1.000 chamadas', `${rede.total}`);
+  // O teto por hora continua por cima: limite de 12 por hora, 10 já saíram, então só mais 2.
+  tab('config').push({ chave: 'comenta', valor: { limite_hora: 12, testadores: [] } });
+  esquecerAjustesComenta();
+  zerarRede();
+  const fp2 = await rodarMinuto(ENV_PAGO, quando + 3 * MINUTO);
+  ok(contarStatus('enviada') === 12 && contarStatus('pendente') === 3, 'o teto por hora (config.comenta.limite_hora) continua valendo: só mais 2 saem', `${contarStatus('enviada')} enviadas, ${contarStatus('pendente')} na fila; ${JSON.stringify(fp2.comenta && fp2.comenta.enviar)}`);
+  ok(pagos.every((u) => ultimaDe(u).classe === 'respondeu'), 'as 2 conversas que sobraram são respondidas no minuto seguinte', pagos.map((u) => ultimaDe(u).classe).join(','));
+  esquecerAjustesComenta();
+
   // ---------------------------------------------------------------- item 3: erro no meio não deixa órfã
   secao('3. Erro no meio de responder');
   await novoCenario();

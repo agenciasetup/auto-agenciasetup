@@ -12,7 +12,9 @@ function cabecalhos(env, extra = {}) {
 }
 
 // ---------------------------------------------------------------- contador de chamadas externas
-// O plano grátis da Cloudflare deixa cada execução fazer 50 chamadas externas, e cada ida ao banco conta. O relógio de
+// A Cloudflare limita as chamadas externas de cada execução, e cada ida ao banco conta. Desde 10/11/2026 a conta tem o
+// Workers pago (WORKERS_PAGO=1 no wrangler.jsonc): o limite de lá é de 10.000, e o nosso teto fica em 1.000 de
+// propósito, para nenhum minuto virar uma execução enorme. No plano grátis eram 50. O relógio de
 // minuto cria um env só daquela execução com um contador (comContador). Toda ida ao banco soma sozinha; quem chama a
 // Meta ou o Claude soma com contarChamada. Antes de começar um trabalho que não pode parar no meio, a etapa pergunta a
 // folga (folgaDeChamadas) e, se for pouca, deixa para a próxima execução. reservarChamadas guarda chamadas para uma

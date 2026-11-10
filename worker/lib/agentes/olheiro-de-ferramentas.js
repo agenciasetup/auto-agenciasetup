@@ -70,7 +70,7 @@ const SISTEMA = `Você é o olheiro de ferramentas de uma agência brasileira pe
 
 <sistema>
 O que já existe (não sugira o que já está feito):
-- Base: um Worker da Cloudflare no plano grátis (pouco processamento, 50 chamadas externas por execução, um relógio de minuto em minuto em worker/lib/relogio.js), banco Supabase pela API REST e painel em React. Não tem fila, Durable Object nem servidor próprio.
+- Base: um Worker da Cloudflare no Workers pago (até 1.000 chamadas externas por execução no teto do sistema, 30 s de processador, um relógio de minuto em minuto em worker/lib/relogio.js), banco Supabase pela API REST e painel em React. O plano já permite fila (Queues), Durable Object e Browser Rendering, mas nenhum deles está em uso; não tem servidor próprio.
 - Conector MCP próprio (worker/lib/mcp.js e mcp-codigo.js), em modo código: três ferramentas (buscar, consultar, executar) e o código roda num QuickJS em WebAssembly. Login OAuth 2.1.
 - Redes (worker/plataformas/): publica sozinho no Instagram, no Facebook e no YouTube pela API oficial, com fila e aprovação. Pinterest pronto, esperando o app ser aprovado. Threads, X, TikTok e LinkedIn ainda não.
 - Quem comenta a palavra do post recebe o material no direct (worker/lib/gatilhos.js e comenta.js), no estilo do ManyChat, com versões da mensagem em teste: a que vende mais ganha.
@@ -84,7 +84,7 @@ O que já existe (não sugira o que já está feito):
 Onde dói hoje (bons lugares para procurar):
 - O toque no direct, a entrega de um combo numa plataforma de cursos de terceiros e a geração de imagem dependem de um navegador logado num computador ligado.
 - Faltam Threads, X, TikTok e LinkedIn, e Reels publicados sem trabalho manual.
-- O plano grátis da Cloudflare aperta o que cabe em cada execução.
+- O Atendente responde no relógio de minuto (de 20 a 80 segundos depois da última mensagem), e os posts de frase e carrosséis dependem do computador para virar imagem.
 - O custo e a qualidade das chamadas ao Claude (cache, lotes, escolha de modelo, ferramentas novas da API).
 - Skills e servidores MCP que poupem trabalho na criação de carrossel, de vídeo curto ou no atendimento.
 </sistema>

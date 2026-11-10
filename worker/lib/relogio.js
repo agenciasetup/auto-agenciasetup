@@ -1,7 +1,7 @@
-// O relógio de 10 minutos. Plano grátis da Cloudflare: cada execução tem pouco processamento e no máximo 50 chamadas
-// externas (banco incluído). Por isso: toda vez a fila das redes e o "Comenta X"; e uma tarefa da vez, em rodízio
-// (por hora: 3 rodadas de radar, 2 de métricas, 1 de posts), e métricas e posts pegam uma conta da vez (rodízio em
-// config "vez:<tarefa>"). Com WORKERS_PAGO=1, cada tarefa faz mais por vez e passa por todas as contas.
+// O relógio de 10 minutos: toda vez a fila das redes e o "Comenta X"; e uma tarefa da vez, em rodízio (por hora: 3
+// rodadas de radar, 2 de métricas, 1 de posts). Desde 10/11/2026 a conta tem o Workers pago (WORKERS_PAGO=1 no
+// wrangler.jsonc): o radar lê todas as fontes, métricas e posts passam por todas as contas e cada tarefa faz mais por
+// vez. No plano grátis (50 chamadas externas por execução) era uma conta da vez, em rodízio em config "vez:<tarefa>".
 // Nos outros minutos (pedido do dono em 26/10/2026, "igual ManyChat"): só a fila e o "Comenta X" dos posts dos
 // últimos 2 dias, para quem comentou receber em 1 ou 2 minutos sem esperar o Acesso Avançado da Meta.
 import { processarFila } from '../plataformas/fila.js';
@@ -45,7 +45,7 @@ async function atenderODirect(env) {
     }
     return guardadas.get(perfil);
   };
-  return responderPendentes(env, { limite: env.WORKERS_PAGO ? 6 : 2, contaDe });
+  return responderPendentes(env, { limite: env.WORKERS_PAGO === '1' ? 6 : 2, contaDe });
 }
 
 // Chamadas externas que cada etapa do minuto precisa ter garantidas (estimativa por cima). Ficam reservadas desde o
@@ -59,13 +59,13 @@ const RESERVA_ENVIO = 17;
 const FOLGA_RECENTES = 26;
 
 export async function rodarMinuto(envDoWorker, quando = Date.now()) {
-  // Um env só desta execução, com o contador de chamadas externas (nucleo/db.js). O plano grátis corta a execução em
-  // 50 chamadas: cada etapa olha a folga antes de começar um trabalho que não pode parar no meio.
+  // Um env só desta execução, com o contador de chamadas externas (nucleo/db.js): teto de 1.000 no Workers pago (50 no
+  // grátis). Cada etapa olha a folga antes de começar um trabalho que não pode parar no meio.
   const env = comContador(envDoWorker);
   const feito = {};
   const etapas = [
-    // O Atendente do direct vem primeiro: responde quem parou de escrever há uns 20 segundos (até 2 conversas por minuto,
-    // e a segunda só começa se houver folga de chamadas para ela inteira).
+    // O Atendente do direct vem primeiro: responde quem parou de escrever há uns 20 segundos (até 6 conversas por minuto
+    // no Workers pago, 2 no grátis; cada uma só começa se houver folga de chamadas para ela inteira).
     ['atendente', () => atenderODirect(env)],
     ['fila', () => processarFila(env)],
     ['comenta', async () => {
@@ -79,12 +79,12 @@ export async function rodarMinuto(envDoWorker, quando = Date.now()) {
   // Às 23h58 (Brasília): o resumo do dia no celular da equipe (push.js). Fora dessa hora não faz nada.
   etapas.push(['fechamento', () => fecharODia(env, quando)]);
   // Search Console (searchconsole.js): no minuto 17 das horas cheias, das 6h às 23h de Brasília, um site por vez, até os
-  // dois estarem em dia. Sozinho num minuto, para caber nas 50 chamadas do plano grátis.
+  // dois estarem em dia. Sozinho num minuto (vem do plano grátis, que cortava em 50 chamadas).
   const h = (new Date(quando).getUTCHours() + 21) % 24;
   // A chave da conta robô vem de Integrações (o relógio de minuto não carrega as integrações sozinho).
   if (new Date(quando).getUTCMinutes() === 17 && h >= 6) etapas.push(['seo', async () => { await prepararIntegracoes(env); return importarDaVez(env, quando); }]);
   // O Chefe de gabinete: o resumo das 8h com as 3 decisões do dia (8h02, e de novo às 8h22 e 8h42 se a primeira falhar;
-  // ele mesmo não repete no dia). Fica por último: se as chamadas do plano grátis acabarem, quem espera é ele.
+  // ele mesmo não repete no dia). Fica por último: se as chamadas do minuto acabarem, quem espera é ele.
   if (h === 8 && [2, 22, 42].includes(new Date(quando).getUTCMinutes())) etapas.push(['chefe', () => rodarChefeDeGabinete(env, quando)]);
   // O Zelador (sem IA): no minuto 7 de toda hora confere se as tarefas rodaram, os erros e o gasto, e avisa.
   if (new Date(quando).getUTCMinutes() === 7) etapas.push(['zelador', () => rodarZelador(env, quando)]);

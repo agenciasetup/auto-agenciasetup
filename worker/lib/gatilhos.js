@@ -161,12 +161,18 @@ export async function linkDaVariante(env, g, v, r) {
 // "recentes" (horas): só os posts publicados nesse intervalo. É a conferência de minuto em minuto, que responde rápido
 // onde chegam quase todos os comentários; a de 10 minutos continua passando por todos.
 // Cada perfil por si (lib/perfis.js): as palavras do perfil, os posts do perfil e a conta do perfil naquela rede.
-const CUSTO_VARRER_POST = 4; // chamadas externas para ler um post: até 2 páginas na rede, a gravação e a marca de lido
+// Quanto lê por volta. Workers pago (desde 10/11/2026): até 6 páginas de comentários por post; 10 posts na volta de 10
+// minutos e 4 na de minuto em minuto, que é só a reserva do aviso da Meta (o comentário chega por ele em uns 8 segundos):
+// ler todos os recentes a cada minuto dobraria as leituras na Meta sem ganho. Plano grátis: 2 páginas e 2 posts.
+const paginasPorPost = (env) => (pago(env) ? 6 : 2);
+const postsPorVolta = (env, recentes) => (pago(env) ? (recentes ? 4 : 10) : 2);
+const custoVarrerPost = (env) => paginasPorPost(env) + 2; // chamadas externas para ler um post: as páginas, a gravação e a marca de lido
 export async function varrerComentarios(env, { posts: maxPosts, recentes } = {}) {
   const gatilhos = await db.select(env, 'gatilhos', { filtros: { ativo: 'eq.true' }, select: 'id,rede,perfil,palavra,posts' });
   if (!gatilhos.length) return { posts: 0, novos: 0 };
   const cfg = await ajustesComenta(env);
   const resultado = { posts: 0, novos: 0 };
+  const CUSTO_VARRER_POST = custoVarrerPost(env);
   const grupos = [...new Set(gatilhos.map((g) => `${g.rede}:${perfilValido(g.perfil)}`))];
   for (const grupo of grupos) {
     // Sem folga de chamadas externas nesta execução (nucleo/db.js): os posts que faltam ficam para a próxima volta.
@@ -187,7 +193,7 @@ export async function varrerComentarios(env, { posts: maxPosts, recentes } = {})
       filtros: { rede: `eq.${rede}`, perfil: `eq.${perfil}`, or: `(${partes.join(',')})`, ...(recentes ? { publicado_em: `gt.${new Date(Date.now() - recentes * 3600_000).toISOString()}` } : {}) },
       select: 'id,id_na_rede,palavra_chave,comentarios_ate,comentarios_lidos_em', ordem: 'comentarios_lidos_em.asc.nullsfirst', limite: 40,
     });
-    const alvo = candidatos.filter((p) => fixos.includes(p.id_na_rede) || genericas.has(normalPalavra(p.palavra_chave))).slice(0, maxPosts || (pago(env) ? 10 : 2));
+    const alvo = candidatos.filter((p) => fixos.includes(p.id_na_rede) || genericas.has(normalPalavra(p.palavra_chave))).slice(0, maxPosts || postsPorVolta(env, recentes));
     if (!alvo.length) continue;
     const credenciais = await credenciaisAtivas(env, conexao);
     const eu = normalPalavra(String(conexao.conta_nome || '').replace(/^@/, ''));
@@ -202,8 +208,8 @@ export async function varrerComentarios(env, { posts: maxPosts, recentes } = {})
       if (folgaDeChamadas(env) < CUSTO_VARRER_POST) { resultado.sem_folga = true; break; }
       let comentarios;
       try {
-        contarChamada(env, pago(env) ? 6 : 2); // até esse tanto de páginas na rede
-        comentarios = await m.lerComentarios({ credenciais, post_id: p.id_na_rede, desde, paginas: pago(env) ? 6 : 2 });
+        contarChamada(env, paginasPorPost(env)); // até esse tanto de páginas na rede
+        comentarios = await m.lerComentarios({ credenciais, post_id: p.id_na_rede, desde, paginas: paginasPorPost(env) });
       } catch (e) {
         // Token morto desta conta: as outras contas (o outro perfil) continuam.
         if (await avisarSeTokenMorreu(env, conexao, e)) break;
@@ -372,11 +378,16 @@ const marcar = (env, id, status, erro, extra) => db.rpc(env, 'marcar_resposta', 
 // o eco dela ser reconhecido como do sistema (atendente.js).
 const midDe = (enviado) => (enviado && enviado.message_id ? String(enviado.message_id) : undefined);
 
-// Chamadas externas do envio, para caber no limite da execução (plano grátis: 50; contador em nucleo/db.js).
+// Chamadas externas do envio, para caber no limite da execução (contador em nucleo/db.js).
 // O fixo: os ajustes, a conta da hora, a fila, as palavras e, no primeiro item, a conta, os números da versão, o link
 // curto e a oferta. Cada item: o direct, o registro, a resposta pública (a IA, o consumo e o comentário) e o registro dela.
 const CUSTO_ENVIO_FIXO = 10;
 const CUSTO_ENVIO_ITEM = 7;
+// Directs por execução (o teto por hora, config.comenta.limite_hora, vale por cima disto). Workers pago: 10, e não
+// 40 como antes: cada item leva uns 5 segundos (o direct, a IA e a resposta pública), 40 seguidos passavam de 3
+// minutos, o relógio rodava por cima de si mesmo e duas execuções juntas podiam passar do teto por hora. O pico real
+// até 10/11/2026 foi de 3 directs num minuto. Plano grátis: 5.
+const ENVIOS_POR_VEZ = (env) => (pago(env) ? 10 : 5);
 
 export async function enviarRespostas(env, { limite } = {}) {
   // Só sai da fila o que dá para levar até o fim com as chamadas externas que sobram nesta execução.
@@ -388,7 +399,7 @@ export async function enviarRespostas(env, { limite } = {}) {
   const umaHora = await db.select(env, 'respostas_gatilho', { filtros: { enviado_em: `gte.${new Date(Date.now() - 3600_000).toISOString()}` }, select: 'id', limite: teto + 1 }).catch(() => []);
   const folga = teto - (umaHora || []).length;
   if (folga <= 0) return { enviadas: 0, falhas: 0, limite: `Limite de ${teto} directs por hora.` };
-  const lote = await db.rpc(env, 'pegar_respostas', { p_limite: Math.min(limite || (pago(env) ? 40 : 5), folga, cabem) });
+  const lote = await db.rpc(env, 'pegar_respostas', { p_limite: Math.min(limite || ENVIOS_POR_VEZ(env), folga, cabem) });
   if (!lote || !lote.length) return { enviadas: 0, falhas: 0 };
   // O que foi pego e ainda não teve o envio começado. Se a volta parar antes da hora (acesso vencido, limite da Meta,
   // falta de chamadas, erro), esses voltam para "pendente" na hora, no fim da função. Em "enviando" fica só o item que

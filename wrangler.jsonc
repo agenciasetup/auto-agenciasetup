@@ -38,6 +38,9 @@
     "SITE_URL": "https://agenciasetup.com.br",
     "CURSO_URL": "https://curso.agenciasetup.com.br",
     // Asaas de verdade (a chave fica em segredo: ASAAS_CHAVE). No computador, sem a chave, o pagamento é simulado.
-    "ASAAS_AMBIENTE": "producao"
+    "ASAAS_AMBIENTE": "producao",
+    // Workers pago (US$ 5 por mês, assinado em 10/11/2026): o relógio faz mais por vez (nucleo/db.js, lib/relogio.js,
+    // lib/gatilhos.js, lib/desempenho.js, lib/radar.js). Os tetos de mensagens para as pessoas não mudam. Não é segredo.
+    "WORKERS_PAGO": "1"
   }
 }

@@ -235,9 +235,9 @@ Pronto quando: dá para gravar a tela do escritório trabalhando e postar.
 ## Custo e limites
 
 - **API do Claude:** só o que precisa responder na hora no Worker (o rascunho da resposta do direct) gasta a chave de API, na casa de centavos por dia. Os analistas usam o crédito de US$ 200 por mês do plano Max 20x, pelo GitHub Actions. O valor real aparece na tela, e o teto (US$ 2 por dia, até o dono mudar) corta o que passar.
-- **Assinaturas (resposta ao dono em 09/11):** nada para assinar agora. O Workers pago (US$ 5 por mês) só entra se o plano grátis acusar limite. O ponto fraco do "100% grátis" é o banco: conferir no Supabase se existe backup automático; se não, montar um backup diário de graça.
+- **Assinaturas (resposta ao dono em 09/11):** nada para assinar agora. O Workers pago (US$ 5 por mês) só entra se o plano grátis acusar limite. (Atualização de 10/11: o dono assinou o Workers pago; ver `docs/decisoes.md`, "Workers pago".) O ponto fraco do "100% grátis" é o banco: conferir no Supabase se existe backup automático; se não, montar um backup diário de graça.
 - **Limite da assinatura:** hoje o direct abre 9 sessões por dia. Com a leitura no Worker, sobram 2. Os analistas não usam a assinatura.
-- **Cloudflare:** o plano grátis aguenta se cada analista rodar na sua vez, como o relógio já faz. O plano pago (US$ 5 por mês) só entra se apertar.
+- **Cloudflare:** Workers pago desde 10/11/2026 (US$ 5 por mês): até 1.000 chamadas externas por minuto no nosso teto e 30 s de processador por execução, e passam a existir Queues, Durable Objects e Browser Rendering. Cada analista continua rodando na sua vez, para um minuto não ficar longo.
 - **Imagem:** a nuvem não usa o Magnific de graça. Sem estoque, ela monta sem foto ou avisa. Nunca compra crédito.
 
 ## Riscos e como o plano lida com eles

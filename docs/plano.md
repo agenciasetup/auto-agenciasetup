@@ -45,6 +45,8 @@ Pedido do dono: o sistema 100% focado em engajar, entregar material atualizado e
 - [x] Oferta do funil no fim de cada recurso e da DM; captura de e-mail ligada ao recurso. Rascunho do mini curso "Posts com IA sem cara de IA" (produto inativo, landing em rascunho).
 - [x] Painel: Início com o motor, Em alta, Desempenho, Comenta X, Oferta (em Cursos), aviso de reconexão em Redes. Claude: 9 ferramentas novas e instruções do motor.
 - [x] Plano grátis da Cloudflare respeitado: relógio em rodízio (fila e Comenta X sempre; radar, métricas ou posts por vez). `WORKERS_PAGO=1` aumenta tudo se o plano mudar.
+- [x] Workers pago (10/11/2026, assinado pelo dono, US$ 5 por mês): `WORKERS_PAGO=1` no `wrangler.jsonc`. O Atendente responde até 6 conversas por minuto (eram 2), o Comenta X lê mais posts e mais páginas de comentários, o radar lê as 25 fontes por rodada e métricas e posts passam por todas as contas. Os tetos de mensagens para as pessoas não mudaram. Ver `docs/decisoes.md` (10/11/2026, Workers pago).
+- [x] Modo pago no ar (10/11/2026, "Sim, publique"), versão `55912598` (e na `95e9e709`, publicada logo depois pelo time de Design): conferido o site e o conector, e o relógio rodando sem erro.
 - [x] Reconectar o Instagram em Redes (23/10/2026): 5 permissões, métricas chegando.
 - [x] Publicar o app da Meta (modo ao vivo), em 23/10/2026: os comentários do público passaram a chegar.
 - [x] Teste de ponta a ponta da DM (palavra TESTEDM no post mais recente): o comentário do dono foi lido pelo relógio e a DM saiu em 24/10/2026 (23h10 de Brasília do dia 23), sem erro. O acesso padrão da Meta basta.
