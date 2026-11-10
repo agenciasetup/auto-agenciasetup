@@ -8,6 +8,7 @@ Este arquivo tem duas partes: como a peça funciona (para quem cuida do sistema)
 
 - **Quem é:** o agente `executor` do Escritório (sala Direção, ao lado do Chefe de gabinete: um cobra, o outro faz). Roda no computador, numa tarefa agendada do Claude chamada `fazer-aprovadas`, uma vez por dia, na pasta do projeto, sem ninguém olhando.
 - **O que faz:** pega UM cartão aprovado por rodada, só de esforço pequeno, o aprovado há mais tempo primeiro. Faz o que cabe dentro do repositório (código interno, texto de instrução, skill, ensaio, documento), confere com os ensaios, deixa um commit local e anota o andamento no cartão. Não publica, não grava no banco, não fala com ninguém.
+- **O que fica fora da fila mesmo sendo pequeno:** o teste de estilo da semana (cartão do Diretor de arte). Não é obra: o Designer aplica nas próximas capas e o Diretor de arte mede e fecha o cartão sozinho. A tela mostra "Fora da fila" com esse motivo (`porQueNaoPega` em `worker/lib/escritorio.js`, desde 10/11/2026).
 - **Quem escolhe o cartão é o sistema,** não a tarefa: `verFilaDoExecutor` em `worker/lib/escritorio.js` (conector: `escritorio_ver` com `fila` verdadeiro). A mesma regra aparece na tela.
 - **Onde fica o andamento:** não tem tabela nem coluna nova. É o último turno que cita o cartão (`turnos.dados.proposta`), com `dados.desfecho` e `dados.nota`. A tarefa abre o turno ("rodando") antes de mexer em qualquer arquivo e fecha no fim. Se a sessão cair no meio, a tentativa fica marcada e o Zelador avisa do turno preso.
 - **Os desfechos:**

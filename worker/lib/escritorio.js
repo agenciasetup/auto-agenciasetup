@@ -670,6 +670,9 @@ export function andamentosDe(aprovadas, turnos, quando = Date.now()) {
 // Por que o Executor não pega este cartão agora (null: pode pegar). A regra é uma só, para a tarefa e para a tela.
 // O que o cartão pede (se mexe em site público, dinheiro, banco ou mensagem) não se decide aqui: é a triagem da tarefa.
 function porQueNaoPega(p, a) {
+  // O teste de estilo da semana não é obra para o Executor: o Designer aplica nas próximas capas, e o Diretor de arte
+  // mede e fecha o cartão sozinho (agentes/diretor-de-arte.js). Na fila, ele gastaria a rodada de um dia à toa.
+  if (p.agente_id === 'diretor-de-arte') return 'É um teste de estilo: o Designer aplica nas próximas capas, e o Diretor de arte mede e fecha o cartão.';
   if (p.esforco !== 'p') return `Só cartão pequeno entra na fila do Executor. Este é ${p.esforco === 'g' ? 'grande' : 'médio'}: peça ao Claude para fazer.`;
   if (!a) return null;
   if (a.estado === 'falta_publicar') return 'Já foi feito no projeto. Falta publicar.';

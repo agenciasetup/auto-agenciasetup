@@ -178,6 +178,10 @@ confere('falhou uma vez, em outro dia: pode tentar de novo', naFila(10).pode_faz
 confere('pequeno sem andamento: pode fazer', naFila(1).pode_fazer === true && naFila(1).andamento === null);
 confere('o primeiro que pode é o da rodada (o que falhou ontem, aprovado antes do novo)', fila.find((c) => c.pode_fazer).id === idDe(10));
 confere('sem cartão aprovado a fila é vazia', filaDoExecutor([], {}).length === 0 && filaDoExecutor(null, null).length === 0);
+// O teste de estilo da semana (cartão do Diretor de arte) é pequeno, mas não é obra do Executor: quem aplica é o
+// Designer e quem mede e fecha é o próprio Diretor de arte.
+const comTeste = filaDoExecutor([cartao(91, { agente_id: 'diretor-de-arte', sala: 'design' }), cartao(92)], {});
+confere('teste de estilo do Diretor de arte fica fora da fila, com o motivo', comTeste[0].pode_fazer === false && /teste de estilo/.test(comTeste[0].por_que_nao) && comTeste[1].pode_fazer === true);
 
 // ================================================================ 3. com o banco de mentira
 console.log('\nA leitura da tarefa, o ciclo pelos turnos e a tela (banco de mentira):');

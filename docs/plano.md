@@ -343,4 +343,7 @@ Pedido do dono em 09/11/2026: automatizar sem depender do computador ligado e or
 - [ ] Chamados, o que falta ver: o primeiro chamado aberto pelo Atendente numa conversa de verdade. Os vendedores da tarefa do direct aprenderam a abrir chamado em 10/11 (parte "Chamado de suporte" da skill `direct-agenciasetup` e o roteiro da tarefa `direct-followup`): falta ver a primeira rodada abrindo um.
 - [ ] Posts de frase montados na nuvem (Browser Rendering): o item 5 do lote 3, ainda não começado (cerca de um dia).
 - [ ] Revisão do Escritório: o que ficou aberto está em `docs/revisao-escritorio.md` ("Ainda aberto").
+- [x] Passada nos cartões aprovados da mesa (10/11/2026, pedido do dono: "veja o que você pode ir fazendo"): "Capas fora da curva" fechado (a regra já vale e virou o teste da semana); o teste de estilo saiu da fila do Executor (quem fecha é o Diretor de arte); "API de lotes" e "GSAP no motor de vídeo" marcados como Espera você, com o motivo no cartão.
+- [ ] Cartões de vídeo aprovados e parados (GSAP, Calango que fala, Garimpar o HyperFrames): são obra em `Curso-Videos/estudio`, fora do Git. Fazer com o estúdio livre (em 10/11 a conversa da produção dos vídeos estava trabalhando lá), ou passar para ela.
+- [ ] Decisão do dono: o cartão da API de lotes. O radar não usa o Claude; o que daria para pôr em lote gasta uns US$ 4 por mês (estimativa de dois dias de registro), então a economia seria de uns US$ 2 por mês.
 - [ ] Próximas construções: os primeiros analistas no Worker (chefe de gabinete e gerente de receita), o zelador e o plantão.
