@@ -137,7 +137,8 @@ const rotas = roteador([
   ['PATCH', '/pecas/:id', async (x) => A.editarPeca(x, x.params.id, await corpoJson(x.request))],
   ['POST', '/pecas/:id/aprovar', (x) => A.mudarStatusPeca(x, x.params.id, 'aprovar')],
   ['POST', '/pecas/:id/agendar', async (x) => A.mudarStatusPeca(x, x.params.id, 'agendar', await corpoJson(x.request))],
-  ['POST', '/pecas/:id/cancelar', (x) => A.mudarStatusPeca(x, x.params.id, 'cancelar')],
+  ['POST', '/pecas/:id/cancelar', async (x) => A.mudarStatusPeca(x, x.params.id, 'cancelar', await corpoJson(x.request).catch(() => ({})))],
+  ['GET', '/pecas-recusadas', (x) => A.verPostsRecusados(x, Object.fromEntries(x.url.searchParams))],
   ['POST', '/pecas/:id/voltar', (x) => A.mudarStatusPeca(x, x.params.id, 'voltar')],
   ['POST', '/pecas/:id/publicar-agora', (x) => A.publicarPecaAgora(x, x.params.id)],
 

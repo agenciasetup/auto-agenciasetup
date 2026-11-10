@@ -16,6 +16,7 @@ import { normalPalavra } from './temas.js';
 import { avisarIndexNow } from './seo.js';
 import { ASSUNTOS, INTENCOES, TIPOS_ARTIGO, caminhoArtigo } from './assuntos.js';
 import { analisar } from './analisador-seo.js';
+import { aprenderComARecusa, lerRecusa, listarRecusas } from './recusas.js';
 
 // As ações da área de membros (vendas, alunos, aulas, ofertas, links) ficam em acoes-area.js e saem por aqui também.
 export * from './acoes-area.js';
@@ -333,7 +334,9 @@ export async function editarPeca(x, id, dadosBrutos) {
 }
 
 // aprovar | agendar | cancelar | voltar
-export async function mudarStatusPeca(x, id, acao, { agendado_para } = {}) {
+// cancelar é o "Recusar" do painel: com motivo (e a parte, texto, imagem ou os dois), a recusa fica na peça e vira
+// lição no caderno do Redator, do Designer e do Revisor (lib/recusas.js).
+export async function mudarStatusPeca(x, id, acao, { agendado_para, motivo, parte } = {}) {
   const atual = await db.um(x.env, 'pecas', { id: `eq.${id}` });
   if (!atual) throw new Erro(404, 'Não achei essa peça.');
   let dados;
@@ -355,14 +358,25 @@ export async function mudarStatusPeca(x, id, acao, { agendado_para } = {}) {
     exigir(x.u, 'pecas.editar');
     if (['publicado', 'publicando'].includes(atual.status)) throw new Erro(409, 'Peça já publicada (ou publicando) não pode ser cancelada.');
     dados = { status: 'cancelado', proxima_tentativa: null };
+    if (motivo !== undefined || parte !== undefined) dados.recusa = lerRecusa({ motivo, parte }, x.u.casa ? 'Claude' : String(x.u.nome || '').trim().split(/\s+/)[0]);
   } else if (acao === 'voltar') {
     exigir(x.u, 'pecas.editar');
     if (['publicado', 'publicando'].includes(atual.status)) throw new Erro(409, 'Peça já publicada não volta para rascunho.');
     dados = { status: 'rascunho', agendado_para: null, aprovado_por: null, aprovado_em: null, erro: null, tentativas: 0, proxima_tentativa: null };
   } else throw new Erro(400, 'Ação desconhecida. Use aprovar, agendar, cancelar ou voltar.');
   const [r] = await db.update(x.env, 'pecas', { id: `eq.${atual.id}` }, dados);
-  await auditar(x.env, x.u, `peca.${acao}`, `pecas:${r.id}`, acao === 'agendar' ? { agendado_para: dados.agendado_para } : {});
+  await auditar(x.env, x.u, `peca.${acao}`, `pecas:${r.id}`, acao === 'agendar' ? { agendado_para: dados.agendado_para } : dados.recusa ? { parte: dados.recusa.parte, motivo: dados.recusa.motivo } : {});
+  if (dados.recusa && dados.recusa.motivo) {
+    const quem = x.u.casa ? { quem: null, quemNome: 'Claude' } : { quem: x.u.id || null, quemNome: String(x.u.nome || '').trim().split(/\s+/)[0] };
+    r.aprendeu = (await aprenderComARecusa(x.env, atual, dados.recusa, quem)).agentes;
+  }
   return r;
+}
+
+// As recusas do dono, com o motivo: o que a tarefa de post lê antes de criar (conector posts_recusados).
+export async function verPostsRecusados(x, d = {}) {
+  exigir(x.u, 'pecas.ver');
+  return { recusas: await listarRecusas(x.env, { dias: d.dias, perfil: d.perfil, limite: d.limite }) };
 }
 
 export async function publicarPecaAgora(x, id) {

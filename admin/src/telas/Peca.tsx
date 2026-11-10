@@ -10,6 +10,9 @@ import { EtiquetaPeca, EtiquetaPerfil, NomeRede } from './comum';
 import { OpcoesInstagram } from './postComum';
 
 const EDITAVEL = ['rascunho', 'aprovado', 'erro'];
+// Recusar pede o porquê (pedido do dono em 10/11/2026): o motivo vira lição no caderno do time (worker/lib/recusas.js).
+const PARTES = [{ v: 'texto', t: 'O texto' }, { v: 'imagem', t: 'A imagem' }, { v: 'os_dois', t: 'Os dois' }];
+const NOME_PARTE: Record<string, string> = { texto: 'o texto', imagem: 'a imagem', os_dois: 'o texto e a imagem' };
 
 export default function Peca({ params }: { params: { id: string } }) {
   const { pode } = useSessao();
@@ -17,6 +20,7 @@ export default function Peca({ params }: { params: { id: string } }) {
   const [form, setForm] = useState<any>(null);
   const [agendar, setAgendar] = useState(false);
   const [quando, setQuando] = useState('');
+  const [recusa, setRecusa] = useState<{ motivo: string; parte: string } | null>(null);
   const { ocupado, rodar } = useAcao();
 
   useEffect(() => {
@@ -71,6 +75,15 @@ export default function Peca({ params }: { params: { id: string } }) {
     setDados({ ...p, ...r });
   }, ok);
 
+  // Recusar: salva o que foi editado, grava o motivo e fecha a pergunta só se deu certo.
+  const recusar = () => recusa && rodar('cancelar', async () => {
+    if (mudou && podeEditar) await patch(`/pecas/${p.id}`, { ...form, conexao_id: form.conexao_id || null });
+    const r = await post(`/pecas/${p.id}/cancelar`, { motivo: recusa.motivo.trim(), parte: recusa.parte });
+    setDados({ ...p, ...r });
+    setRecusa(null);
+  }, 'Peça recusada. O motivo virou lição no caderno do time.');
+  const recusaPronta = !!recusa && !!recusa.parte && recusa.motivo.trim().length >= 3;
+
   const subirImagem = async (arquivo: File, i: number | null) => {
     await rodar('imagem', async () => {
       const r = await enviarArquivo(arquivo, 'midia');
@@ -90,6 +103,7 @@ export default function Peca({ params }: { params: { id: string } }) {
       {p.status === 'agendado' && <Faixa><b>Agendada para {dataHora(p.agendado_para)}.</b> {conectada ? `O relógio publica sozinho na hora marcada, por ${contas.find((c: any) => c.id === form.conexao_id)?.conta_nome || contas[0]?.conta_nome || 'a conta do perfil'}.` : `A rede ainda não tem conta no perfil ${nomePerfil}: na hora marcada a peça vai dar erro. Conecte em Redes.`}</Faixa>}
       {p.status === 'publicado' && <Faixa tipo="ok"><b>Publicada {dataHora(p.publicado_em)}.</b> {p.url_publicada && <a href={p.url_publicada} target="_blank" rel="noopener">Ver na rede</a>}{p.id_na_rede && pode('desempenho.ver') && <> · <Link para={`/resultados/${p.id_na_rede}`}>Ver os resultados</Link></>}</Faixa>}
       {p.status === 'publicando' && <Faixa tipo="aviso">Publicando agora. Atualize em instantes.</Faixa>}
+      {p.status === 'cancelado' && p.recusa?.motivo && <Faixa tipo="aviso"><b>Recusada {dataHora(p.recusa.em)}</b> (o problema: {NOME_PARTE[p.recusa.parte] || 'o texto e a imagem'}). {p.recusa.motivo}</Faixa>}
       {!podeEditar && pode('pecas.editar') && !['publicado', 'publicando'].includes(p.status) && <Faixa>Para editar, volte a peça para rascunho.</Faixa>}
 
       {(podeAprovar || pode('pecas.editar')) && !['publicado', 'publicando'].includes(p.status) && (
@@ -101,7 +115,7 @@ export default function Peca({ params }: { params: { id: string } }) {
               <button className="bt bt-tinta" disabled={!!ocupado || !conectada} title={conectada ? undefined : `Conecte a conta do perfil ${nomePerfil} em Redes para publicar`} onClick={() => { if (confirm(`Publicar esta peça agora no perfil ${nomePerfil}, por ${contas.find((c: any) => c.id === form.conexao_id)?.conta_nome || contas[0]?.conta_nome || 'a conta conectada'}?`)) acao('publicar', 'publicar-agora', {}, 'Peça enviada para a rede.'); }}><Send />{ocupado === 'publicar' ? 'Publicando…' : 'Publicar agora'}</button>
             )}
             {pode('pecas.editar') && ['aprovado', 'agendado', 'erro', 'cancelado'].includes(p.status) && <button className="bt bt-texto" disabled={!!ocupado} onClick={() => acao('voltar', 'voltar', {}, 'A peça voltou para rascunho.')}><RotateCcw />Voltar a rascunho</button>}
-            {podeAprovar && p.status !== 'cancelado' && <button className="bt bt-texto bt-perigo" disabled={!!ocupado} onClick={() => { if (confirm('Cancelar esta peça? Ela não vai ser publicada.')) acao('cancelar', 'cancelar', {}, 'Peça cancelada.'); }}><XCircle />Cancelar</button>}
+            {podeAprovar && p.status !== 'cancelado' && <button className="bt bt-texto bt-perigo" disabled={!!ocupado} onClick={() => setRecusa({ motivo: '', parte: '' })}><XCircle />Recusar</button>}
           </div>
           {!conectada && podeAprovar && <p className="campo-dica" style={{ marginTop: 10 }}>{p.rede && p.rede.situacao === 'em_breve'
             ? `O módulo de ${p.rede.nome} ainda não está ligado ao sistema. Dá para aprovar; publicar e agendar com efeito só depois que ele entrar.`
@@ -201,6 +215,26 @@ export default function Peca({ params }: { params: { id: string } }) {
         </>}>
         <Campo rotulo="Data e hora (no horário deste aparelho)" tipo="datetime-local" valor={quando} mudar={setQuando} />
         {!conectada && <Faixa tipo="aviso">Esta rede ainda não tem conta no perfil {nomePerfil}. Se continuar assim até a hora marcada, a peça vai dar erro.</Faixa>}
+      </Modal>
+
+      <Modal titulo="Por que você recusou?" aberto={!!recusa} fechar={() => setRecusa(null)}
+        rodape={<>
+          <button className="bt bt-texto" onClick={() => setRecusa(null)}>Voltar</button>
+          <button className="bt bt-tinta bt-perigo" disabled={!recusaPronta || !!ocupado} onClick={recusar}><XCircle />{ocupado === 'cancelar' ? 'Recusando…' : 'Recusar'}</button>
+        </>}>
+        {recusa && <>
+          <div className="campo">
+            <label>Onde está o problema?</label>
+            <div className="barra-acoes">
+              {PARTES.map((o) => (
+                <button key={o.v} type="button" className={`bt bt-mini${recusa.parte === o.v ? ' bt-tinta' : ''}`} aria-pressed={recusa.parte === o.v} onClick={() => setRecusa({ ...recusa, parte: o.v })}>{o.t}</button>
+              ))}
+            </div>
+          </div>
+          <AreaTexto rotulo="O que ficou errado" valor={recusa.motivo} mudar={(v) => setRecusa({ ...recusa, motivo: v })} linhas={4}
+            placeholder="Ex.: a capa ficou escura, sem cor, e o bicho está pequeno no quadro."
+            dica="Vira lição: o texto vai para o caderno do Redator, a imagem para o do Designer, e o Revisor aprende os dois. A peça não vai ser publicada." />
+        </>}
       </Modal>
     </div>
   );

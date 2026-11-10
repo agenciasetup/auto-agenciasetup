@@ -152,7 +152,7 @@ const FERRAMENTAS = [
   },
   {
     name: 'mudar_status_peca', risco: 'escrita', exige: 'pecas.editar', description: 'Aprova, agenda (agendado_para em ISO; sem data, publica assim que a rede estiver ligada), cancela ou volta uma peça para rascunho. Aprovar e agendar pedem cargo de Editor.',
-    inputSchema: { type: 'object', properties: { ...ID, acao: { type: 'string', enum: ['aprovar', 'agendar', 'cancelar', 'voltar'] }, agendado_para: { type: 'string' } }, required: ['id', 'acao'] },
+    inputSchema: { type: 'object', properties: { ...ID, acao: { type: 'string', enum: ['aprovar', 'agendar', 'cancelar', 'voltar'] }, agendado_para: { type: 'string' }, motivo: { type: 'string', description: 'Só para cancelar: por que a peça foi recusada, nas palavras do dono. Vira lição no caderno do Redator, do Designer e do Revisor.' }, parte: { type: 'string', enum: ['texto', 'imagem', 'os_dois'], description: 'Só para cancelar: o problema foi o texto, a imagem ou os dois.' } }, required: ['id', 'acao'] },
   },
   { name: 'publicar_peca_agora', risco: 'perigosa', externa: true, exige: 'pecas.aprovar', description: 'Publica uma peça na rede agora mesmo (sai do site e vai para o público). Só funciona se a rede estiver conectada.', inputSchema: { type: 'object', properties: ID, required: ['id'] } },
   {
@@ -204,6 +204,7 @@ const FERRAMENTAS = [
   { name: 'video_cacador_testar', risco: 'leitura', exige: 'pautas.ver', description: 'Roda o Caçador de virais agora sem gravar nada: lê os próximos canais da vez e devolve a base de cada um e o que saiu da curva.', inputSchema: { type: 'object', properties: { quantos: { type: 'number', description: 'De 1 a 6 canais. Padrão 4.' } } } },
   { name: 'video_cacador_rodar', risco: 'escrita', exige: 'pautas.editar', description: 'Roda o Caçador de virais agora, fora da hora: lê os próximos canais da vez (até 8) e guarda o que saiu da curva. Não gasta IA.', inputSchema: { type: 'object', properties: { quantos: { type: 'number' } } } },
   { name: 'video_roteirista', risco: 'escrita', exige: 'pautas.editar', description: 'Roda a Roteirista agora: lê os virais novos, a oferta e as palavras ligadas e põe até 3 roteiros na mesa do Escritório (uma chamada ao Claude, dentro do teto do dia). simular=true só mostra o que ela leria, sem gastar. Sozinha, ela roda segunda e quinta às 9h31.', inputSchema: { type: 'object', properties: { simular: { type: 'boolean' } } } },
+  { name: 'posts_recusados', risco: 'leitura', exige: 'pecas.ver', description: 'Os posts que o dono recusou, com o motivo nas palavras dele e se o problema foi o texto, a imagem ou os dois (padrão: últimos 30 dias). Cada motivo é regra para o próximo post: o texto vale para o Redator, a imagem para o Designer, e o Revisor confere os dois.', inputSchema: { type: 'object', properties: { dias: { type: 'number' }, perfil: { type: 'string', enum: ['br', 'en'] }, limite: { type: 'number' } } } },
   // O setor de Design: a leitura das capas fora da curva (Olheiro visual) e o teste de estilo da semana (Diretor de arte).
   { name: 'design_leitura', risco: 'leitura', exige: 'pautas.ver', description: 'O que o Designer lê antes da ficha da capa: o teste de estilo da semana (título, regra, quantas capas, quantas já foram marcadas) com a instrução do que fazer agora, e a última leitura do Olheiro visual (as capas que saíram da curva, para cima e para baixo, com nota, salvos, assunto, cor, palavra grande e o padrão). Quando o teste está rodando, a capa de carrossel segue a regra e o turno do Designer (agente redator-de-carrossel) leva dados.design_teste com o id do teste e dados.peca_id.', inputSchema: { type: 'object', properties: {} } },
   { name: 'design_olheiro', risco: 'escrita', exige: 'pautas.editar', description: 'Roda o Olheiro visual agora: acha as capas que saíram da curva em nota e salvos nas últimas 5 semanas, lê cada uma com o Claude (visão) e põe o padrão e a regra na mesa do Escritório (uma chamada, dentro do teto do dia). simular=true só mostra as capas e as contas, sem gastar. Sozinho, ele roda toda segunda às 9h03.', inputSchema: { type: 'object', properties: { simular: { type: 'boolean' } } } },
@@ -357,6 +358,7 @@ async function executar(nome, a, x) {
     case 'video_cacador_testar': return A.testarCacadorDeVirais(x, a);
     case 'video_cacador_rodar': return A.rodarCacadorAgora(x, a);
     case 'video_roteirista': return A.rodarRoteiristaAgora(x, a);
+    case 'posts_recusados': return A.verPostsRecusados(x, a);
     case 'design_leitura': return A.verLeituraDeDesign(x);
     case 'design_olheiro': return A.rodarOlheiroVisualAgora(x, a);
     case 'design_diretor': return A.rodarDiretorDeArteAgora(x, a);

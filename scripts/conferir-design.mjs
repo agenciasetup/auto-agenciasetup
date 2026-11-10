@@ -8,6 +8,7 @@ import { env as local } from './env.mjs';
 import { separar, tipoDe, conferirLeitura, contar, cartaoDe, textoLivre, tituloCurto, rodarOlheiroVisual } from '../worker/lib/agentes/olheiro-visual.js';
 import { conferirTeste, medir, cartaoDoResultado, resumoDaLeitura, rodarDiretorDeArte, lerDesign } from '../worker/lib/agentes/diretor-de-arte.js';
 import { daTarefa, tarefasQueNaoRodaram } from '../worker/lib/agentes/zelador.js';
+import { lerRecusa, licaoDaRecusa, tipoDaPeca } from '../worker/lib/recusas.js';
 
 let falhas = 0;
 const ok = (nome, cond, visto) => { if (!cond) falhas++; console.log(cond ? 'ok  ' : 'ERRO', nome, cond ? '' : JSON.stringify(visto).slice(0, 300)); };
@@ -108,6 +109,22 @@ const manha = Date.parse('2026-11-16T15:30:00Z'); // 12h30 em Brasília
 const so8h = [{ agente_id: 'redator-de-carrossel', status: 'ok', inicio: '2026-11-16T11:20:00Z', tarefa: 'posts-de-frase-do-dia' }];
 const alertas = tarefasQueNaoRodaram(so8h, {}, manha).map((a) => a.tipo);
 ok('o Designer da frase das 8h não esconde o carrossel que não rodou', alertas.includes('nao-rodou:redator-de-carrossel') && !alertas.includes('nao-rodou:redator-de-frase'), alertas);
+
+// ---------------------------------------------------------------- Recusa de post: o motivo vira lição
+const pFrase = { titulo: '19h · Antes do pix cair', formato: 'carrossel', origem_tipo: 'livre', slides: [{}, {}, {}] };
+const pCarrossel = { titulo: 'Pare de usar fundos sem graça', formato: 'carrossel', origem_tipo: 'recurso', slides: Array(8).fill({}) };
+ok('tipo da peça: frase e carrossel', tipoDaPeca(pFrase) === 'post de frase' && tipoDaPeca(pCarrossel) === 'carrossel' && tipoDaPeca({ formato: 'reels' }) === 'reels');
+const rImg = lerRecusa({ motivo: '  A capa ficou escura   e sem cor. ', parte: 'imagem' }, 'Filipe Lourenço');
+ok('a recusa guarda o motivo limpo, a parte e quem', rImg.motivo === 'A capa ficou escura e sem cor.' && rImg.parte === 'imagem' && rImg.por === 'Filipe Lourenço' && !!rImg.em, rImg);
+ok('parte desconhecida vira os dois', lerRecusa({ motivo: 'Não gostei do texto.', parte: 'som' }).parte === 'os_dois');
+ok('sem motivo (pelo conector) a recusa passa, sem lição', lerRecusa({ parte: 'texto' }).motivo === null);
+let barrou = null; try { lerRecusa({ motivo: 'x', parte: 'texto' }); } catch (e) { barrou = e.message; }
+ok('motivo de uma letra é barrado', !!barrou && barrou.includes('motivo'), barrou);
+const lImg = licaoDaRecusa(pCarrossel, rImg);
+ok('imagem: aprende o Designer e o Revisor', lImg.agentes.join() === 'redator-de-carrossel,revisor' && lImg.texto.includes('carrossel "Pare de usar fundos sem graça"') && lImg.texto.includes('a imagem') && lImg.texto.endsWith('sem cor.'), lImg);
+ok('texto: aprende o Redator e o Revisor', licaoDaRecusa(pFrase, lerRecusa({ motivo: 'Frase genérica.', parte: 'texto' })).agentes.join() === 'redator-de-frase,revisor');
+ok('os dois: aprendem os três', licaoDaRecusa(pFrase, lerRecusa({ motivo: 'Tudo fraco.', parte: 'os_dois' })).agentes.length === 3);
+ok('a lição cabe no caderno', licaoDaRecusa(pCarrossel, lerRecusa({ motivo: 'a'.repeat(900), parte: 'imagem' })).texto.length <= 600);
 
 // ---------------------------------------------------------------- com o banco
 const args = process.argv.slice(2);

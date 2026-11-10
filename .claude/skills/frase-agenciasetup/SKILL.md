@@ -35,6 +35,8 @@ O Conteúdo cuida das palavras e dos números; o Design cuida da imagem. Todo po
 
 As decisões do Filipe valem mais que a leitura do Olheiro. Na tarefa agendada, cada um registra o seu turno (veja a tarefa).
 
+**As recusas dele são lição (desde 10/11/2026).** Quando o Filipe recusa uma peça no painel, ele escreve o porquê e diz se o problema foi o texto, a imagem ou os dois. O motivo entra no caderno do Redator, do Designer e do Revisor, e `posts_recusados` no conector lista as recusas com as palavras dele. Leia antes de começar; regra nova entra nesta skill, com a data.
+
 ## O fluxo
 
 Cada fase termina numa verificação. O que falhar, conserte antes de seguir.

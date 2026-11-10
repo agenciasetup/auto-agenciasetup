@@ -762,6 +762,8 @@ Pedido do dono: "ao invés do MCP atual, construa o MCP estilo code mode do Clou
 - **Um teste de estilo por vez, aprovado pelo dono.** O teste só começa com o cartão aprovado e vale só para capas de carrossel. As decisões do Filipe na skill valem mais que a leitura e que o teste; título fora de preto, amarelo ou branco é barrado no código.
 - **No computador a chave do Claude não abre** (`prepararIntegracoes` pula as integrações no ambiente local). Os agentes de Design não rodam de verdade pelo computador; rodam no ar, pelo relógio ou pelo conector (`design_olheiro`, `design_diretor`).
 - **A capa vai como imagem, não como endereço.** A API do Claude recusou buscar a miniatura do Instagram pelo endereço. O Worker baixa cada capa (o Instagram primeiro, a cópia da peça se ele não abrir) e manda junto; com menos de 70% das capas abertas, a chamada nem é feita.
+- **Recusa do dono é lição, com o porquê dele.** Recusar uma peça pede onde está o problema (texto, imagem ou os dois) e o motivo. O motivo vai para o caderno de quem fez a parte (Redator ou Designer) e sempre para o do Revisor, que deixou passar; as tarefas de post leem as recusas antes de criar e passam a regra para a skill. O motivo fica num campo próprio da peça (`pecas.recusa`), porque as opções da peça são limpas a cada salvamento.
+- **Deploy de uma cópia limpa quando a pasta tem trabalho alheio pela metade.** O último commit mais só os arquivos da mudança, compilado à parte, com os mesmos arquivos do site conferidos antes de publicar.
 
 ## Em aberto
 
