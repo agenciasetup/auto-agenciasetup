@@ -210,6 +210,15 @@ Fora do painel: `/checkout/<oferta>`, `/checkout/obrigado?pedido=`, `POST /api/c
 - `GET /colmeia?tipo&produto&status&busca` → `{ itens: [{ id, tipo, produto, titulo, texto, prova, origem, autor, status, usos, vendas }], numeros: { ativas, propostas }, nomes }`
 - `POST /colmeia` `{ tipo, produto, titulo, texto, prova }` → o item (pelo painel vale na hora; pelo conector com a chave da casa, regra e resposta nascem como proposta)
 - `POST /colmeia/:id` `{ titulo, texto, produto, tipo, status: ativa|arquivada }` → o item
+- Formato do item (migration 46): `GET /colmeia` devolve `modo` em cada item (`frase`, `explicacao` ou vazio) e `nomes.modos`; `POST /colmeia` e `POST /colmeia/:id` aceitam `modo` (no modo `frase` o texto guarda as quebras de linha: cada linha é uma mensagem)
+- Treino da Colmeia (`worker/lib/acoes-treino.js`, só pelo painel; `colmeia.ver` para ler, `colmeia.editar` para o resto):
+  - `GET /treino` → `{ treino: { id, titulo, status, n, aprendizado, aprendido_em }, mensagens: [{ id, papel: cliente|atendente|nota, texto, autor, ia, criado_em }], salvas: [...] }`. A conversa aberta é uma só, a mesma para todos; se não existe, nasce aqui
+  - `GET /treino?depois=<id da última fala>` → `{ treino, mensagens }` só com as falas novas (o pedido que a tela faz a cada 2,5 segundos). `GET /treino?id=<id>` → uma conversa salva com as falas
+  - `POST /treino/mensagem` `{ id, papel: cliente|atendente, texto }` → `{ mensagem }`. 409 quando a conversa já foi encerrada
+  - `POST /treino/responder` `{ id }` → o Atendente de IA responde as últimas falas do cliente: `{ classe, mensagens }` (o que ele não responderia entra como `nota`)
+  - `POST /treino/recomecar` → a sala com uma conversa limpa. `POST /treino/salvar` `{ id, titulo? }` → a sala nova e `salva`
+  - `POST /treino/aprender` `{ id }` → `{ itens (propostas criadas na Colmeia), ja_sabia, fora, resumo, aprendizado, custo_usd }`. Uma chamada ao Claude, na conta do Conciliador
+  - `POST /treino/:id` `{ status: "descartada" }` → tira uma conversa salva da lista
 - `POST /followup/atendente/testar` aceita `{ texto (uma mensagem por linha), nome, usuario, ha_min, modelo }` e devolve também `espera`, `modelo`, `tokens` e `contexto`
 - `POST /followup/atendente` aceita `modelo: claude-haiku-5-5|claude-sonnet-5-5`
 

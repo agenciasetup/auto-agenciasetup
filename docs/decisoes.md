@@ -800,6 +800,18 @@ Pedido do dono: "ao invés do MCP atual, construa o MCP estilo code mode do Clou
 - **A sala do dono vem sem cadeira na imagem.** O Calango sentado traz a própria cadeira; com a cadeira desenhada na sala, ficariam duas. Por isso a imagem e o ponto de sentar (`SENTAR.direcao`) mudam juntos.
 - **O Executor entrou em 10/11** (Neemias R., sala Direção), com a tarefa `fazer-aprovadas` às 7h10. O modo de permissão da tarefa quem escolhe é o dono, no app do Claude.
 
+## Tomadas em 10/11/2026 (Colmeia: formato dos itens e Treino)
+
+- **Frase pronta ou explicação.** O dono não sabia se escrevia a resposta exata ou se explicava o contexto, e o mesmo campo guardava as duas coisas. Agora cada item diz qual é (`colmeia.modo`). Regra e fato de produto são sempre explicação. Item sem formato (lição de vendedor) segue como era.
+- **O formato dos itens que já existiam foi marcado um a um, na migration, por id.** Nenhum texto do dono foi alterado. Uma regra automática erraria: vários itens misturam fala entre aspas com instrução.
+- **O Atendente recebe o item inteiro.** O corte de 320 letras escondia o fim das junções (o desconto do mini curso nunca chegava nele). O banco já limita o item em 1.200 letras.
+- **O Treino é uma conversa só, a mesma para todos, e só pelo painel.** Duas pessoas, cada uma no seu aparelho; a tela busca as falas novas a cada 2,5 segundos. Agente não escreve no Treino nem manda aprender.
+- **O que o Treino aprende é proposta.** Nada vale antes do sim do dono. Sem número nem link novo, o item entra como palavra do dono (o Atendente só repete número e link de item do dono); com novidade, entra como item de agente, com o aviso no cartão. Fala escrita pela IA em teste nunca ensina.
+- **Item aprendido que muda um item que vale aponta para ele** (`substitui` com um item só): aprovado, o antigo é arquivado; tem o botão de desfazer. É o mesmo caminho das junções do Conciliador, sem código novo no banco.
+- **O gasto do Aprender fica na conta do Conciliador** (Salomão R.), que é quem cuida da Colmeia. Não nasceu agente novo.
+- **A migration ficou fora da pasta até o ok do dono**, porque outra conversa poderia aplicar junto. O código lê e grava sem a coluna nova se ela ainda não existir.
+- **Não feito, de propósito:** reescrever os itens gigantes e os títulos crus, e tirar os preços escritos dentro dos itens. É conteúdo do dono: fica para ele decidir, item por item.
+
 ## Em aberto
 
 - **Follow-up do direct:** no ar desde 08/11/2026 (versão `8267d516`) com a tarefa `direct-followup`. Falta a primeira rodada com o dono olhando e conferir na primeira semana se o "achado pelo nome" erra. Sete rodadas por dia lendo o direct gastam bastante do limite semanal do Claude: se apertar, ficar com 9h, 14h e 20h.

@@ -19,8 +19,14 @@ export const TIPOS = {
 };
 export const PRODUTOS = { geral: 'Geral', posts: 'Posts automáticos', combo: 'Combo Black Calango', videos: 'Vídeos com Claude', duvidas: 'Dúvidas da Fé' };
 export const STATUS_COLMEIA = { ativa: 'Valendo', proposta: 'Esperando você', arquivada: 'Arquivada' };
+// Como o item foi ensinado (migration 46). frase: as palavras do dono, para o vendedor usar como estão (uma mensagem
+// por linha). explicacao: o dono explicou o que fazer e o vendedor escreve do jeito dele. Item de antes não tem modo e
+// segue como era.
+export const MODOS = { frase: 'Frase pronta', explicacao: 'Explicação' };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const limpo = (v, max) => String(v ?? '').replace(/[—–]/g, ',').replace(/\s+/g, ' ').trim().slice(0, max);
+// A frase pronta guarda as quebras de linha: cada linha é uma mensagem.
+export const limpoEmLinhas = (v, max) => String(v ?? '').replace(/[—–]/g, ',').split(/\r?\n/).map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n').slice(0, max);
 
 // ---------------------------------------------------------------- ler
 export async function listarColmeia(env, { tipo, produto, status, busca, limite = 300 } = {}) {
@@ -39,19 +45,25 @@ export async function listarColmeia(env, { tipo, produto, status, busca, limite 
     // porque e pergunta: o "por quê" da junção sem a pergunta, e a pergunta que o Conciliador fez ao dono (lerProva).
     itens: itens.map((i) => ({ ...i, ...lerProva(i), usos: (p[i.id] || {}).usos || 0, vendas: (p[i.id] || {}).vendas || 0 })),
     numeros: { ativas: itens.filter((i) => i.status === 'ativa').length, propostas: itens.filter((i) => i.status === 'proposta').length },
-    nomes: { tipos: TIPOS, produtos: PRODUTOS, status: STATUS_COLMEIA },
+    nomes: { tipos: TIPOS, produtos: PRODUTOS, status: STATUS_COLMEIA, modos: MODOS },
   };
 }
 
 // ---------------------------------------------------------------- escrever
+// No banco que ainda não tem a migration 46 a coluna modo não existe e o banco recusa a linha: a gravação segue sem
+// o formato, para o painel não parar de salvar se o código chegar antes da migration.
+const semModo = (o) => { const { modo, ...resto } = o; return resto; };
+const gravar = (fn, o) => (o.modo === undefined ? fn(o) : fn(o).catch((e) => { if (e instanceof Erro && e.message === 'O banco recusou a operação.') return fn(semModo(o)); throw e; }));
 // agente: true quando quem escreve é um agente (chave da casa, tarefa agendada). Regra, resposta, objeção e fato de
 // produto escritos por agente esperam o dono; observação (vendeu, nao_vendeu) vale na hora.
 export async function salvarColmeia(env, d = {}, { id, quemNome = '', agente = false } = {}) {
   const m = {};
   if (d.tipo !== undefined) { if (!TIPOS[d.tipo]) throw new Erro(400, `Tipo desconhecido. Use: ${Object.keys(TIPOS).join(', ')}.`); m.tipo = d.tipo; }
   if (d.produto !== undefined) { if (!PRODUTOS[d.produto]) throw new Erro(400, `Produto desconhecido. Use: ${Object.keys(PRODUTOS).join(', ')}.`); m.produto = d.produto; }
+  // modo vazio tira o formato: o item volta a ser lido como os de antes.
+  if (d.modo !== undefined) { if (d.modo && !MODOS[d.modo]) throw new Erro(400, `Formato desconhecido. Use: ${Object.keys(MODOS).join(', ')}.`); m.modo = d.modo || null; }
   if (d.titulo !== undefined) m.titulo = limpo(d.titulo, 200);
-  if (d.texto !== undefined) m.texto = limpo(d.texto, 1200);
+  if (d.texto !== undefined) m.texto = d.modo === 'frase' ? limpoEmLinhas(d.texto, 1200) : limpo(d.texto, 1200);
   if (d.prova !== undefined) m.prova = limpo(d.prova, 600) || null;
   if (m.titulo !== undefined && m.titulo.length < 3) throw new Erro(400, 'Escreva quando isso vale: a pergunta ou a situação.');
   if (m.texto !== undefined && m.texto.length < 3) throw new Erro(400, 'Escreva o que responder ou fazer.');
@@ -63,7 +75,7 @@ export async function salvarColmeia(env, d = {}, { id, quemNome = '', agente = f
     if (d.status !== undefined) { if (!STATUS_COLMEIA[d.status]) throw new Erro(400, 'Status desconhecido.'); m.status = d.status; }
     if (!Object.keys(m).length) throw new Erro(400, 'Nada para mudar.');
     m.atualizado_em = new Date().toISOString();
-    const [i] = await db.update(env, 'colmeia', { id: `eq.${id}` }, m);
+    const [i] = (await gravar((o) => db.update(env, 'colmeia', { id: `eq.${id}` }, o), m)) || [];
     if (!i) throw new Erro(404, 'Não encontrado.');
     // Junção aprovada (ou que voltou a valer): os itens que ela substitui saem, para não ficarem as duas versões.
     const antes = m.status === 'ativa' ? idsDaJuncao(i) : [];
@@ -85,7 +97,7 @@ export async function salvarColmeia(env, d = {}, { id, quemNome = '', agente = f
   const observacao = m.tipo === 'vendeu' || m.tipo === 'nao_vendeu';
   if (agente && observacao && !m.prova) throw new Erro(400, 'Lição de vendedor precisa da prova: o que aconteceu, com número ou com a conversa.');
   const linha = { produto: 'geral', ...m, origem: agente ? 'agente' : 'dono', autor: limpo(quemNome, 80) || null, status: agente && !observacao ? 'proposta' : 'ativa' };
-  const [i] = await db.insert(env, 'colmeia', [linha]);
+  const [i] = await gravar((o) => db.insert(env, 'colmeia', [o]), linha);
   esquecerColmeia();
   return { ok: true, criado: true, ...i };
 }
@@ -216,8 +228,10 @@ const ehLicao = (i) => LICOES.includes(i.tipo);
 async function ativos(env) {
   if (Date.now() - guardado.quando > VALIDADE) {
     const campos = 'id,tipo,produto,titulo,texto,origem';
+    const doDono = (c) => db.select(env, 'colmeia', { filtros: { status: 'eq.ativa', tipo: `not.in.(${LICOES.join(',')})` }, select: c, ordem: 'atualizado_em.desc', limite: 400 });
     const [base, licoes] = await Promise.all([
-      db.select(env, 'colmeia', { filtros: { status: 'eq.ativa', tipo: `not.in.(${LICOES.join(',')})` }, select: campos, ordem: 'atualizado_em.desc', limite: 400 }),
+      // O formato do item (modo) veio na migration 46: no banco que ainda não tem a coluna, a leitura segue sem ele.
+      doDono(`${campos},modo`).catch(() => doDono(campos)),
       db.select(env, 'colmeia', { filtros: { status: 'eq.ativa', tipo: `in.(${LICOES.join(',')})` }, select: campos, ordem: 'atualizado_em.desc', limite: 60 }).catch(() => []),
     ]);
     guardado = { quando: Date.now(), itens: [...base, ...licoes].map((i) => ({ ...i, pt: palavras(i.titulo), px: palavras(i.texto) })) };
