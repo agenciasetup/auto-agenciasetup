@@ -18,7 +18,7 @@ import { comVendas, escolherVariante, formasComLink, formasPergunta, preencher, 
 import { pago } from './desempenho.js';
 import { prepararIntegracoes } from './integracoes.js';
 import { PERFIS, idiomaDe, perfilValido, siteDoPerfil } from './perfis.js';
-import { codigoDaPessoa, comPessoa } from './pessoa.js';
+import { codigoDaPessoa, codigoDeLink, comPessoa } from './pessoa.js';
 import { normalPalavra, pediu } from './temas.js';
 import { anotarEco, atender } from './atendente.js';
 
@@ -83,7 +83,11 @@ async function ofertaEn(env) {
 
 // O botão do mini curso no direct, com a palavra como campanha. Fica em segundo; com "curso_primeiro" ligado na oferta
 // ele sobe para primeiro e a marca vira "curso-topo", para a venda de cada posição aparecer separada em Vendas.
-function cursoDaOferta(oferta, g, rede, pessoa = '') {
+// A versão da mensagem vai junto, sem mexer nessas marcas (10/11/2026). "versao" é o que linkDaVariante devolveu para
+// o botão do material do mesmo direct: o código do link curto dele vai em "l" e o post vai em "utm_term", igual ao
+// link do material. A visita guarda o código (origem.js) e a venda cai direto na versão (comenta.js), sem depender de
+// achar a pessoa no follow-up. Não custa leitura nenhuma: o código já estava na mão.
+function cursoDaOferta(oferta, g, rede, pessoa = '', versao = null) {
   if (!oferta) return null;
   try {
     const u = new URL(oferta.link);
@@ -92,8 +96,10 @@ function cursoDaOferta(oferta, g, rede, pessoa = '') {
     u.searchParams.set('utm_campaign', slugar(g.palavra, 30) || 'comenta');
     const primeiro = oferta.curso_primeiro === true;
     u.searchParams.set('utm_content', primeiro ? 'curso-topo' : 'curso');
+    if (versao && versao.post) u.searchParams.set('utm_term', String(versao.post));
     // O código de quem recebeu (pessoa.js): é por ele que a compra é ligada à pessoa do follow-up.
     if (pessoa) u.searchParams.set('p', pessoa);
+    if (versao && codigoDeLink(versao.codigo)) u.searchParams.set('l', versao.codigo);
     const linha = String(oferta.linha_dm || '').replace(/\{link_curso\}/g, '').replace(/\{curso\}/g, oferta.nome || 'mini curso').trim();
     return { url: u.toString(), nome: oferta.nome, botao: oferta.botao_dm || '', linha, primeiro };
   } catch {
@@ -465,7 +471,7 @@ async function enviarLote(env, lote, { naoTentados, resolver, res }) {
     let enviado = null;
     try {
       const pessoa = c.porDm && !espera ? await codigoDaPessoa(perfil, r.usuario).catch(() => '') : '';
-      const curso = c.porDm && !espera ? cursoDaOferta(await ofertaDo(perfil), g, r.rede, pessoa) : null;
+      const curso = c.porDm && !espera ? cursoDaOferta(await ofertaDo(perfil), g, r.rede, pessoa, { codigo: link.codigo, post: r.post_id }) : null;
       // Daqui para a frente o envio começou: se a execução cair, este item não volta para a fila.
       naoTentados.delete(r.id);
       contarChamada(env);
@@ -605,7 +611,7 @@ async function responderToque(env, c, credenciais, pend, igsid, texto) {
   try {
     const oferta = await ofertaAtiva(env, perfil).catch(() => null);
     const pessoa = await codigoDaPessoa(perfil, (quem && quem.usuario) || pend.usuario).catch(() => '');
-    saiu = await c.m.mandarDirect({ credenciais, para: igsid, formas: formasComLink(v.depois || v.dm, { link: comPessoa(link.url, pessoa), usuario, titulo, botao: v.botao, curso: cursoDaOferta(oferta, g, pend.rede, pessoa), idioma }) });
+    saiu = await c.m.mandarDirect({ credenciais, para: igsid, formas: formasComLink(v.depois || v.dm, { link: comPessoa(link.url, pessoa), usuario, titulo, botao: v.botao, curso: cursoDaOferta(oferta, g, pend.rede, pessoa, { codigo: link.codigo, post: pend.post_id }), idioma }) });
   } catch (e) {
     await marcar(env, pend.id, 'falhou', `O material não saiu: ${e.message}`, extra);
     return 'erro';
@@ -646,7 +652,7 @@ async function palavraNoDirect(env, c, credenciais, rede, igsid, mid, texto) {
     }
     const oferta = await ofertaAtiva(env, perfil).catch(() => null);
     const pessoa = await codigoDaPessoa(perfil, quem && quem.usuario).catch(() => '');
-    const saiu = await c.m.mandarDirect({ credenciais, para: igsid, formas: formasComLink(g.modo === 'direto' ? v.dm : v.depois, { link: comPessoa(link.url, pessoa), usuario, titulo, botao: v.botao, curso: cursoDaOferta(oferta, g, rede, pessoa), idioma }) });
+    const saiu = await c.m.mandarDirect({ credenciais, para: igsid, formas: formasComLink(g.modo === 'direto' ? v.dm : v.depois, { link: comPessoa(link.url, pessoa), usuario, titulo, botao: v.botao, curso: cursoDaOferta(oferta, g, rede, pessoa, { codigo: link.codigo, post: r.post_id }), idioma }) });
     await marcar(env, r.id, 'enviada', null, { ...extra, mid: midDe(saiu), link_codigo: link.codigo || undefined, ...(quem && quem.segue !== null ? { seguia: quem.segue } : {}) });
     statsMem.delete(g.id);
     return 'material';

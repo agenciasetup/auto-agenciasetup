@@ -5,13 +5,20 @@ import { db } from '../nucleo/db.js';
 import { Erro } from '../nucleo/util.js';
 import { salvarConfigAtendente } from './atendente.js';
 import { VENDEDORES } from './followup.js';
-import { CONTROLA, baterPonto, sinalDeVida, criarProposta, decidirProposta, lerAgente, registrarTurno, resultadoProposta, salvarAgente, salvarTeto, verEscritorio } from './escritorio.js';
+import { CONTROLA, baterPonto, sinalDeVida, criarProposta, decidirProposta, lerAgente, registrarTurno, resultadoProposta, salvarAgente, salvarTeto, verEscritorio, verFilaDoExecutor } from './escritorio.js';
 
 const quemE = (u) => ({ quem: u.casa ? null : u.id, quemNome: u.casa ? 'Claude' : String(u.nome || '').trim().split(/\s+/)[0] });
 
 export async function verOEscritorio(x) {
   exigir(x.u, 'escritorio.ver');
   return verEscritorio(x.env);
+}
+
+// A fila do Executor (docs/tarefa-aprovadas.md): se ele pode trabalhar, o próximo cartão aprovado que dá para fazer
+// sozinho e o andamento dos outros. Só leitura: o andamento se escreve pelo turno (registrarTurnoDoEscritorio).
+export async function verAFilaDoExecutor(x) {
+  exigir(x.u, 'escritorio.ver');
+  return verFilaDoExecutor(x.env);
 }
 
 export async function lerAgenteDoEscritorio(x, id) {

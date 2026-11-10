@@ -25,6 +25,13 @@ export function comPessoa(url, codigo) {
   try { const u = new URL(url); u.searchParams.set('p', c); return u.toString(); } catch { return url; }
 }
 
+// A versão no link (10/11/2026). O botão do mini curso do Comenta X leva "&l=<código>": o código do link curto da versão
+// da mensagem que saiu no mesmo direct (/l/<palavra>-<versão>-<post>, o do botão do material). A visita guarda esse
+// código no mesmo campo em que o clique no link curto já guarda, e a venda cai direto na versão. O formato é o dos
+// códigos da tabela links.
+const LINK = /^[a-z0-9-]{2,40}$/;
+export const codigoDeLink = (v) => (LINK.test(String(v || '')) ? String(v) : null);
+
 // Os links de venda que os vendedores e o Atendente mandam numa conversa, ainda sem marca.
 export const LINKS_VENDA = {
   posts: 'https://agenciasetup.com.br/cursos/posts-automaticos',

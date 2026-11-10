@@ -470,6 +470,10 @@ a.numero:hover { transform: translateY(-2px); box-shadow: var(--brilho-topo), 0 
 .esp-cartao > span { font-size: 14px; line-height: 1.4; }
 .esp-cartao.esp-zero { opacity: 0.5; }
 .esp-cartao.esp-zero > b { color: var(--mudo); }
+/* A nota: uma frase pequena a mais no cartão (na mesa, as aprovadas prontas ou esperando). Com o número zerado e
+   nota, o cartão não apaga e continua com o botão; só o zero fica discreto. */
+.esp-nota { margin: 0; font-size: 12.5px; line-height: 1.4; color: var(--mudo); }
+.esp-cartao.esp-so-nota > b { color: var(--mudo); }
 .esp-pe { margin-top: auto; padding-top: 8px; }
 .esp-pe p { margin: 0; font-size: 12.5px; line-height: 1.4; }
 /* No celular cada cartão vira uma linha, um embaixo do outro: o número, o nome com a frase e o botão à direita. A frase
@@ -482,6 +486,7 @@ a.numero:hover { transform: translateY(-2px); box-shadow: var(--brilho-topo), 0 
   .esp-cartao > span { grid-area: f; align-self: start; font-size: 13.5px; }
   .esp-pe { grid-area: pe; margin: 0; padding: 0; }
   .esp-pe.esp-pe-frase { grid-area: auto; grid-column: 1 / -1; padding-top: 8px; }
+  .esp-nota { grid-column: 1 / -1; padding-top: 6px; }
 }
 
 /* --------------------------------------------------------------- peça: slides */
@@ -743,61 +748,79 @@ a.numero:hover { transform: translateY(-2px); box-shadow: var(--brilho-topo), 0 
 @media (max-width: 560px) { .seo-notas { grid-template-columns: repeat(2, 1fr); } }
 
 /* ---------------------------------------------------------------- Escritório de IA (telas/Escritorio.tsx)
-   Cada sala tem a sua parede de cor; a principal (Direção) é amarela. O Calango é uma folha de 8 quadros. */
-.esc-planta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
-@media (max-width: 1100px) { .esc-planta { grid-template-columns: 1fr; } }
-.esc-sala { --parede: #8e8e93; --tinta-parede: #141414; display: flex; flex-direction: column; background: var(--fundo-2); border-radius: var(--raio-l); overflow: hidden; box-shadow: var(--brilho-topo), 0 0 0 1px var(--borda); }
-.esc-direcao { grid-column: 1 / -1; --parede: var(--amarelo); }
+   A cor de cada sala (--parede) pinta o ponto do cabeçalho na lista e, mais abaixo, a planta, as abas e o perfil. */
+.esc-direcao { --parede: var(--amarelo); }
 .esc-vendas { --parede: var(--verde); }
-.esc-conteudo { --parede: var(--azul); --tinta-parede: #fff; }
-.esc-video { --parede: var(--vermelho); --tinta-parede: #fff; }
+.esc-conteudo { --parede: var(--azul); }
+.esc-video { --parede: var(--vermelho); }
 .esc-design { --parede: var(--laranja); }
 .esc-sistema { --parede: #8e8e93; }
 .esc-produto { --parede: var(--ciano); }
-.esc-receita { --parede: #b98a2f; --tinta-parede: #fff; }
-.esc-parede {
-  display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: var(--tinta-parede);
-  background-color: var(--parede);
-  background-image: linear-gradient(rgba(0, 0, 0, 0.07) 2px, transparent 2px), linear-gradient(90deg, rgba(0, 0, 0, 0.07) 2px, transparent 2px);
-  background-size: 16px 16px;
-  border-bottom: 4px solid color-mix(in srgb, var(--parede) 68%, #000);
+.esc-receita { --parede: #b98a2f; }
+/* A vista Lista: um bloco por sala, uma linha por agente. As colunas são as mesmas em todos os blocos (.esc-colunas):
+   boneco, nome e função, estado, última atividade, gasto de hoje e o botão "Ver perfil". Quando a lista fica
+   estreita (a medida é a largura dela, não a da janela), cada agente vira duas linhas: o nome, a função e o gasto em
+   cima; o estado, a atividade e o botão embaixo. Nada é cortado e nada rola de lado. */
+.esc-lista { container: esc-lista / inline-size; margin-bottom: 18px; }
+.esc-colunas { display: grid; grid-template-columns: 36px minmax(0, 1.25fr) 96px minmax(156px, 1fr) 104px 96px; column-gap: 14px; align-items: center; padding-left: 18px; padding-right: 18px; }
+.esc-lista-topo { margin-bottom: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fraco); }
+.esc-bloco { margin-bottom: 12px; }
+.esc-bloco-topo { min-height: 48px; }
+.esc-bloco-topo .pl-ponto { justify-self: center; }
+.esc-bloco-topo h2 { grid-column: 2 / span 3; display: flex; align-items: baseline; gap: 10px; min-width: 0; margin: 0; font-size: 15px; font-weight: 650; letter-spacing: -0.015em; }
+.esc-bloco-topo h2 small { font-size: 13px; font-weight: 400; letter-spacing: 0; color: var(--mudo); white-space: nowrap; }
+.esc-bloco-topo .esc-la-gasto { color: var(--texto); font-weight: 600; }
+.esc-bloco-vazio { margin: 0; padding: 0 18px 16px; font-size: 13.5px; }
+.esc-linhas { margin: 0; padding: 0 0 6px; list-style: none; }
+.esc-la { min-height: 50px; padding-top: 5px; padding-bottom: 5px; border-top: 1px solid var(--borda); font-size: 13.5px; }
+/* As duas metades da linha (.esc-la-l1 e .esc-la-l2) não existem no computador: cada pedaço vai direto para a coluna dele. */
+.esc-la-l1, .esc-la-l2 { display: contents; }
+.esc-la-foto { grid-area: 1 / 1; width: 34px; height: 38px; justify-self: center; background: center bottom / contain no-repeat; }
+.esc-la-inicial { display: grid; place-items: center; height: 34px; border-radius: 10px; background: var(--fundo-3); box-shadow: inset 0 0 0 1px var(--borda-forte); color: var(--mudo); font-size: 14px; font-weight: 650; }
+.esc-la-nome { grid-area: 1 / 2; display: grid; min-width: 0; }
+.esc-la-nome b { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.esc-la-nome small { font-size: 12.5px; color: var(--mudo); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.esc-la-estado { grid-area: 1 / 3; display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+/* a atividade nunca é cortada: se um dia não couber na coluna, quebra em duas linhas */
+.esc-la-atividade { grid-area: 1 / 4; min-width: 0; color: var(--mudo); line-height: 1.3; }
+/* o tom da atividade: erro em vermelho, trabalhando agora em verde (misturados com a cor do texto, para ler bem nos dois temas) */
+.esc-tom-erro { color: color-mix(in srgb, var(--vermelho) 78%, var(--texto)); }
+.esc-tom-agora { color: color-mix(in srgb, var(--verde) 60%, var(--texto)); }
+.esc-la-gasto { text-align: right; color: var(--mudo); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.esc-la .esc-la-gasto { grid-area: 1 / 5; }
+.esc-la-gasto small { display: none; font-size: inherit; font-weight: inherit; }
+.esc-la-botao { grid-area: 1 / 6; justify-self: end; }
+/* vaga aberta: a linha inteira mais apagada; em pausa, o boneco sem cor */
+.esc-la-planejado { color: var(--fraco); }
+.esc-la-planejado .esc-la-foto { filter: grayscale(1); opacity: 0.4; }
+.esc-la-planejado .esc-la-nome b { color: var(--mudo); font-weight: 550; }
+.esc-la-planejado .esc-la-nome small { color: var(--fraco); }
+.esc-la-pausado .esc-la-foto { filter: grayscale(0.85); }
+@container esc-lista (max-width: 760px) {
+  .esc-lista-topo { display: none; }
+  .esc-colunas { grid-template-columns: 30px minmax(0, 1fr) auto; column-gap: 10px; padding-left: 14px; padding-right: 14px; }
+  .esc-bloco-topo h2 { grid-column: 2; flex-wrap: wrap; gap: 0 8px; }
+  .esc-bloco-topo .esc-la-gasto small { display: inline; }
+  .esc-la { grid-template-columns: 30px minmax(0, 1fr); row-gap: 1px; padding-top: 8px; padding-bottom: 8px; }
+  .esc-la-foto { grid-area: 1 / 1 / span 2; width: 30px; height: 34px; }
+  .esc-la-inicial { height: 30px; }
+  .esc-la-l1, .esc-la-l2 { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .esc-la-l1 { grid-area: 1 / 2; align-items: baseline; }
+  .esc-la-l2 { grid-area: 2 / 2; font-size: 12.5px; }
+  .esc-la-nome { display: flex; align-items: baseline; gap: 7px; flex: 1 1 auto; }
+  .esc-la-nome b { flex: none; max-width: 100%; }
+  .esc-la .esc-la-gasto { flex: none; font-size: 12.5px; }
+  .esc-la-estado { flex: none; gap: 6px; }
+  .esc-la-atividade { flex: 1 1 auto; }
+  .esc-la-atividade:not(:empty)::before { content: '·'; margin-right: 6px; color: var(--fraco); }
+  .esc-la-botao { flex: none; min-height: 30px; padding: 0 10px; font-size: 12.5px; }
 }
-.esc-placa { font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; background: rgba(0, 0, 0, 0.84); color: #fff; padding: 5px 9px; border-radius: 4px; }
-.esc-cruz { display: inline-flex; }
-.esc-cruz svg { width: 18px; height: 18px; stroke-width: 2.6; }
-.esc-conta { margin-left: auto; font-size: 12px; font-weight: 650; opacity: 0.82; }
-.esc-chao { flex: 1; padding: 14px; background-image: linear-gradient(var(--borda) 1px, transparent 1px), linear-gradient(90deg, var(--borda) 1px, transparent 1px); background-size: 24px 24px; }
-.esc-quadro { margin: 0 0 14px; padding: 10px 14px; font-family: var(--serifa); font-size: 18px; line-height: 1.3; background: var(--fundo); border-radius: var(--raio-s); box-shadow: 0 0 0 1px var(--borda), inset 4px 0 0 var(--amarelo); }
-.esc-quadro span { display: block; margin-top: 2px; font-family: var(--sans); font-size: 12px; color: var(--fraco); }
-.esc-mesa { margin-bottom: 14px; padding: 14px; background: var(--fundo); border-radius: var(--raio); box-shadow: 0 0 0 1px var(--borda); }
-.esc-mesa h2 { margin: 0 0 10px; font-size: 15px; font-weight: 650; letter-spacing: -0.015em; }
-.esc-mesa .vazio { background: transparent; box-shadow: none; padding: 14px 8px; }
-.esc-mesas { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-.esc-agente { display: flex; gap: 10px; padding: 10px; background: var(--fundo); border-radius: var(--raio-s); box-shadow: 0 0 0 1px var(--borda); }
-.esc-a-planejado { background: transparent; box-shadow: none; border: 1px dashed var(--borda-forte); }
-.esc-a-erro { box-shadow: 0 0 0 1px var(--vermelho); }
-.esc-calango { flex: none; width: 48px; height: 57px; background-repeat: no-repeat; background-size: 384px 57px; background-position: 0 0; image-rendering: pixelated; }
-@keyframes esc-anda { to { background-position: -384px 0; } }
-@keyframes esc-respira { 50% { transform: translateY(-2px); } }
-.esc-c-ativo { animation: esc-respira 2.6s ease-in-out infinite; }
-.esc-c-rodando { animation: esc-anda 0.9s steps(8) infinite; }
-.esc-c-pausado { filter: grayscale(0.7); opacity: 0.6; }
-.esc-c-planejado { filter: grayscale(1); opacity: 0.25; }
-@media (prefers-reduced-motion: reduce) { .esc-calango { animation: none; } }
-.esc-info { min-width: 0; flex: 1; }
-.esc-nome { display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .esc-luz { width: 8px; height: 8px; border-radius: 2px; background: var(--fraco); flex: none; }
 .esc-luz-ativo { background: var(--verde); box-shadow: 0 0 8px var(--verde); }
 .esc-luz-pausado { background: var(--ambar); }
 .esc-luz-erro { background: var(--vermelho); box-shadow: 0 0 8px var(--vermelho); }
-.esc-funcao { margin: 3px 0 0; font-size: 13px; line-height: 1.35; color: var(--mudo); }
-.esc-meta { margin: 4px 0 0; font-size: 12px; color: var(--fraco); }
-.esc-turno { display: flex; gap: 5px; margin: 6px 0 0; font-size: 12px; line-height: 1.35; color: var(--mudo); }
-.esc-turno svg { width: 13px; height: 13px; flex: none; margin-top: 2px; }
-.esc-mais { margin-top: 6px; padding-left: 0; }
-.esc-detalhe { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--borda); font-size: 13px; }
-.esc-detalhe ol { margin: 6px 0 0; padding-left: 18px; }
-.esc-detalhe li { margin-bottom: 4px; line-height: 1.35; }
+/* vaga aberta: o ponto vazado (ninguém ali ainda) */
+.esc-luz-planejado { background: transparent; box-shadow: inset 0 0 0 1.5px var(--fraco); }
 .esc-caderno { white-space: pre-wrap; margin: 4px 0 10px; color: var(--mudo); }
 .esc-cartao { padding: 14px; margin-bottom: 10px; background: var(--fundo-2); border-radius: var(--raio-s); box-shadow: 0 0 0 1px var(--borda), inset 4px 0 0 var(--amarelo); }
 .esc-cartao:last-child { margin-bottom: 0; }
@@ -814,7 +837,10 @@ a.numero:hover { transform: translateY(-2px); box-shadow: var(--brilho-topo), 0 
 .esc-linha:first-child { border-top: 0; }
 .esc-linha p { margin: 3px 0 0; }
 .esc-aprovada textarea { display: block; width: 100%; margin: 8px 0; }
-@media (max-width: 640px) { .esc-conta { display: none; } .esc-linha { flex-direction: column; } }
+/* O andamento do cartão aprovado, em uma linha: a etiqueta do estado e a frase de quem pegou. */
+.esc-linha .esc-andamento { margin: 8px 0 0; font-size: 13.5px; line-height: 1.5; }
+.esc-andamento .etiqueta { margin-right: 4px; }
+@media (max-width: 640px) { .esc-linha { flex-direction: column; } }
 
 .esc-teto { display: block; padding-left: 0; margin-top: 4px; }
 .esc-teto-form { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
@@ -852,8 +878,8 @@ a.numero:hover { transform: translateY(-2px); box-shadow: var(--brilho-topo), 0 
 .pl-vistas { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; font-size: 13px; }
 .pl-planta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 12px; margin-bottom: 20px; }
 .pl-sala { --parede: #8e8e93; --tinta-parede: #141414; position: relative; container-type: inline-size; min-width: 0; }
-/* A sala com balão aberto fica por cima das vizinhas, para o balão não ser cortado. */
-.pl-sala:hover, .pl-sala:focus-within, .pl-sala:has(.pl-fala) { z-index: 3; }
+/* A sala com o mouse em cima fica por cima das vizinhas, para o crachá de um Calango não ser cortado. */
+.pl-sala:hover, .pl-sala:focus-within { z-index: 3; }
 .pl-chao { position: relative; isolation: isolate; aspect-ratio: 905 / 846; background: center / 100% 100% no-repeat; }
 .pl-placa { position: absolute; left: 1%; top: 2%; padding: 3px 9px; border-radius: 6px; background: var(--parede); color: var(--tinta-parede); font-size: 12px; font-weight: 800; letter-spacing: 0.02em; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4); }
 .pl-conta { position: absolute; right: 1%; top: 3%; font-size: 11px; color: var(--fraco); }
@@ -866,19 +892,25 @@ a.numero:hover { transform: translateY(-2px); box-shadow: var(--brilho-topo), 0 
 .pl-b-pausado .pl-sprite { animation: none; filter: grayscale(0.85) brightness(0.8); }
 @keyframes pl-passos { to { background-position-x: 114.2857%; } }
 @keyframes pl-respira { 50% { translate: 0 -2%; } }
-.pl-balao { position: absolute; left: 50%; bottom: 96%; transform: translateX(-50%); display: none; width: max-content; max-width: min(72cqw, 240px); padding: 4px 8px; border: 2px solid #17181c; border-radius: 9px; background: #fff; color: #17181c; font-size: 11px; line-height: 1.25; text-align: left; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35); pointer-events: none; }
-.pl-balao::after { content: ''; position: absolute; left: 50%; top: 100%; margin-left: -5px; border: 5px solid transparent; border-top-color: #17181c; }
-.pl-balao b { display: block; font-size: 10px; letter-spacing: 0.02em; }
-.pl-fala .pl-balao-fala, .pl-boneco:hover .pl-balao-fala, .pl-boneco:focus-visible .pl-balao-fala { display: block; }
-.pl-pensa .pl-balao-pensa { display: flex; gap: 3px; padding: 6px 8px; border-radius: 12px; }
-.pl-boneco:hover .pl-balao-pensa, .pl-boneco:focus-visible .pl-balao-pensa, .pl-boneco:hover .pl-balao-fixo, .pl-fala .pl-balao-fixo { display: none; }
-.pl-balao-pensa i { width: 4px; height: 4px; border-radius: 50%; background: #17181c; animation: pl-ponto 0.9s ease-in-out infinite; }
-.pl-balao-pensa i:nth-child(2) { animation-delay: 0.15s; }
-.pl-balao-pensa i:nth-child(3) { animation-delay: 0.3s; }
-@keyframes pl-ponto { 50% { opacity: 0.25; translate: 0 -2px; } }
-.pl-balao-fixo { display: block; padding: 1px 6px; font-weight: 800; font-size: 10px; }
-.pl-balao-erro { background: var(--vermelho); color: #fff; border-color: #17181c; }
-.pl-fala, .pl-pensa, .pl-boneco:hover, .pl-boneco:focus-visible { z-index: 2000 !important; }
+/* O balão: uma frase curta que vem pronta do servidor (a.fala), em letra pequena, um por sala. Ele fica montado e
+   invisível até ser a vez do Calango (a largura precisa existir para a conta do --desvio, que segura o balão dentro da
+   sala; a ponta continua em cima de quem fala). Aparece e some devagar, sem piscar. */
+.pl-balao { position: absolute; left: 50%; bottom: 97%; transform: translateX(calc(-50% + var(--desvio, 0px))); width: max-content; max-width: min(calc(100cqw - 8px), 220px); padding: 3px 7px; border: 1.5px solid #17181c; border-radius: 8px; background: #fff; color: #17181c; font-size: 10.5px; font-weight: 550; line-height: 1.25; text-align: left; text-wrap: balance; box-shadow: 1.5px 1.5px 0 rgba(0, 0, 0, 0.35); pointer-events: none; }
+.pl-balao::after { content: ''; position: absolute; left: clamp(8px, calc(50% - var(--desvio, 0px)), calc(100% - 8px)); top: 100%; margin-left: -4px; border: 4px solid transparent; border-top-color: #17181c; }
+.pl-balao-fala { opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s linear 0.3s; }
+.pl-fala .pl-balao-fala, .pl-boneco:hover .pl-balao-fala, .pl-boneco:focus-visible .pl-balao-fala { opacity: 1; visibility: visible; transition: opacity 0.3s ease 0.25s, visibility 0s; }
+/* com o mouse em cima de um Calango, só o balão dele aparece na sala */
+.pl-chao:has(.pl-boneco:hover) .pl-boneco:not(:hover) .pl-balao-fala { opacity: 0; visibility: hidden; transition: none; }
+/* o ponto na frente da frase: verde pulsando (trabalhando agora) ou vermelho (pede atenção); "acabei de fazer" vai sem ponto */
+.pl-diz-agora::before, .pl-diz-atencao::before { content: ''; display: inline-block; width: 5px; height: 5px; margin: 0 5px 1px 0; border-radius: 50%; background: #1faa52; vertical-align: middle; }
+.pl-diz-agora::before { animation: pl-vivo 1.8s ease-in-out infinite; }
+.pl-diz-atencao::before { background: #e5342b; }
+@keyframes pl-vivo { 50% { opacity: 0.3; } }
+/* os avisos fixos: zz (em pausa) e ZzzZz (offline) */
+.pl-balao-fixo { padding: 0 5px; font-weight: 800; font-size: 9px; }
+/* quem fala fica na frente dos outros; quem está com o mouse em cima, na frente de todos */
+.pl-fala { z-index: 2000 !important; }
+.pl-boneco:hover, .pl-boneco:focus-visible { z-index: 2100 !important; }
 .pl-vagas { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: -2px 4px 10px; font-size: 12px; color: var(--fraco); }
 .pl-vaga { padding: 2px 8px; border: 1px dashed var(--borda); border-radius: 999px; background: transparent; color: var(--mudo); font-size: 12px; cursor: pointer; }
 .pl-vaga:hover { background: var(--fundo-3); color: var(--texto); }
@@ -923,7 +955,7 @@ a.numero:hover { transform: translateY(-2px); box-shadow: var(--brilho-topo), 0 
   .pl-perfil-topo { border-radius: 18px 18px 0 0; }
 }
 @keyframes pl-sobe { from { translate: 0 40px; opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .pl-sprite, .pl-balao-pensa i, .pl-perfil { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .pl-sprite, .pl-diz-agora::before, .pl-perfil { animation: none; } .pl-balao-fala { transition: none !important; } }
 /* A sala principal é maior na planta: ocupa duas colunas e duas linhas nas telas largas. */
 .pl-sala.esc-direcao { grid-column: span 2; grid-row: span 2; }
 @media (max-width: 1280px) { .pl-sala.esc-direcao { grid-column: auto; grid-row: auto; } }
@@ -936,9 +968,6 @@ a.numero:hover { transform: translateY(-2px); box-shadow: var(--brilho-topo), 0 
 @media (prefers-reduced-motion: reduce) { .pl-anda .pl-sprite.pl-foto { animation: none; } }
 
 /* ---------------------------------------------------------------- Escritório, versão 2: sala que abre, nomes, seta, sentados */
-.esc-calango-foto { flex: none; width: 48px; height: 54px; background: center bottom / contain no-repeat; }
-.esc-cf-planejado { filter: grayscale(1); opacity: 0.45; }
-.esc-cf-pausado { filter: grayscale(0.8); }
 /* a sala inteira abre o setor; os Calangos e a placa ficam por cima */
 .pl-abrir { position: absolute; inset: 0; z-index: 0; padding: 0; border: 0; background: none; cursor: zoom-in; }
 .pl-abrir:focus-visible { outline: 2px solid var(--marca); outline-offset: -4px; border-radius: 12px; }
@@ -946,21 +975,14 @@ button.pl-placa { z-index: 2500; display: inline-flex; align-items: center; gap:
 button.pl-placa svg { width: 11px; height: 11px; opacity: 0.7; }
 button.pl-placa:hover svg { opacity: 1; }
 .pl-conta { z-index: 1; pointer-events: none; }
-/* balões menores */
-.pl-balao { max-width: min(62cqw, 150px); padding: 2px 6px; border-width: 1.5px; border-radius: 7px; font-size: 9.5px; line-height: 1.2; box-shadow: 1.5px 1.5px 0 rgba(0, 0, 0, 0.35); }
-.pl-balao::after { margin-left: -4px; border-width: 4px; }
-.pl-balao b { font-size: 9px; }
-.pl-pensa .pl-balao-pensa { gap: 2px; padding: 4px 6px; border-radius: 9px; }
-.pl-balao-pensa i { width: 3px; height: 3px; }
-.pl-balao-fixo { padding: 0 5px; font-size: 9px; }
-.pl-grande .pl-balao { max-width: 210px; padding: 3px 8px; font-size: 11.5px; }
-.pl-grande .pl-balao b { font-size: 10.5px; }
+/* na sala aberta o balão é um pouco maior, e continua em uma linha */
+.pl-grande .pl-balao-fala { max-width: 260px; padding: 4px 9px; font-size: 11.5px; }
 /* a seta de desempenho, pequena, em cima da cabeça */
 .pl-seta { position: absolute; left: 50%; top: -5%; width: 0; height: 0; margin-left: calc(-1 * clamp(3.5px, 1.4cqw, 7px)); border: clamp(3.5px, 1.4cqw, 7px) solid transparent; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)) drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6)); pointer-events: none; }
 .pl-seta-bem { border-top-width: 0; border-bottom-color: #2fd66f; }
 .pl-seta-mal { border-bottom-width: 0; border-top-color: #ff4d4f; }
 .pl-seta-neutro { width: clamp(7px, 2.8cqw, 13px); height: clamp(3px, 1.1cqw, 5px); margin-left: calc(-0.5 * clamp(7px, 2.8cqw, 13px)); border: 0; border-radius: 1px; background: #ffcc33; }
-.pl-fala .pl-seta, .pl-pensa .pl-seta, .pl-boneco:hover .pl-seta, .pl-b-pausado .pl-seta { display: none; }
+.pl-fala .pl-seta, .pl-boneco[data-fala]:hover .pl-seta, .pl-b-pausado .pl-seta { display: none; }
 .pl-seta.pl-seta-linha { position: static; display: inline-block; flex: none; margin: 0; border-width: 5px; vertical-align: middle; }
 .pl-seta-bem.pl-seta-linha { border-top-width: 0; }
 .pl-seta-mal.pl-seta-linha { border-bottom-width: 0; }
@@ -968,10 +990,13 @@ button.pl-placa:hover svg { opacity: 1; }
 /* quem trabalha sentado digita */
 .pl-senta .pl-sprite.pl-foto { animation: pl-digita 0.55s steps(2, jump-none) infinite; }
 @keyframes pl-digita { to { translate: 0 -1.6%; } }
-/* nome e função embaixo do Calango, só na sala aberta */
-.pl-rotulo { display: none; }
-.pl-grande .pl-rotulo { display: block; position: absolute; left: 50%; top: 99%; transform: translateX(-50%); padding: 1px 6px 2px; border-radius: 6px; background: rgba(12, 12, 14, 0.72); color: #fff; font-size: 10px; line-height: 1.15; white-space: nowrap; text-align: center; pointer-events: none; }
-.pl-grande .pl-rotulo b { display: block; font-size: 11px; }
+/* o crachá embaixo do Calango: na sala aberta, só o nome (a função está na equipe, ao lado); com o mouse em cima,
+   em qualquer visão, o nome e a função */
+.pl-rotulo { display: none; position: absolute; left: 50%; top: 99%; transform: translateX(-50%); padding: 1px 6px 2px; border-radius: 6px; background: rgba(12, 12, 14, 0.78); color: #fff; line-height: 1.2; white-space: nowrap; text-align: center; pointer-events: none; }
+.pl-rotulo b { display: block; font-size: 10.5px; font-weight: 600; }
+.pl-rotulo small { display: none; font-size: 9.5px; opacity: 0.8; }
+.pl-grande .pl-rotulo, .pl-boneco:hover .pl-rotulo, .pl-boneco:focus-visible .pl-rotulo { display: block; }
+.pl-boneco:hover .pl-rotulo small, .pl-boneco:focus-visible .pl-rotulo small { display: block; }
 /* a visão do setor */
 .pl-setor { margin-bottom: 20px; }
 .pl-setor-topo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -1019,22 +1044,17 @@ button.pl-placa:hover svg { opacity: 1; }
   .pl-conta { font-size: 9px; }
   .pl-vagas { margin: -2px 2px 8px; font-size: 10.5px; gap: 3px 4px; }
   .pl-vaga { padding: 1px 6px; font-size: 10.5px; }
-  .pl-planta .pl-balao { font-size: 8.5px; max-width: 120px; }
+  /* duas salas por linha: a frase quebra em duas linhas quando precisa e nunca passa da sala */
+  .pl-planta .pl-balao-fala { padding: 2px 6px; font-size: 9.5px; }
   .pl-vistas .mudo { width: 100%; }
   .pl-lado { padding: 14px 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .pl-senta .pl-sprite.pl-foto { animation: none; } }
 @media (max-width: 640px) { .pl-planta .pl-conta-custo { display: none; } }
-/* o balão de quem está perto da parede abre para dentro da sala */
-.pl-boneco[data-lado="e"] .pl-balao-fala { left: 15%; transform: none; }
-.pl-boneco[data-lado="e"] .pl-balao-fala::after { left: 18px; }
-.pl-boneco[data-lado="d"] .pl-balao-fala { left: auto; right: 15%; transform: none; }
-.pl-boneco[data-lado="d"] .pl-balao-fala::after { left: auto; right: 14px; }
 @media (max-width: 640px) {
-  /* na sala aberta do celular o rótulo mostra só o nome (a função está na lista da equipe, logo abaixo) */
-  .pl-grande .pl-rotulo { font-size: 0; padding: 1px 5px; }
+  .pl-grande .pl-rotulo { padding: 1px 5px; }
   .pl-grande .pl-rotulo b { font-size: 10px; }
-  .pl-grande .pl-balao { max-width: 170px; font-size: 10.5px; }
+  .pl-grande .pl-balao-fala { font-size: 11px; }
 }
 
 /* ---------------------------------------------------------------- Escritório, versão 3: salas iguais, em cartões, com espaço */

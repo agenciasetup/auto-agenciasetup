@@ -59,6 +59,7 @@ if (!semBanco) {
     console.log(`  Leu: ${ou(z.leu.agentes)} agentes, ${ou(z.leu.turnos)} ${z.leu.turnos === 1 ? 'turno' : 'turnos'} em 14 dias (${ou(z.leu.turnos_com_erro_24h)} com erro em 24 horas, ${ou(z.leu.turnos_abertos)} com o status "rodando"),`);
     console.log(`       ${ou(z.leu.atendimentos_com_erro_24h)} atendimentos com erro em 24 horas, ${ou(z.leu.mensagens_esperando)} mensagens esperando há mais de 5 minutos,`);
     console.log(`       ${ou(z.leu.entregas_pendentes)} entregas do Combo pendentes, resumo das 8h de hoje: ${ou(z.leu.resumo_do_dia)},`);
+    console.log(`       última cópia do banco: ${Number.isFinite(Date.parse(z.leu.copia_do_banco)) ? emBrasilia(Date.parse(z.leu.copia_do_banco)) : ou(z.leu.copia_do_banco)},`);
     console.log(`       gasto de IA de hoje: ${g ? `${dolar(g.gasto_hoje_usd)} de ${dolar(g.teto_dia_usd)}` : 'não deu para ler'}.`);
     console.log(`  Alertas agora: ${z.alertas.length}`);
     for (const a of z.alertas) {
@@ -97,7 +98,7 @@ if (!semBanco) {
 
 // ================================================================ 2. banco de mentira, em memória
 console.log('\nAs regras e a base do Escritório, com banco de mentira (em memória):');
-const { cartaoSemAparelho, entregasParadas, resumoQueNaoSaiu, rodarZelador: zelador, turnosPresos } = await import('../worker/lib/agentes/zelador.js');
+const { cartaoSemAparelho, copiaDoBanco, entregasParadas, resumoQueNaoSaiu, rodadasDoDia, rodarZelador: zelador, tarefasQueNaoRodaram, turnosPresos } = await import('../worker/lib/agentes/zelador.js');
 const { agenteLiberado, memoriaDoAgente, podeTrabalhar, registrarTurno, sinalDe } = await import('../worker/lib/escritorio.js');
 
 let falhas = 0;
@@ -109,7 +110,7 @@ const BANCO = 'https://banco-de-mentira.invalid';
 const m = { SUPABASE_URL: BANCO, SUPABASE_SECRET_KEY: 'sb_secret_de_mentira', AMBIENTE: 'local' };
 const tabelas = { agentes: [], turnos: [], propostas: [], config: [], consumo_ia: [], agentes_historico: [], atendimentos: [], respostas_gatilho: [], ofertas: [], pedidos: [], produto_acessos: [], equipe: [] };
 // cai: (método, tabela) => true faz o banco de mentira responder erro 500. antes: roda antes de cada chamada.
-const mundo = { chamadas: [], cai: null, antes: null, gastoHoje: 0.1 };
+const mundo = { chamadas: [], chaves: [], cai: null, antes: null, gastoHoje: 0.1 };
 let serie = 0;
 const novoId = () => `00000000-0000-4000-8000-${String(++serie).padStart(12, '0')}`;
 
@@ -147,6 +148,7 @@ globalThis.fetch = async (alvo, op = {}) => {
   if (url.origin !== BANCO || !url.pathname.startsWith('/rest/v1/')) throw new Error(`A rede de mentira recusou ${metodo} ${url.origin}${url.pathname}`);
   const caminho = url.pathname.slice('/rest/v1/'.length);
   mundo.chamadas.push(`${metodo} ${caminho}`);
+  if (metodo === 'GET' && caminho === 'config') mundo.chaves.push(url.searchParams.get('chave')); // quais linhas de config cada leitura pediu
   if (mundo.antes) mundo.antes(metodo, caminho);
   if (mundo.cai && mundo.cai(metodo, caminho)) return resposta({ message: 'caiu de propósito' }, 500);
   if (caminho.startsWith('rpc/')) return resposta(caminho === 'rpc/escritorio_resumo' ? { custo_hoje: mundo.gastoHoje } : {});
@@ -186,11 +188,51 @@ const iso = (ms) => new Date(ms).toISOString();
 const cadastro = { 'chefe-de-gabinete': { id: 'chefe-de-gabinete', nome: 'Chefe de gabinete', apelido: null, estado: 'ativo' }, animador: { id: 'animador', nome: 'Animador', apelido: 'Noemi T.', estado: 'ativo' } };
 
 const pendentes = (...horas) => ({ pendentes: horas.map((h, i) => ({ pedido_id: `pd${i + 1}`, numero: 10 + i, email: 'fulano@exemplo.com', nome: 'Fulano de Teste', plataforma: 'Hubla', pago_em: iso(quando - h * HORA) })), total_pendentes: horas.length });
-let a = entregasParadas(pendentes(8, 30, 2), quando);
-confere('entrega do Combo: alerta quando alguém pagou há mais de 6 horas, contando só os atrasados', a.length === 1 && a[0].tipo === 'entrega-parada' && a[0].titulo === '2 entregas do Combo esperando há mais de 6 horas' && a[0].assinatura === 'pd2', a);
-confere('entrega do Combo: diz desde quando, sem nome nem e-mail de ninguém', /há 30h00/.test(a[0].corpo) && !/fulano|Fulano/.test(JSON.stringify(a)), a[0] && a[0].corpo);
-confere('entrega do Combo: pagamento de menos de 6 horas, lista vazia e leitura que falhou não alertam', entregasParadas(pendentes(5, 1), quando).length === 0 && entregasParadas(pendentes(), quando).length === 0 && entregasParadas(null, quando).length === 0);
+// A tarefa "entregar-combo-hubla" roda às 11h e às 17h e não grava turno: quem pagou antes de uma rodada e continua
+// na lista depois dela mostra que a rodada não rodou. São 12h07: a rodada das 11h já teve tempo de terminar.
+let a = entregasParadas(pendentes(8, 30, 2, 1), quando);
+confere('entrega do Combo: alerta quem pagou antes da rodada das 11h e continua na lista, contando só esses', a.length === 1 && a[0].tipo === 'entrega-parada' && a[0].titulo === '3 entregas do Combo esperando depois da rodada das 11h' && a[0].assinatura === 'pd2', a);
+confere('entrega do Combo: diz desde quando e qual tarefa, sem nome nem e-mail de ninguém', /há 30h00/.test(a[0].corpo) && /entregar-combo-hubla/.test(a[0].corpo) && !/fulano|Fulano/.test(JSON.stringify(a)) && !/[—–]/.test(JSON.stringify(a)), a[0] && a[0].corpo);
+confere('entrega do Combo: quem pagou depois da rodada (ou nos 10 minutos antes dela), lista vazia e leitura que falhou não alertam', entregasParadas(pendentes(1, 0.5, 1.2), quando).length === 0 && entregasParadas(pendentes(), quando).length === 0 && entregasParadas(null, quando).length === 0);
 confere('entrega do Combo: espera longa aparece em dias', /há 3 dias/.test(entregasParadas(pendentes(80), quando)[0].corpo));
+// Às 11h30 a rodada das 11h ainda está no prazo: vale a das 17h de ontem.
+const as11h30 = quando - 37 * 60_000;
+const pagoEm = (...datas) => ({ pendentes: datas.map((d, i) => ({ pedido_id: `pd${i + 1}`, numero: 10 + i, plataforma: 'Hubla', pago_em: iso(Date.parse(d)) })), total_pendentes: datas.length });
+confere('entrega do Combo: compra da noite espera a rodada das 11h sem alarme, mesmo depois de mais de 6 horas', entregasParadas(pagoEm('2026-11-11T19:00:00-03:00', '2026-11-12T01:30:00-03:00'), as11h30).length === 0);
+a = entregasParadas(pagoEm('2026-11-11T15:00:00-03:00', '2026-11-11T19:00:00-03:00'), as11h30);
+confere('entrega do Combo: quem pagou antes da rodada das 17h de ontem e continua na lista é alerta de manhã', a.length === 1 && a[0].titulo === '1 entrega do Combo esperando depois da rodada das 17h de ontem', a);
+a = entregasParadas(pagoEm('2026-11-12T12:00:00-03:00'), Date.parse('2026-11-12T17:30:00-03:00'));
+confere('entrega do Combo: a rodada das 17h só é cobrada 45 minutos depois de começar', a.length === 0 && entregasParadas(pagoEm('2026-11-12T12:00:00-03:00'), Date.parse('2026-11-12T18:07:00-03:00'))[0].titulo === '1 entrega do Combo esperando depois da rodada das 17h', a);
+
+// ---------------------------------------------------------------- a rodada do direct: cada rodada com o seu turno
+console.log('\nA rodada do direct (9h, 10h, 12h, 16h e de 18h a 22h):');
+const hora = (hhmm) => Date.parse(`2026-11-12T${hhmm.length === 5 ? `${hhmm}:00` : hhmm}-03:00`);
+let nTurno = 0;
+const doDirect = (hhmm, status = 'ok', agente = 'vendedor-calango', extra = {}) => ({ id: 900 + (++nTurno), agente_id: agente, status, inicio: iso(hora(hhmm)), fim: iso(hora(hhmm)), ...extra });
+const direct = (turnos, hhmm, agentes = {}) => tarefasQueNaoRodaram(turnos, agentes, hora(hhmm)).filter((x) => x.tipo === 'nao-rodou:direct');
+const semAlerta = (turnos, ...horas) => horas.every((h) => direct(turnos, h).length === 0);
+confere('dia normal: cada rodada grava o turno na sua hora, nenhum alerta', semAlerta([doDirect('09:20'), doDirect('10:15'), doDirect('10:15:20', 'ok', 'vendedor-pergunta'), doDirect('12:01', 'sem_trabalho')], '10:07', '11:07', '13:07'));
+a = direct([doDirect('10:02')], '11:07');
+confere('a rodada das 9h termina às 10h02 e a das 10h se perde: o turno das 9h não vale mais pelas duas', a.length === 1 && a[0].titulo === 'A rodada do direct: a das 9h ou a das 10h não rodou' && a[0].assinatura === '2026-11-12T10' && /chegou um turno só, às 10h02/.test(a[0].corpo), a);
+confere('a mesma rodada das 9h, sozinha, não era alarme às 10h07 (um pouco mais de uma hora ainda conta)', semAlerta([doDirect('10:02')], '10:07') && semAlerta([doDirect('10:06:30')], '10:07'));
+a = direct([doDirect('10:02'), doDirect('10:02:20', 'ok', 'vendedor-pergunta')], '11:07');
+confere('os dois vendedores gravam o turno juntos no fim da rodada: contam como um, não como duas rodadas', a.length === 1 && /9h ou a das 10h/.test(a[0].titulo), a);
+a = direct([doDirect('10:01', 'sem_trabalho')], '10:07');
+confere('a das 9h se perde e a das 10h sai cedo ("sem_trabalho" às 10h01): o alerta é da das 9h, na hora', a.length === 1 && a[0].titulo === 'A rodada do direct das 9h não rodou' && /Sem turno da rodada das 9h/.test(a[0].corpo), a);
+confere('e na hora seguinte o alerta não se repete para a das 10h, que rodou', semAlerta([doDirect('10:01', 'sem_trabalho')], '11:07'));
+confere('rodada longa sem alarme falso: a das 9h acaba às 10h05 e a das 10h sai cedo às 10h01', semAlerta([doDirect('10:01', 'sem_trabalho'), doDirect('10:05')], '10:07', '11:07'));
+confere('rodada longa sem alarme falso: a das 9h acaba às 10h05 e a das 10h trabalha até as 10h40', semAlerta([doDirect('10:05'), doDirect('10:40')], '10:07', '11:07'));
+confere('turno aberto no começo da rodada das 10h (ainda "rodando", ou já fechado) não vale pela das 9h', direct([doDirect('10:00:30', 'rodando', 'vendedor-calango', { fim: null })], '10:07').length === 1 && direct([doDirect('10:00:30', 'ok', 'vendedor-calango', { fim: iso(hora('10:05')) })], '10:07').length === 1);
+const noite = [doDirect('09:25'), doDirect('10:01', 'sem_trabalho'), doDirect('16:10', 'sem_trabalho'), doDirect('18:20')];
+a = direct(noite, '20:07');
+confere('o computador desliga às 18h30: a das 19h vira alerta às 20h07, com o último turno antes dela', a.length === 1 && a[0].titulo === 'A rodada do direct das 19h não rodou' && a[0].assinatura === '2026-11-12T19' && /O último turno antes dela foi hoje às 18h20/.test(a[0].corpo) && /2 de 6 rodadas ficaram sem turno: 12h e 19h\./.test(a[0].prova), a[0] && a[0].prova);
+confere('e às 21h07 o alerta é outro, da das 20h; às 19h07 ainda não tinha alerta', direct(noite, '21:07')[0].assinatura === '2026-11-12T20' && semAlerta(noite, '19:07'));
+confere('rodada sozinha: a das 10h sem turno é alerta às 11h07, e a das 12h, com turno, fecha o assunto às 13h07', direct([doDirect('12:01', 'sem_trabalho')], '11:07')[0].titulo === 'A rodada do direct das 10h não rodou' && semAlerta([doDirect('12:01', 'sem_trabalho')], '13:07'));
+a = direct([doDirect('10:10'), doDirect('10:30')], '10:07');
+confere('limite conhecido: rodada de mais de 67 minutos ainda alarma, como antes, e some na hora seguinte', a.length === 1 && a[0].titulo === 'A rodada do direct das 9h não rodou' && semAlerta([doDirect('10:10'), doDirect('10:30')], '11:07'));
+confere('vendedores em pausa: a rodada não é cobrada', direct([], '11:07', { 'vendedor-calango': { estado: 'pausado' }, 'vendedor-pergunta': { estado: 'pausado' } }).length === 0);
+const rd = rodadasDoDia([9, 10, 12], [doDirect('09:30'), doDirect('10:01', 'sem_trabalho')], hora('10:07'));
+confere('rodadasDoDia: só as que já começaram, cada uma com o seu turno, e venceu só a que já fechou a janela', rd.length === 2 && rd[0].h === 9 && rd[0].venceu === true && !!rd[0].sinal && rd[1].h === 10 && rd[1].venceu === false && rd[1].sinal.status === 'sem_trabalho', rd);
 
 const resumo = (valor) => ({ chave: 'escritorio_resumo_dia', valor });
 a = resumoQueNaoSaiu({}, cadastro, quando);
@@ -218,6 +260,41 @@ const cartao = cartaoSemAparelho([{ titulo: 'A fila do Atendente está parada' }
 confere('aviso que não chega: o cartão diz o problema e como ligar, no título', /não estão chegando/.test(cartao.titulo) && /app Vendas/.test(cartao.titulo) && /Avisos > "Escritório de IA" e "Dúvida no direct"/.test(cartao.titulo) && cartao.titulo.length <= 160, cartao.titulo);
 confere('aviso que não chega: a prova lista o que não chegou', /mandei 2 alertas e nenhum aparelho recebeu: A fila do Atendente está parada; O resumo das 8h não saiu hoje\./.test(cartao.prova) && cartao.agente === 'zelador' && !/[—–]/.test(JSON.stringify(cartao)), cartao.prova);
 
+// ---------------------------------------------------------------- a cópia do banco (config.backup_ultimo)
+// O Supabase grátis não guarda backup: a cópia é do computador (scripts/backup.mjs) e grava o sinal a cada vez que dá certo.
+console.log('\nA cópia do banco:');
+const sinal = (horasAtras, extra = {}) => ({ chave: 'backup_ultimo', valor: { em: iso(quando - horasAtras * HORA), tabelas: 80, linhas: 21058, bytes: 4146001, avisos: [], ...extra } });
+confere('cópia em dia (9 horas, 80 tabelas, sem aviso) não alerta; com 35 horas ainda não', copiaDoBanco(sinal(9), quando).length === 0 && copiaDoBanco(sinal(35), quando).length === 0);
+a = copiaDoBanco(sinal(37), quando);
+confere('mais de 36 horas é alerta, com a hora da última cópia e o que fazer em uma frase', a.length === 1 && a[0].tipo === 'copia-parada' && a[0].titulo === 'A cópia do banco está parada há 37h00' && /A última cópia foi em 10\/11 às 23h07/.test(a[0].corpo) && /Rode "node scripts\/backup\.mjs"/.test(a[0].corpo) && /docs\/backup\.md/.test(a[0].corpo) && a[0].assinatura === sinal(37).valor.em && !a[0].menor, a);
+confere('parada há dias aparece em dias', /parada há 3 dias/.test(copiaDoBanco(sinal(80), quando)[0].titulo));
+a = copiaDoBanco({}, quando);
+confere('sem o sinal (a cópia nunca rodou) é alerta', a.length === 1 && a[0].tipo === 'copia-parada' && a[0].assinatura === 'sem-sinal' && /nunca avisou/.test(a[0].titulo) && /Rode "node scripts\/backup\.mjs"/.test(a[0].corpo) && /docs\/backup\.md/.test(a[0].corpo), a);
+confere('sinal sem data conta como sem sinal; leitura que falhou não alerta', copiaDoBanco({ chave: 'backup_ultimo', valor: { tabelas: 80, linhas: 10 } }, quando)[0].assinatura === 'sem-sinal' && copiaDoBanco(null, quando).length === 0);
+a = copiaDoBanco(sinal(9, { linhas: 0 }), quando);
+confere('zero tabelas ou zero linhas é alerta, mesmo com a cópia em dia', a.length === 1 && a[0].tipo === 'copia-parada' && a[0].titulo === 'A última cópia do banco saiu vazia' && /linhas: 0/.test(a[0].corpo) && copiaDoBanco(sinal(9, { tabelas: 0 }), quando)[0].titulo === 'A última cópia do banco saiu vazia', a);
+a = copiaDoBanco(sinal(9, { avisos: ['A API de gestão não respondeu (401 <b>Unauthorized</b> — token): os extras ficaram de fora', 'O extra auth-users não foi copiado: 401'] }), quando);
+confere('em dia e com aviso é alerta menor, com o primeiro texto (sem marcação e sem travessão)', a.length === 1 && a[0].tipo === 'copia-com-aviso' && a[0].menor === true && a[0].titulo === 'A cópia do banco saiu com 2 avisos' && /O primeiro aviso: A API de gestão não respondeu \(401 bUnauthorized\/b, token\): os extras ficaram de fora\. Rode "node scripts\/backup\.mjs"/.test(a[0].corpo) && /docs\/backup\.md/.test(a[0].corpo) && !/[<>—–]/.test(JSON.stringify(a)), a[0] && a[0].corpo);
+confere('o mesmo aviso com outros números é o mesmo problema (não avisa de novo a cada cópia)', copiaDoBanco(sinal(9, { avisos: ['O banco tem 181 migrations aplicadas e a pasta supabase/migrations tem 182.'] }), quando)[0].assinatura === copiaDoBanco(sinal(2, { avisos: ['O banco tem 182 migrations aplicadas e a pasta supabase/migrations tem 184.'] }), quando)[0].assinatura);
+a = copiaDoBanco(sinal(40, { avisos: ['Um aviso.'] }), quando);
+confere('parada e com aviso dá só o alerta da cópia parada', a.length === 1 && a[0].tipo === 'copia-parada');
+
+// ---------------------------------------------------------------- a tarefa dos cartões aprovados (o Executor)
+// docs/tarefa-aprovadas.md: sem o agente "executor" no cadastro, pausado ou em vaga aberta, a tarefa sai sem trabalhar
+// e sem gravar turno. O Zelador só cobra o turno do dia de quem está no cadastro e ativo.
+console.log('\nA tarefa "fazer-aprovadas" (o Executor, todo dia às 7h10):');
+const doExecutor = (turnos, hhmm, agentes) => tarefasQueNaoRodaram(turnos, agentes, hora(hhmm)).filter((x) => x.tipo === 'nao-rodou:executor');
+const executor = (extra = {}) => ({ executor: { id: 'executor', nome: 'Executor', apelido: 'Neemias R.', estado: 'ativo', criado_em: '2026-11-10T20:00:00Z', ...extra } });
+confere('sem o Executor no cadastro, ou sem a lista de agentes, a tarefa não é cobrada', doExecutor([], '09:07', cadastro).length === 0 && doExecutor([], '09:07', {}).length === 0);
+confere('Executor em vaga aberta, pausado ou demitido: a tarefa não é cobrada', ['planejado', 'pausado', 'desligado'].every((estado) => doExecutor([], '09:07', executor({ estado })).length === 0));
+a = doExecutor([], '08:07', executor());
+confere('Executor ativo e sem turno de hoje: alerta às 8h07, com a hora marcada e o nome da tarefa', a.length === 1 && a[0].titulo === 'A tarefa dos cartões aprovados não rodou hoje' && /Ela está agendada para as 7h10/.test(a[0].corpo) && a[0].assinatura === '2026-11-12' && /"fazer-aprovadas"/.test(a[0].acao), a);
+confere('antes das 7h55 (7h10 mais 45 minutos) ainda não cobra', doExecutor([], '07:50', executor()).length === 0);
+const doDia = (hhmm, status) => ({ id: 950, agente_id: 'executor', status, inicio: iso(hora(hhmm)), fim: status === 'rodando' ? null : iso(hora(hhmm)), tarefa: 'fazer-aprovadas' });
+confere('com o turno do dia (fez, saiu sem cartão ou ainda está trabalhando), não alerta', ['ok', 'sem_trabalho', 'rodando'].every((s) => doExecutor([doDia('07:11', s)], '08:07', executor()).length === 0));
+confere('no dia em que o Executor entra no cadastro a tarefa não é cobrada; no dia seguinte, sim', doExecutor([], '17:07', executor({ criado_em: '2026-11-12T19:00:00Z' })).length === 0 && doExecutor([], '08:07', executor({ criado_em: '2026-11-11T19:00:00Z' })).length === 1);
+confere('as outras tarefas continuam cobradas quando o agente não aparece na lista', direct([], '11:07', executor()).length === 1);
+
 // ---------------------------------------------------------------- a rodada inteira do Zelador
 console.log('\nA rodada do Zelador, com banco de mentira:');
 const parados = ['vendedor-calango', 'vendedor-pergunta', 'redator-de-frase', 'redator-de-carrossel']; // em pausa: as tarefas do computador não são cobradas aqui
@@ -238,7 +315,12 @@ tabelas.config.push(
 );
 const estadoZ = () => tabelas.config.find((l) => l.chave === 'zelador_estado').valor;
 const dosAvisos = () => tabelas.propostas.filter((p) => /não estão chegando/.test(p.titulo));
-const rodarZ = async (em, opcoes) => { mundo.chamadas = []; return zelador(m, em, opcoes); };
+// O sinal da cópia do banco. Nas rodadas abaixo a cópia está sempre em dia (feita 9 horas antes de cada conferência),
+// para não entrar na conta dos outros alertas; a cópia parada tem as suas rodadas no fim, com copiaEmDia desligado.
+const copia = sinal(9);
+tabelas.config.push(copia);
+let copiaEmDia = true;
+const rodarZ = async (em, opcoes) => { mundo.chamadas = []; mundo.chaves = []; if (copiaEmDia) copia.valor = sinal(9 - (em - quando) / HORA).valor; return zelador(m, em, opcoes); };
 
 let r = await rodarZ(quando, { simular: true });
 confere('simular: acha os 3 alertas novos e não grava nada', r.alertas.length === 3 && ['turno-preso', 'entrega-parada', 'resumo-nao-saiu'].every((t) => r.alertas.some((x) => x.tipo === t)) && escritas().length === 0, r.alertas && r.alertas.map((x) => x.tipo));
@@ -272,6 +354,45 @@ tabelas.agentes[0].estado = 'pausado';
 r = await rodarZ(quando + 3 * DIA);
 confere('Zelador pausado: não avisa, não cria cartão e não grava nada', r.pulou === 'agente_parado' && escritas().length === 0, escritas());
 tabelas.agentes[0].estado = 'ativo';
+
+// A cópia do banco na rodada inteira. Vinte dias depois, sem entrega esperando e com o resumo do dia feito: o único
+// assunto é a cópia.
+const maisTarde = quando + 20 * DIA; // 02/12, 12h07 em Brasília
+tabelas.pedidos.length = 0;
+const resumoEmDia = (em) => { tabelas.config.find((l) => l.chave === 'escritorio_resumo_dia').valor = { dia: iso(em - 3 * HORA).slice(0, 10), status: 'ok' }; };
+resumoEmDia(maisTarde);
+r = await rodarZ(maisTarde, { simular: true });
+confere('com a cópia em dia e o resto em ordem, nenhum alerta', r.alertas.length === 0 && r.leu.copia_do_banco === copia.valor.em && r.turno === 'sem_trabalho', r.alertas);
+confere('o sinal da cópia não custa chamada: vem na mesma leitura de config que traz o modo do Atendente', mundo.chaves.filter((c) => /backup_ultimo|atendente/.test(c)).join(' ') === 'in.(atendente,backup_ultimo)', mundo.chaves);
+copiaEmDia = false;
+copia.valor = sinal(40 - 20 * 24).valor; // feita 40 horas antes desta rodada
+r = await rodarZ(maisTarde, { simular: true });
+confere('cópia parada há 40 horas: a rodada acha o alerta, sem gravar nada', r.alertas.length === 1 && r.alertas[0].tipo === 'copia-parada' && r.alertas[0].titulo === 'A cópia do banco está parada há 40h00' && r.alertas[0].avisaria === true && escritas().length === 0, r.alertas);
+tabelas.config.splice(tabelas.config.indexOf(copia), 1);
+r = await rodarZ(maisTarde, { simular: true });
+confere('sem a linha do sinal: alerta de que a cópia nunca rodou', r.alertas.length === 1 && /nunca avisou/.test(r.alertas[0].titulo) && r.leu.copia_do_banco === 'não existe', r.alertas);
+mundo.cai = (metodo, caminho) => metodo === 'GET' && caminho === 'config' && /backup_ultimo/.test(mundo.chaves[mundo.chaves.length - 1] || '');
+r = await calado(() => rodarZ(maisTarde, { simular: true }));
+mundo.cai = null;
+confere('se a leitura do sinal falhar, não afirma nada sobre a cópia (e segue com o resto)', r.alertas.length === 0 && r.leu.copia_do_banco === null && r.leu.atendente_em_ensaio === false, r.alertas);
+// Alerta menor: a cópia saiu, com um aviso dentro. Avisa uma vez, não segura o turno "em ordem" e volta depois de 3 dias.
+tabelas.config.push(copia);
+const comAviso = (em) => { copia.valor = { ...sinal(9 - (em - quando) / HORA).valor, avisos: ['O extra auth-users não foi copiado: 401'] }; resumoEmDia(em); };
+comAviso(maisTarde);
+r = await rodarZ(maisTarde);
+confere('cópia com aviso: um alerta menor, avisado uma vez', r.alertas === 1 && r.avisados === 1 && r.turno === 'ok' && estadoZ().avisos['copia-com-aviso'].assinatura === 'O extra auth-users não foi copiado: #', r);
+comAviso(maisTarde + 7 * HORA);
+r = await rodarZ(maisTarde + 7 * HORA);
+const ultimoTurno = tabelas.turnos.filter((t) => t.agente_id === 'zelador').pop();
+confere('7 horas depois, o mesmo aviso não volta ao celular, e o Zelador ainda dá o sinal de vida dele', r.alertas === 1 && r.avisados === 0 && r.turno === 'sem_trabalho' && ultimoTurno.resumo === 'Nada grave. A cópia do banco saiu com 1 aviso.', { r, resumo: ultimoTurno && ultimoTurno.resumo });
+comAviso(maisTarde + 2 * DIA);
+r = await rodarZ(maisTarde + 2 * DIA, { simular: true });
+const menor = (x) => x.alertas.find((y) => y.tipo === 'copia-com-aviso');
+confere('2 dias depois ainda não avisa de novo; com 3 dias, lembra', menor(r).avisaria === false, menor(r));
+comAviso(maisTarde + 3 * DIA);
+r = await rodarZ(maisTarde + 3 * DIA, { simular: true });
+confere('com 3 dias do mesmo aviso, lembra uma vez', menor(r).avisaria === true && menor(r).repete === null, menor(r));
+copiaEmDia = true;
 
 // ---------------------------------------------------------------- escritorio.js: o agente pode trabalhar?
 console.log('\nA base do Escritório (worker/lib/escritorio.js):');
@@ -368,6 +489,49 @@ confere('seta: sem a leitura da semana, não inventa venda', s.nivel === 'neutro
 s = sinalDe({ ...vendedor({ compraram: 5, compraram_7d: 3 }), turnos: { ultimo: { status: 'erro' }, hoje: 1, erros_7d: 1 } });
 confere('seta: erro no último turno continua pesando mais que a venda', s.nivel === 'mal', s);
 confere('seta: agente em pausa não tem seta', sinalDe({ ...vendedor({ compraram_7d: 3 }), estado: 'pausado' }) === null);
+
+// ---------------------------------------------------------------- escritorio.js: a fala do Calango (o balão da planta)
+// Só contas: quem fala, o quê e por quanto tempo. A frase é curta, fixa por agente, e nunca leva o resumo do turno.
+const { FALA_MAX, falaDe, frasesDaFala } = await import('../worker/lib/escritorio.js');
+const AGORA_DA_FALA = Date.parse('2026-11-10T15:00:00Z');
+const haMin = (min) => new Date(AGORA_DA_FALA - min * 60_000).toISOString();
+const calango = (id, extra = {}) => ({ id, sala: 'vendas', estado: 'ativo', offline: false, turnos: null, trabalho: null, ...extra });
+const turnoHa = (status, min, extra = {}) => ({ ultimo: { status, inicio: haMin(min + 2), fim: status === 'rodando' ? null : haMin(min), ...extra } });
+const diz = (a) => falaDe(a, AGORA_DA_FALA);
+const frases = frasesDaFala();
+// Os dois travessões e as reticências num caractere só, pelos códigos (para este arquivo não ter nenhum deles escrito).
+const PROIBIDOS = new RegExp(`[${String.fromCharCode(0x2014, 0x2013, 0x2026)}]`);
+const ruins = frases.filter((f) => f.length > FALA_MAX || f.length < 8 || PROIBIDOS.test(f) || /\.\.\.|[0-9]|R\$|@|[.!?]$/.test(f) || f[0] !== f[0].toUpperCase());
+confere(`fala: as ${frases.length} frases fixas cabem em ${FALA_MAX} letras, sem travessão, reticências, número, valor nem @`, frases.length > 60 && ruins.length === 0, ruins);
+let f = diz(calango('atendente', { turnos: turnoHa('rodando', 3) }));
+confere('fala: turno rodando fala o que está fazendo agora', !!f && f.tipo === 'agora' && f.texto === 'Atendendo no direct', f);
+confere('fala: turno rodando há mais de 3 horas é turno preso, não fala', diz(calango('atendente', { turnos: turnoHa('rodando', 200) })) === null);
+f = diz(calango('chefe-de-gabinete', { sala: 'direcao', turnos: turnoHa('ok', 5, { resumo: 'Ontem foram 12 vendas, somando R$ 576,53. Maria (@maria) pediu desconto.' }) }));
+confere('fala: quem acabou de trabalhar fala a frase dele, nunca o resumo (sem valor, nome nem @)', !!f && f.tipo === 'feito' && f.texto === 'Fechei o resumo do dia', f);
+confere('fala: depois de 30 minutos o Calango fica quieto', diz(calango('chefe-de-gabinete', { turnos: turnoHa('ok', 31) })) === null);
+confere('fala: turno sem trabalho não fala', diz(calango('zelador', { sala: 'sistema', turnos: turnoHa('sem_trabalho', 1, { resumo: 'Tudo em ordem.' }) })) === null);
+f = diz(calango('vendedor-calango', { turnos: turnoHa('erro', 120, { resumo: 'Não abriu o direct.' }) }));
+confere('fala: erro chama para o perfil, por até 12 horas', !!f && f.tipo === 'atencao' && f.texto === 'Deu erro, veja meu perfil' && diz(calango('vendedor-calango', { turnos: turnoHa('erro', 13 * 60) })) === null, f);
+f = diz(calango('zelador', { sala: 'sistema', turnos: turnoHa('ok', 180, { resumo: '2 alertas: João L. (Vendedor Calango): 2 turnos com erro; Gasto de IA em 90% do teto. Aviso no celular: 1 aparelho.' }) }));
+confere('fala: o Zelador diz quantos alertas tem, sem o texto do alerta', !!f && f.tipo === 'atencao' && f.texto === '2 alertas para você', f);
+f = diz(calango('zelador', { sala: 'sistema', turnos: turnoHa('ok', 10, { resumo: '1 alerta: A cópia do banco não saiu.' }) }));
+confere('fala: um alerta só, no singular', !!f && f.texto === '1 alerta para você', f);
+f = diz(calango('zelador', { sala: 'sistema', turnos: turnoHa('ok', 10, { resumo: '0 alertas: nenhum novo. Cartão na mesa: Aviso sem aparelho.' }) }));
+confere('fala: Zelador sem alerta novo fala a frase comum dele', !!f && f.tipo === 'feito' && f.texto === 'Conferi se tudo rodou', f);
+f = diz(calango('redator-de-carrossel', { sala: 'design', turnos: turnoHa('rodando', 4, { tarefa: 'posts-de-frase-do-dia' }) }));
+const outra = diz(calango('redator-de-carrossel', { sala: 'design', turnos: turnoHa('rodando', 4, { tarefa: 'tarefa-que-nao-existe' }) }));
+confere('fala: quem tem mais de uma tarefa fala da tarefa do turno', !!f && f.texto === 'Montando o post de frase' && !!outra && outra.texto === 'Montando a arte do post', { f, outra });
+f = diz(calango('atendente', { trabalho: { hoje: 9, ultimo: haMin(2) } }));
+const antes = diz(calango('atendente', { trabalho: { hoje: 9, ultimo: haMin(20) } }));
+confere('fala: o Atendente (sem turno) fala "agora" até 5 minutos depois da última resposta, e "feito" até 30', !!f && f.tipo === 'agora' && !!antes && antes.tipo === 'feito' && antes.texto === 'Respondi no direct' && diz(calango('atendente', { trabalho: { hoje: 9, ultimo: haMin(40) } })) === null, { f, antes });
+f = diz(calango('publicador', { sala: 'conteudo', trabalho: { hoje: 1, ultimo: haMin(2) } }));
+confere('fala: a rotina do relógio fala pelo último trabalho que saiu, sempre como "feito"', !!f && f.tipo === 'feito' && f.texto === 'Publiquei um post', f);
+f = diz(calango('agente-novo', { sala: 'video', turnos: turnoHa('ok', 3) }));
+const semSala = diz(calango('agente-novo', { sala: 'sala-nova', turnos: turnoHa('rodando', 3) }));
+confere('fala: agente sem frase própria usa a da sala; sala desconhecida, a frase padrão', !!f && f.texto === 'Trabalhei num vídeo' && !!semSala && semSala.texto === 'Trabalhando agora', { f, semSala });
+confere('fala: pausado, offline e vaga aberta não falam', [{ estado: 'pausado' }, { offline: true }, { estado: 'planejado' }].every((x) => diz(calango('atendente', { ...x, turnos: turnoHa('rodando', 1) })) === null));
+f = diz(calango('zelador', { sala: 'sistema', turnos: turnoHa('ok', 10, { resumo: '999 alertas: muitos.' }) }));
+confere('fala: a frase com a contagem também cabe no balão', !!f && f.texto.length <= FALA_MAX, f);
 
 globalThis.fetch = buscar;
 console.log(falhas ? `\n${falhas} conferência(s) falharam.` : '\nTudo certo.');

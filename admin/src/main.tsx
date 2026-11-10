@@ -266,6 +266,9 @@ function Moldura({ eu, aoSair }: { eu: Eu; aoSair: () => void }) {
   // Quem não vê as telas das redes (cargo Suporte) ganha Suporte e Alunos nas abas de baixo.
   const baixo = ['inicio', 'posts', 'resultados', 'comenta', 'suporte', 'alunos'].filter((id) => itens.some((i) => i.id === id)).slice(0, 4);
   const noMais = itens.filter((i) => !baixo.includes(i.id));
+  // No celular, Escritório, Follow-up e Colmeia ficam dentro de "Mais": o botão mostra a soma dos contadores de lá, para
+  // o que espera o dono aparecer sem abrir a folha. São os mesmos números de cada item, sem leitura nova.
+  const nMais = noMais.reduce((s, i) => s + (i.n || 0), 0);
 
   const alternarFina = () => { setFina((f) => { guardarPref('agenciasetup-painel-fino', !f); return !f; }); setMenuPessoa(false); };
   const alternarSecao = (s: string) => setFechadas((l) => { const n = l.includes(s) ? l.filter((x) => x !== s) : [...l, s]; guardarPref('agenciasetup-painel-secoes', n); return n; });
@@ -353,7 +356,7 @@ function Moldura({ eu, aoSair }: { eu: Eu; aoSair: () => void }) {
             </Link>
           );
         })}
-        <button className={mais || noMais.some((i) => i.id === aba) ? 'ativo' : ''} onClick={() => setMais(!mais)}><Ellipsis /><span>Mais</span></button>
+        <button className={mais || noMais.some((i) => i.id === aba) ? 'ativo' : ''} onClick={() => setMais(!mais)}><Ellipsis /><span>Mais</span>{nMais ? <span className="menu-n">{nMais}</span> : null}</button>
       </nav>
 
       {mais && (

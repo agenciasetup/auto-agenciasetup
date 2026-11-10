@@ -64,23 +64,73 @@ Conferido no computador: `conferir-atendente` (154), `conferir-comenta` (64), `c
 
 Conferido em produção: `node scripts/conferir.mjs https://agenciasetup.com.br` deu tudo certo; pelo conector, `followup_lista` traz `tetos` e `pode_tocar`, `listar_comenta` traz as vendas de 9 versões e `escritorio_ver` abre. O contador de toques nasceu no meio do dia e foi acertado com as 5 mensagens de vendedor que já tinham saído. O despertador foi ligado logo depois da publicação (`config.atendente.na_hora`). Não foi visto com dado de verdade: as telas novas, o efeito do recado no que os agentes escrevem e a troca de versão do Comenta X por venda.
 
+## Lote 3: corrigido e no ar em 10/11 (ok do dono: "Sim, comece" e "Sim, publique"; versão `ef626e03`)
+
+Publicado em 10/11 às 19h19 (UTC). Depois da publicação: agente `executor` (Neemias R.) criado pelo conector e tarefa agendada `fazer-aprovadas` criada (7h10). Conferido no ar: `conferir.mjs` na produção, o Escritório pelo conector (os 32 agentes com o campo `fala`, a fila do Executor respondendo) e o relógio de minuto sem erro.
+
+**Quem faz o cartão aprovado (o Executor)**
+- [x] **A tarefa diária `fazer-aprovadas`.** Pega um cartão aprovado por rodada, só de esforço pequeno, o aprovado há mais tempo primeiro. Faz o que cabe dentro do projeto, confere com os ensaios, deixa um commit local e anota o andamento no cartão. Nunca publica, nunca grava no banco e nunca fala com ninguém: site público, dinheiro, redes, mensagens, tetos e as instruções do próprio Claude continuam esperando o dono. O roteiro e o texto da tarefa estão em `docs/tarefa-aprovadas.md`.
+- [x] **O andamento sem tabela nova.** É o último turno que cita o cartão (`turnos.dados.proposta`, com `desfecho`, `nota` e `commit`). Quatro desfechos: feito, pronto e falta publicar, espera você, tentou e não conseguiu (tenta outro dia, uma vez). Quem escolhe o cartão é o sistema (`verFilaDoExecutor`, `filaDoExecutor`, `andamentosDe` e `lerAndamentos` em `worker/lib/escritorio.js`; no conector, `escritorio_ver` com `fila` verdadeiro).
+- [x] **A tela e o Chefe falam a mesma língua.** Em "Aprovadas, falta fazer" cada cartão ganhou a linha do andamento (`Escritorio.tsx`). O Chefe de gabinete cobra "Pronto, falta publicar" separado de "Aprovado e parado" (`cobrancaDe` em `chefe-de-gabinete.js`).
+- [x] **"Esperando você" conta o que está pronto.** O cartão da mesa, no Início, ganhou uma frase pequena: quantas aprovadas estão prontas (falta publicar) e quantas esperam uma decisão dele, contando as que o Executor tentou 2 vezes e não conseguiu (`nota` em `GET /esperando`, `worker/lib/acoes-esperando.js`). O número grande e o contador do menu continuam sendo só as propostas novas. Custa uma leitura a mais, e só quando há cartão aprovado.
+- [x] **O Zelador cobra a tarefa só de quem existe.** A `fazer-aprovadas` entrou na lista de tarefas do computador (7h10, alerta depois das 7h55 sem turno do dia), mas só com o agente `executor` no cadastro e ativo, e a partir do dia seguinte ao da entrada dele. Sem o agente, pausado ou em vaga aberta, não cobra.
+- [x] **Cartão aprovado que já foi feito tem dono para fechar.** O Executor fecha sozinho o que não precisa de publicação. O que precisa fica como "Pronto, falta publicar" e quem publica fecha (`escritorio_resultado` ou o botão "Foi feita", que abre com a nota dele).
+
+**Cópia do banco**
+- [x] **O Supabase grátis não guarda backup nenhum** (a API de gestão respondeu `"backups": []`). Agora o computador copia o banco inteiro uma vez por dia para `_backup/banco/` (fora do Git): as 80 tabelas, as migrations, a estrutura, os logins e a lista de arquivos, uns 4 MB por cópia, 14 cópias guardadas. `node scripts/backup.mjs` copia e confere a contagem de cada tabela; `node scripts/backup-restaurar.mjs` só simula e, para escrever, exige `--tabela <nome> --confirmo`. Tudo explicado em `docs/backup.md`.
+- [x] **O Zelador avisa quando a cópia para.** Cada cópia que dá certo grava o sinal `config.backup_ultimo`. Alerta quando o sinal não existe, tem mais de 36 horas ou veio com zero tabelas ou zero linhas; alerta menor (uma vez, e de novo só depois de 3 dias) quando a cópia saiu com algum aviso. Não custa chamada a mais: o sinal vem na leitura de config que já trazia o modo do Atendente (`copiaDoBanco` em `zelador.js`).
+
+**Vendas e Comenta X**
+- [x] **O botão do mini curso no direct leva a versão da mensagem:** o endereço ganha `l=<código do link curto da versão>` e `utm_term=<post>`; as marcas de sempre (`curso`, `curso-topo`, a palavra, a pessoa) não mudam. A visita guarda o código no campo `link` (`origem.js`) e a venda cai direto na versão (`comenta.js`); o caminho pela pessoa fica de reserva para os pedidos de antes.
+- [x] **A mesma pessoa contada duas vezes em Vendas:** em canal, campanha e conteúdo, "vendas" passou a contar pessoas; o dinheiro do complemento continua somando na origem (`calcularVendas` em `acoes-area.js`). O topo continua contando pedidos e ganhou `compradores`. Na base de 10/11 não havia nenhum pedido de upsell (nenhuma oferta tem upsell ligado); a conta dobrava para 1 pessoa, que comprou o complemento pelo checkout comum no dia seguinte (link da bio: de 37 para 36).
+- [x] **A tela Vendas diz o que conta.** O rodapé de "De onde vieram as vendas" explica que ali, em Campanhas e em Conteúdos, quem comprou duas vezes conta uma; ao lado de "Vendas pagas" aparece de quantas pessoas elas são (`Vendas.tsx`).
+
+**Zelador**
+- [x] **Cada rodada do direct com o seu turno:** a janela da rodada fecha 7 minutos depois da hora cheia seguinte e um turno não vale mais por duas rodadas (`rodadasDoDia` em `zelador.js`). Limite que ficou: rodada de mais de 67 minutos ainda alarma, como antes; para acabar com isso a tarefa do direct teria de abrir o turno no começo (o Zelador já entende esse turno).
+- [x] **Entrega do Combo por rodada:** a tarefa das 11h e das 17h não grava turno, então a conferência é pela lista. Avisa quando uma compra feita antes da rodada continua fora da Hubla 45 minutos depois dela. A regra antiga ("há mais de 6 horas") tocaria de madrugada para toda compra feita à noite.
+
+**Telas e cadastro**
+- [x] **No celular, o botão "Mais" mostra a soma dos contadores** do que está dentro dele (`admin/src/main.tsx`).
+- [x] **Cadastro dos agentes igual ao que roda** (acertado no banco em 10/11 pelo conector, `escritorio_agente`): o Chefe com o modelo Sonnet 5.5; o Atendente como "misto: claude-haiku-5-5 abre, claude-sonnet-5-5 continua"; o Testador de mensagens com o modelo Sonnet 5.5 e a cadência "Todo dia, na rodada do direct das 9h. No Worker, só quando pedem versões novas" (continua "computador": a troca de versão de todo dia é o passo 2b da tarefa do direct); Roteirista "Segunda e quinta, às 9h31", Olheiro visual "Toda segunda, às 9h03", Diretor de arte "Toda segunda, às 10h03". Se o dono trocar o modelo do Atendente na tela, o cadastro precisa acompanhar.
+
+Conferido no computador: `conferir-atendente` (154), `conferir-comenta` (87), `conferir-aprovadas` (72), `conferir-chefe` (48), `conferir-video` (43), `conferir-design` (55), `conferir-sistema --sem-banco` (107), `conferir-conciliador --sem-banco` (90), o painel compila e o pacote do Worker monta na simulação (`wrangler deploy --dry-run`). Não foi visto: nenhuma tela com dado de verdade, a primeira rodada do Executor, a restauração de uma tabela (só simulada) e os alertas novos do Zelador em produção.
+
+## A planta do Escritório: "correções bobas" do dono, no ar em 10/11 (versão `ef626e03`)
+
+Pedido dele olhando a tela: a Direção estava poluída, o Salomão estava com o desenho errado, os textos incomodavam e a Lista estava "poluída demais".
+
+- [x] **Balão curto e pequeno.** Um por sala, de uma linha, em letra de 10,5 px. Só fala quem trabalha agora, quem acabou de fazer algo (30 minutos) e quem deu erro ou trouxe alerta (12 horas). Frase fixa por agente ("Atendendo no direct", "Fechei o resumo do dia"), sem IA: `falaDe` em `worker/lib/escritorio.js`. O resumo comprido do turno fica no perfil.
+- [x] **Lista redesenhada.** Um bloco igual por sala, quatro colunas e um botão "Ver perfil" por linha. A mesa saiu de dentro da Direção. No celular, duas linhas por agente, sem rolar de lado.
+- [x] **Direção nova.** Uma mesa só, plaquinhas, troféus e o tapete de urso polar. O dono escolheu entre três opções ("Sala 1 e os três").
+- [x] **Calangos novos:** o do Filipe (óculos prata, boné bege, camisa branca, jeans, tênis branco), o do Erick (barba, jaqueta de couro preta), o do Salomão e o do Neemias, o Executor (o de crachá e café, que estava de reserva).
+- [ ] **Não foi visto:** a tela de verdade com dados reais, o movimento (a troca de balão a cada 8 segundos), Safari e iPhone. A conferência foi na prévia com dados de mentira, no Chrome.
+- [ ] **Com o Windows desligado, os três "ZzzZz" da sala Vídeo ficam um em cima do outro.** Já era assim.
+
 ## Ainda aberto
+
+**Do lote 3**
+- [x] Publicado, agente `executor` criado, tarefa `fazer-aprovadas` agendada e cópia do banco registrada no Agendador do Windows (`AgenciaSetup-Backup`, 3h30). Tudo em 10/11.
+- [ ] **A permissão da tarefa `fazer-aprovadas` (depende do dono).** Ela foi criada por uma conversa aberta de fora do app, e o modo de permissão não foi junto: a rodada pode parar pedindo permissão, sem ninguém para responder. O dono abre a tarefa no app do Claude, escolhe o modo e clica em "Run now" uma vez. Se ela não rodar, o Zelador avisa depois das 7h55 (a partir de 12/11).
+- [ ] **Ver a primeira rodada do Executor** (11/11) e a primeira cópia do banco pela tarefa do Windows (11/11, 3h30).
+- [x] Os três textos de instrução foram aplicados em 10/11 (o `CLAUDE.md` e uma linha em cada tarefa, `direct-followup` e `entregar-combo-hubla`).
 
 **Depende do dono**
 - [ ] **O Mac não dá sinal de vida.** O comando está em Escritório > Computadores; sem ele a tela não sabe quando o direct parou.
 - [ ] **Rodadas do direct:** são 9 por dia. Com a saída cedo, as vazias quase não gastam. Reduzir para 5 continua possível.
 - [ ] **Enxugar o que as tarefas de carrossel e de frase leem** (uns 135 KB e 56 KB todo dia). É a régua de qualidade das capas: separar "regras vigentes" do histórico com o dono olhando.
-- [ ] **Cadastro dos agentes diferente do que roda** (é banco): o Chefe sem modelo (roda Sonnet 5.5), o Atendente como "Sonnet" (é misto), o Testador de mensagens como "computador, 9h" (as versões são escritas no Worker), e os horários "às 9h" e "às 10h" (são 9h31, 9h03 e 10h03).
+- [ ] **Trocar as chaves que foram coladas no chat.** Quem troca é o dono, no painel de cada serviço; depois é gravar a nova em Integrações ou no `.env.local`.
+- [ ] **Segunda cópia do banco fora do computador.** Hoje a cópia fica só neste computador: se o HD queimar, vai junto. As saídas (nuvem só dele ou HD externo) e os cuidados estão em `docs/backup.md`, "Se o computador pifar".
+- [ ] **Storage acima do plano grátis?** O projeto está com 1,56 GB de arquivos e o plano grátis do Supabase costuma incluir 1 GB. Conferir na tela de uso do Supabase. `node scripts/midia-limpar.mjs` simula a limpeza das peças já publicadas.
 
 **Código**
-- [ ] **Quem executa o cartão aprovado.** O Chefe cobra, mas ninguém começa sozinho. Uma tarefa "fazer as aprovadas pequenas" seria o próximo passo.
-- [ ] **Cartões parados:** aprovado que já foi feito não fecha sozinho; o cartão do Olheiro visual fica órfão quando é aprovado depois do Diretor rodar.
+- [ ] **O cartão do Olheiro visual fica órfão** quando é aprovado depois do Diretor de arte rodar.
 - [ ] **Uma fonte só para preço e resposta:** a skill do direct ainda repete a tabela de respostas (agora dizendo que a Colmeia vale mais).
 - [ ] **`teto_dia_usd` por agente** é gravado e ninguém lê.
-- [ ] **O botão do mini curso no direct não leva a versão da mensagem:** a venda é atribuída pela pessoa (follow-up). Levar o código do link curto deixaria a conta direta.
-- [ ] **Pedido de upsell herda os toques do original** (`vendas.js`): em Vendas a mesma pessoa conta duas vezes no mesmo conteúdo.
-- [ ] **Zelador:** a rodada do direct perdida entre duas rodadas seguidas ainda passa.
-- [ ] **No celular,** Escritório, Follow-up e Colmeia ficam dentro de "Mais": o contador só aparece abrindo a folha.
+- [ ] **Posts de frase montados na nuvem** (Browser Rendering, que o Workers pago já inclui): hoje a arte sai do computador, e a tarefa das 8h depende dele ligado.
+- [ ] **O perfil em inglês não tem link curto** (`/l/` não existe em `agenciasetup.com`): o botão do curso em inglês não leva a versão, e o Comenta X em inglês não conta clique nem venda por versão.
+- [ ] **A faixa "material-topo"** da página do material não leva a pessoa nem a versão (`linkDoTopo` em `worker/render/paginas.js`): a venda dela vale pelo toque do material que veio antes.
+- [ ] **As vendas por post contam pedidos, não pessoas** (`atribuirVendas` em `worker/lib/acoes.js`): quem comprou duas vezes pelo mesmo post conta duas em Resultados.
+- [ ] **Espelhar os buckets `curso` e `recursos`** (uns 90 MB): a cópia do banco leva só a lista dos arquivos. Hoje a segunda cópia deles são as pastas deste computador.
 
 ## O que está bem feito (não mexer)
 

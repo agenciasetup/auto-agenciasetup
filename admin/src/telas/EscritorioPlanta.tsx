@@ -1,6 +1,9 @@
 // A planta do Escritório de IA: as 8 salas em pixel, vistas em ângulo (isométrico), com um Calango por agente que
 // trabalha, da cor do setor e vestido pela função. Quem roda sempre ligado fica sentado digitando; os outros andam pelo
-// chão livre. Eles pensam e falam o que estão fazendo, e a seta em cima da cabeça diz como cada um está indo.
+// chão livre. A seta em cima da cabeça diz como cada um está indo.
+// O balão é curto e tem motivo: só fala quem está trabalhando agora, trabalhou há pouco ou pede atenção, com uma frase
+// pequena que vem pronta do servidor (a.fala, de falaDe em worker/lib/escritorio.js). Um balão por sala; os outros
+// ficam quietos. O resumo comprido do turno mora no perfil.
 // Duas visões: a geral (todas as salas) e a de um setor (a sala grande, o consumo por modelo e a equipe). O toque num
 // Calango abre o perfil ao lado. Pedidos do dono em 09 e 10/11/2026 (docs/escritorio.md).
 // As salas e os bonecos saem do Magnific e moram no bucket midia (scripts/escritorio-sala.mjs, escritorio-bonecos.mjs,
@@ -18,7 +21,7 @@ import folhaDoCalango from '../img/escritorio-calango.webp';
 // lugares são as cadeiras das mesas da própria sala (o boneco sentado traz a cadeira e cobre a da imagem). ANDAR: o
 // chão livre por onde os outros circulam.
 const SENTAR: Record<string, number[][]> = {
-  direcao: [[27, 70], [81, 73]],
+  direcao: [[56.5, 52.5], [81, 73]], // o primeiro é a mesa do dono (a imagem da sala vem sem cadeira; o boneco sentado traz a dele)
   vendas: [[22, 68], [54.5, 50.5], [79, 69]],
   conteudo: [[22, 68], [54.5, 50.5], [44, 66], [68, 67]],
   video: [[50, 58], [57, 63]],
@@ -56,7 +59,14 @@ const mil = (v?: number | null) => { const n = Number(v) || 0; if (n >= 1e6) ret
 // "João L." quando o Calango tem nome; senão, a função.
 export const chamado = (a: any) => a.apelido || a.nome;
 
-// O que o agente está fazendo, em uma frase: é o que ele "fala" no balão e o que abre o perfil.
+// O balão da planta. Com mais de um Calango com o que falar na sala, fala primeiro quem pede atenção, depois quem está
+// trabalhando agora, depois quem acabou de trabalhar; cada um fica com a vez por alguns segundos.
+const VEZ_DA_FALA: Record<string, number> = { atencao: 0, agora: 1, feito: 2 };
+const TEMPO_DA_FALA = 8000;
+// A fala do agente, quando ele pode falar (ativo e ligado). Sem fala, o Calango fica quieto.
+const falaDoAgente = (a: any): { texto: string; tipo: string } | null => (a.estado === 'ativo' && !a.offline && a.fala?.texto ? a.fala : null);
+
+// O que o agente está fazendo, em uma frase mais completa: aparece no perfil ("O que está fazendo").
 export function fazendo(a: any): string {
   const u = a.turnos?.ultimo;
   const semPonto = (t: string) => String(t || '').trim().replace(/[.]+$/, '').trim();
@@ -113,10 +123,47 @@ export function Planta({ salas, arte, abrir }: { salas: any[]; arte: any; abrir:
   );
 }
 
-type Boneco = { b: HTMLElement; x: number; y: number; tx: number; ty: number; ponto: number; ate: number; anda: boolean; senta: boolean; parado: boolean; fala: number };
+type Boneco = { b: HTMLElement; x: number; y: number; tx: number; ty: number; ponto: number; ate: number; anda: boolean; senta: boolean; parado: boolean };
 
 function SalaIso({ s, imagem, bonecos, abrir, expandir, grande = false }: { s: any; imagem?: string; bonecos: Record<string, string>; abrir: (a: any) => void; expandir?: () => void; grande?: boolean }) {
   const chao = useRef<HTMLDivElement>(null);
+  // Cada sala troca a vez em um instante diferente, para os balões da planta não mudarem todos juntos.
+  const fase = useRef(Math.random() * TEMPO_DA_FALA);
+  // Um balão por sala: fala quem tem o que dizer (data-fala). Com mais de um, a vez passa devagar, pelo relógio.
+  // O balão nunca sai da sala: perto da parede ele desliza para dentro (--desvio) e a ponta continua no Calango.
+  const darAVez = (roda = true) => {
+    const el = chao.current;
+    if (!el) return;
+    const todos = [...el.querySelectorAll<HTMLElement>('[data-boneco]')];
+    const falantes = todos.filter((b) => b.dataset.fala).sort((a, b) => (VEZ_DA_FALA[a.dataset.fala || ''] ?? 9) - (VEZ_DA_FALA[b.dataset.fala || ''] ?? 9));
+    const daVez = falantes[falantes.length > 1 && roda ? Math.floor((performance.now() + fase.current) / TEMPO_DA_FALA) % falantes.length : 0];
+    const largura = el.clientWidth;
+    for (const b of todos) {
+      b.classList.toggle('pl-fala', b === daVez);
+      const balao = b.querySelector<HTMLElement>('.pl-balao-fala');
+      if (!balao) continue;
+      // Na sala pequena (celular) a frase pode quebrar em duas linhas: o balão encolhe até a largura do texto, para
+      // não sobrar um vazio à direita. A conta só é refeita quando a frase ou a largura da sala muda.
+      const medida = `${largura}|${balao.textContent}`;
+      if (balao.dataset.medida !== medida) {
+        balao.dataset.medida = medida;
+        balao.style.width = '';
+        const estilo = getComputedStyle(balao);
+        const altura = balao.clientHeight - parseFloat(estilo.paddingTop) - parseFloat(estilo.paddingBottom);
+        if (altura > (parseFloat(estilo.lineHeight) || 14) * 1.5) {
+          // Quanto sobra entre o fim da linha mais comprida e a borda de dentro do balão, do lado direito.
+          const texto = document.createRange();
+          texto.selectNodeContents(balao);
+          const sobra = balao.getBoundingClientRect().right - parseFloat(estilo.borderRightWidth) - parseFloat(estilo.paddingRight) - texto.getBoundingClientRect().right;
+          if (sobra > 2) balao.style.width = `${Math.ceil(balao.offsetWidth - sobra)}px`;
+        }
+      }
+      const meio = ((parseFloat(b.style.left) || 50) / 100) * largura;
+      const metade = balao.offsetWidth / 2;
+      const desvio = `${Math.round(Math.max(4 + metade - meio, Math.min(largura - 4 - metade - meio, 0)))}px`;
+      if (b.style.getPropertyValue('--desvio') !== desvio) b.style.setProperty('--desvio', desvio);
+    }
+  };
   const vivos = s.agentes.filter((a: any) => a.estado === 'ativo' || a.estado === 'pausado');
   const vagas = s.agentes.filter((a: any) => a.estado === 'planejado');
   // Quem roda sempre ligado (na nuvem) trabalha sentado, enquanto houver cadeira; os outros andam.
@@ -138,31 +185,30 @@ function SalaIso({ s, imagem, bonecos, abrir, expandir, grande = false }: { s: a
       const p = senta ? assentos[i % Math.max(1, assentos.length)] || pontos[0] : pontos[i % pontos.length];
       // Quando há mais bonecos que pontos, os que sobram ficam um pouco ao lado, para ninguém ficar em cima de ninguém.
       const volta = senta ? 0 : Math.floor(i / pontos.length);
-      return { b, x: p[0] + volta * 4, y: p[1] + volta * 2, tx: p[0], ty: p[1], ponto: senta ? -1 : i % pontos.length, ate: performance.now() + 600 + Math.random() * 5000, anda: false, senta, parado: b.dataset.estado !== 'ativo', fala: 0 };
+      return { b, x: p[0] + volta * 4, y: p[1] + volta * 2, tx: p[0], ty: p[1], ponto: senta ? -1 : i % pontos.length, ate: performance.now() + 600 + Math.random() * 5000, anda: false, senta, parado: b.dataset.estado !== 'ativo' };
     });
-    // lado: quem está perto da parede abre o balão para dentro da sala, para ele não sair da tela.
-    const pinta = (c: Boneco) => { c.b.style.left = `${c.x}%`; c.b.style.top = `${c.y}%`; c.b.style.zIndex = String(Math.round(c.y * 10)); c.b.dataset.lado = c.x < 36 ? 'e' : c.x > 64 ? 'd' : ''; };
+    const pinta = (c: Boneco) => { c.b.style.left = `${c.x}%`; c.b.style.top = `${c.y}%`; c.b.style.zIndex = String(Math.round(c.y * 10)); };
     lista.forEach(pinta);
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const fecha = (c: Boneco) => { c.b.classList.remove('pl-fala', 'pl-pensa'); c.fala = 0; };
-    const balao = (c: Boneco, tipo: string, dura: number, t: number) => { fecha(c); c.b.classList.add(`pl-${tipo}`); c.fala = t + dura; };
+    // Quem pediu menos movimento no aparelho vê os Calangos parados e um balão fixo por sala (o primeiro da vez).
+    const semMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const aoMudarTamanho = () => darAVez(!semMovimento);
+    window.addEventListener('resize', aoMudarTamanho);
+    if (semMovimento) return () => window.removeEventListener('resize', aoMudarTamanho);
     let quadro = 0;
     let antes = performance.now();
-    let proximaFala = antes + 1500 + Math.random() * 3000; // na sala, um fala de cada vez
-    // Pensa de vez em quando; fala quando é a vez da sala.
-    const conversa = (c: Boneco, t: number, chancePensar: number) => {
-      if (t > proximaFala) { balao(c, 'fala', 4200, t); proximaFala = t + 6500 + Math.random() * 4500; } else if (Math.random() < chancePensar) balao(c, 'pensa', 2200, t);
-    };
+    let proximaVez = 0;
     const passo = (t: number) => {
       quadro = requestAnimationFrame(passo);
       const dt = Math.min(0.1, (t - antes) / 1000);
       antes = t;
       if (document.hidden) return;
+      // A vez da fala é conferida duas vezes por segundo (a troca de verdade acontece a cada TEMPO_DA_FALA).
+      if (t >= proximaVez) { proximaVez = t + 500; darAVez(); }
       for (const c of lista) {
-        if (c.fala && t > c.fala) fecha(c);
-        if (c.parado) continue;
-        if (c.senta) {
-          if (t >= c.ate) { c.ate = t + 5000 + Math.random() * 7000; conversa(c, t, 0.25); }
+        if (c.parado || c.senta) continue;
+        // Quem tem o que falar para onde está: balão andando pela sala cansa a vista.
+        if (c.b.dataset.fala) {
+          if (c.anda) { c.anda = false; c.b.classList.remove('pl-anda'); }
           continue;
         }
         if (c.anda) {
@@ -174,25 +220,25 @@ function SalaIso({ s, imagem, bonecos, abrir, expandir, grande = false }: { s: a
             c.x = c.tx; c.y = c.ty; c.anda = false;
             c.b.classList.remove('pl-anda');
             c.ate = t + 2500 + Math.random() * 6500;
-            conversa(c, t, 0.16);
           } else { c.x += (dx / d) * v; c.y += (dy / d) * v; }
           pinta(c);
         } else if (t >= c.ate) {
           const tomados = new Set(lista.filter((o) => o !== c).map((o) => o.ponto));
           const livres = pontos.map((_, i) => i).filter((i) => i !== c.ponto && !tomados.has(i));
-          if (!livres.length) { c.ate = t + 3500 + Math.random() * 5000; conversa(c, t, 0.2); continue; }
+          if (!livres.length) { c.ate = t + 3500 + Math.random() * 5000; continue; }
           c.ponto = livres[Math.floor(Math.random() * livres.length)];
           [c.tx, c.ty] = pontos[c.ponto];
           c.anda = true;
           c.b.classList.add('pl-anda');
           c.b.classList.toggle('pl-vira', c.tx < c.x);
-          fecha(c);
         }
       }
     };
     quadro = requestAnimationFrame(passo);
-    return () => { cancelAnimationFrame(quadro); lista.forEach(fecha); };
+    return () => { cancelAnimationFrame(quadro); window.removeEventListener('resize', aoMudarTamanho); };
   }, [s.id, chave]);
+  // Depois de cada desenho (a tela se atualiza sozinha a cada minuto): confere quem fala e onde o balão cabe.
+  useEffect(() => { darAVez(!window.matchMedia('(prefers-reduced-motion: reduce)').matches); });
 
   const trabalhando = vivos.filter((a: any) => a.estado === 'ativo').length;
   // Na visão geral do celular a sala é pequena demais para acertar um Calango com o dedo: o toque abre a sala.
@@ -213,17 +259,18 @@ function SalaIso({ s, imagem, bonecos, abrir, expandir, grande = false }: { s: a
           const erro = u?.status === 'erro';
           const senta = modo[a.id] === 'senta';
           const foto = (senta && bonecos[`${a.id}-sentado`]) || bonecos[a.id];
+          const fala = falaDoAgente(a);
           return (
-            <button key={a.id} type="button" data-boneco data-estado={a.offline ? 'offline' : a.estado} data-modo={modo[a.id]} className={`pl-boneco pl-b-${a.estado}${a.offline ? ' pl-b-offline' : ''}${senta ? ' pl-senta' : ''}${erro ? ' pl-b-erro' : ''}${u?.status === 'rodando' ? ' pl-b-rodando' : ''}`} onClick={() => tocar(a)} aria-label={`${chamado(a)}, ${a.nome}: ${fazendo(a)}. Abrir o perfil.`}>
-              <span className="pl-balao pl-balao-fala"><b>{chamado(a)}</b>{curto(fazendo(a))}</span>
-              <span className="pl-balao pl-balao-pensa" aria-hidden="true"><i /><i /><i /></span>
+            <button key={a.id} type="button" data-boneco data-estado={a.offline ? 'offline' : a.estado} data-modo={modo[a.id]} data-fala={fala ? fala.tipo : undefined} className={`pl-boneco pl-b-${a.estado}${a.offline ? ' pl-b-offline' : ''}${senta ? ' pl-senta' : ''}${erro ? ' pl-b-erro' : ''}${u?.status === 'rodando' ? ' pl-b-rodando' : ''}`} onClick={() => tocar(a)} aria-label={`${chamado(a)}${a.apelido ? `, ${a.nome}` : ''}: ${fala ? fala.texto : fazendo(a)}. Abrir o perfil.`}>
+              {fala && <span className={`pl-balao pl-balao-fala pl-diz-${fala.tipo}`} aria-hidden="true">{fala.texto}</span>}
               {a.estado === 'pausado' && <span className="pl-balao pl-balao-fixo" aria-hidden="true">zz</span>}
               {a.offline && <span className="pl-balao pl-balao-fixo pl-zzz" aria-hidden="true">ZzzZz</span>}
               <Seta sinal={a.sinal} />
               {foto
                 ? <span className="pl-sprite pl-foto" style={{ backgroundImage: `url(${foto})` }} aria-hidden="true" />
                 : <span className="pl-sprite" style={{ backgroundImage: `url(${folhaDoCalango})` }} aria-hidden="true" />}
-              <span className="pl-rotulo"><b>{chamado(a)}</b>{a.apelido ? a.nome : ''}</span>
+              {/* O crachá: na sala aberta, o nome embaixo de cada um; na visão geral, aparece com o mouse em cima. */}
+              <span className="pl-rotulo" aria-hidden="true"><b>{chamado(a)}</b>{a.apelido ? <small>{a.nome}</small> : null}</span>
             </button>
           );
         })}

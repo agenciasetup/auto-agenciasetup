@@ -6,12 +6,16 @@
 //  2. a leitura das vendas: uma para todas as palavras, guardada na memória, que não derruba ninguém quando falha;
 //  3. a escolha: sem vendas é a de antes, pouca amostra não decide, a versão que vende ganha da que só tem clique;
 //  4. o envio de ponta a ponta: a versão que vende sai mais, e nem as vendas nem o teto são lidos a cada direct;
-//  5. o teto de gasto: resposta pública, versões escritas pela IA e o plano.
+//  5. o teto de gasto: resposta pública, versões escritas pela IA e o plano;
+//  6. o botão do mini curso leva a versão: o link, a visita (origem.js), a venda na versão certa, o pedido antigo pela
+//     reserva, e a tela Vendas (acoes-area.js) com "curso" e "curso-topo" iguais e a pessoa contada uma vez.
 // Uso: node scripts/conferir-comenta.mjs
 import { vendasPorVersao, chanceDeSerAMelhor, codigoDoLink, comVendas, escolherVariante, escreverVariantesIA, esquecerOrcamento, esquecerVendas, pistasDoPedido, respostaPublicaIA, vendasDasVersoes } from '../worker/lib/comenta.js';
 import { enviarRespostas, esquecerAjustesComenta, linkDaVariante } from '../worker/lib/gatilhos.js';
 import { gerarPlano, planoDaSemana } from '../worker/lib/plano.js';
 import { codigoDaPessoa } from '../worker/lib/pessoa.js';
+import { canalDe, marcasDe, registrarToque, toquesDoVisitante } from '../worker/lib/origem.js';
+import { resumoVendas } from '../worker/lib/acoes-area.js';
 import { chamadasFeitas, comContador } from '../worker/nucleo/db.js';
 import { cifrar } from '../worker/nucleo/cripto.js';
 
@@ -214,7 +218,8 @@ function pedidoAoBanco(url, op) {
       const ja = conflito.length ? tab(caminho).find((l) => conflito.every((c) => String(l[c]) === String(d[c]))) : null;
       if (ja && prefer.includes('ignore-duplicates')) continue;
       if (ja) { Object.assign(ja, d); novas.push(ja); continue; }
-      const linha = { id: ++serie, criado_em: iso(), ...d };
+      // A visita ganha a hora do banco (a coluna "quando" tem o agora como padrão).
+      const linha = { id: ++serie, criado_em: iso(), ...(caminho === 'toques' ? { quando: iso() } : {}), ...d };
       tab(caminho).push(linha);
       novas.push(linha);
     }
@@ -367,6 +372,14 @@ try {
   r = vendasPorVersao([um([toque({ link: 'posts-b-000001' }, base)], { aluno_id: mesma }), um([toque({ link: 'posts-b-000001' }, base)], { aluno_id: mesma, total_centavos: 2990 })], links);
   ok(r[G].b.vendas === 1 && r[G].b.vendas_centavos === 6980, 'a mesma pessoa com dois pedidos (o curso e o complemento): 1 venda, a receita soma', JSON.stringify(r[G].b));
   ok(pistasDoPedido(um([toque({ conteudo: 'curso' }, base), toque({ conteudo: 'material-topo' }, base)])).length === 0, 'toque sem código de link e sem pessoa não é pista');
+  // O botão do mini curso com a versão no endereço (o código do link curto fica em "link" na visita): a pista direta
+  // vale antes do caminho pela pessoa, que continua de reserva.
+  r = vendasPorVersao([um([toque({ conteudo: 'curso', termo: '17900000000000001', link: 'posts-b-000001' }, base)])], links);
+  ok(r[G] && r[G].b && r[G].b.vendas === 1 && Object.keys(r).length === 1, 'botão do mini curso com o código da versão: a venda é da versão B, sem precisar da pessoa', JSON.stringify(r));
+  r = vendasPorVersao([um([toque({ conteudo: 'curso-topo', link: 'posts-a-000001', pessoa: codigo }, base)])], links, envios);
+  ok(r[G] && r[G].a && r[G].a.vendas === 1 && !r[G].b, 'o código no link diz A e o último direct da pessoa foi o B: vale a pista direta (A)', JSON.stringify(r));
+  r = vendasPorVersao([um([toque({ conteudo: 'curso', link: 'posts-z-999999', pessoa: codigo }, base)])], links, envios);
+  ok(r[G] && r[G].b && r[G].b.vendas === 1, 'código que não resolve (link apagado): cai na reserva, pelo último direct da pessoa (B)', JSON.stringify(r));
   ok(JSON.stringify(comVendas({ a: { enviados: 30, cliques: 9 } }, { a: { vendas: 2, vendas_centavos: 7980 }, b: { vendas: 1, vendas_centavos: 3990 } })) === JSON.stringify({ a: { enviados: 30, cliques: 9, vendas: 2, vendas_centavos: 7980 }, b: { vendas: 1, vendas_centavos: 3990 } }), 'as vendas entram junto dos números de cada versão');
   const semLeitura = { a: { enviados: 30 } };
   ok(comVendas(semLeitura, null) === semLeitura && comVendas(semLeitura, undefined) === semLeitura, 'sem leitura de vendas, os números ficam como vieram');
@@ -575,6 +588,94 @@ try {
   e = await recusa(() => gerarPlano(ENV));
   texto = await frase();
   ok(!!e && e.status === 409 && texto === null && mundo.ia.length === 0, 'teto em zero (o dono desligou o gasto): nem plano nem resposta pública chamam a IA');
+
+  // ---------------------------------------------------------------- 6. o botão do mini curso leva a versão
+  secao('6. O botão do mini curso leva a versão da mensagem');
+  // A oferta do mini curso ligada: é ela que põe o segundo botão no direct.
+  const comOferta = (extra = {}) => {
+    tab('config').push({ chave: 'oferta', valor: { ativo: true, landing_slug: 'posts-automaticos', ...extra } });
+    tab('landing_pages').push({ slug: 'posts-automaticos', status: 'publicado', titulo: 'Posts automáticos', produto: { nome: 'Posts automáticos', ativo: true, chamada: '', preco_centavos: 3790, imagem_url: null } });
+  };
+  const partes = (url) => { const u = new URL(url); return { caminho: u.pathname, ...Object.fromEntries(u.searchParams) }; };
+  const codigoDoBotao = (url) => (String(url).match(/\/l\/([a-z0-9-]+)/) || [])[1] || null;
+  const versaoDoDirect = (d) => (tab('respostas_gatilho').find((x) => x.comentario_id === d.comentario) || {}).variante;
+  c = await novoCenario({ pendentes: 6, vendasNaB: false });
+  comOferta();
+  semente(31);
+  env = comContador(ENV_PAGO);
+  feito = await enviarRespostas(env);
+  const chamadasDe6 = chamadasFeitas(env);
+  const doCurso = mundo.directs.map((d) => partes(d.links[1] || 'https://sem-botao.invalid/'));
+  ok(feito.enviadas === 6 && mundo.directs.every((d) => d.links.length === 2 && codigoDoBotao(d.links[0])), 'com a oferta ligada, cada direct sai com os dois botões: o material (link curto) e o mini curso', JSON.stringify(feito));
+  ok(doCurso.every((p) => p.caminho === '/cursos/posts-automaticos' && p.utm_source === 'instagram' && p.utm_medium === 'dm' && p.utm_campaign === 'posts' && p.utm_content === 'curso' && /^[a-f0-9]{10}$/.test(p.p || '')), 'o botão do mini curso continua com as marcas de sempre: instagram, dm, a palavra, "curso" e a pessoa', JSON.stringify(doCurso[0]));
+  ok(mundo.directs.every((d, i) => doCurso[i].l === codigoDoBotao(d.links[0]) && doCurso[i].utm_term === c.post), 'e agora leva a versão: o código do link curto do material do mesmo direct, e o post', JSON.stringify(doCurso[0]));
+  ok(mundo.directs.every((d, i) => { const l = tab('links').find((x) => x.codigo === doCurso[i].l); return l && l.gatilho_id === c.gid && l.variante === versaoDoDirect(d); }), 'o código é o da versão que saiu para aquela pessoa (confere com o registro do envio)');
+  // A visita de verdade: a página de venda manda o endereço para /api/toque, que lê as marcas e grava (origem.js).
+  const um6 = mundo.directs[0];
+  const marcas6 = marcasDe(new URL(um6.links[1]));
+  ok(marcas6 && marcas6.conteudo === 'curso' && marcas6.campanha === 'posts' && marcas6.meio === 'dm' && marcas6.termo === c.post && marcas6.link === codigoDoBotao(um6.links[0]) && canalDe(marcas6) === 'Direct do Comenta X', 'a visita lê as marcas iguais (canal "Direct do Comenta X", conteúdo "curso") e guarda o código da versão', JSON.stringify(marcas6));
+  ok(marcasDe(new URL('https://agenciasetup.com.br/cursos/posts-automaticos?utm_source=instagram&utm_medium=dm&utm_campaign=posts&utm_content=curso&l=Posts%20B%3Cx%3E')).link === null, 'código fora do formato dos links curtos não é guardado');
+  await registrarToque(ENV, 'visitante6a', marcas6, { pagina: '/cursos/posts-automaticos' });
+  const origem6 = await toquesDoVisitante(ENV, 'visitante6a');
+  ok(origem6.lista.length === 1 && origem6.ultimo.link === marcas6.link && origem6.ultimo.conteudo === 'curso' && origem6.ultimo.pessoa === marcas6.pessoa, 'o toque gravado leva o código no campo "link", o mesmo que o clique no link curto preenche', JSON.stringify(origem6.ultimo));
+  const pagoOntem = iso(Date.now() - 2 * HORA);
+  const comprou = (extra) => { const p = { id: crypto.randomUUID(), aluno_id: crypto.randomUUID(), status: 'pago', teste: false, moeda: 'brl', total_centavos: 3790, pago_em: pagoOntem, criado_em: pagoOntem, itens: [], toques: [], ...extra }; tab('pedidos').push(p); return p; };
+  const pedidoNovo = comprou({ toques: origem6.lista, primeiro_toque: origem6.primeiro, ultimo_toque: origem6.ultimo });
+  esquecerVendas();
+  mundo.chamadas = [];
+  v = await vendasDasVersoes(ENV);
+  const versaoDoUm = versaoDoDirect(um6);
+  ok(v && v[c.gid] && v[c.gid][versaoDoUm] && v[c.gid][versaoDoUm].vendas === 1 && Object.keys(v[c.gid]).length === 1, `a venda pelo botão do mini curso vai para a versão que saiu no direct (${String(versaoDoUm).toUpperCase()})`, JSON.stringify(v && v[c.gid]));
+  ok(mundo.chamadas.join(', ') === 'GET pedidos?toques, GET links', 'pela pista direta: duas leituras, sem procurar a pessoa no follow-up', mundo.chamadas.join(', '));
+  // O pedido de antes: o botão só levava a pessoa. Continua indo para a versão do último direct que ela recebeu.
+  // Quem comprou recebeu, há 3 dias, a outra versão (uma das 40 que o cenário já traz como enviadas).
+  const outraVersao = versaoDoUm === 'a' ? 'b' : 'a';
+  const dela6 = tab('respostas_gatilho').find((x) => x.status === 'enviada' && x.variante === outraVersao && /^antigo/.test(x.comentario_id));
+  const pedidoAntigo = comprou({ toques: [{ quando: iso(Date.now() - 3 * HORA), origem: 'instagram', meio: 'dm', campanha: 'posts', conteudo: 'curso', termo: null, pessoa: await codigoDaPessoa('br', dela6.usuario), link: null, clid: null, pagina: '/cursos/posts-automaticos' }] });
+  pedidoAntigo.ultimo_toque = pedidoAntigo.toques[0];
+  tab('followups').push({ id: crypto.randomUUID(), perfil: 'br', usuario: dela6.usuario, pedido_id: pedidoAntigo.id, comprou_em: pagoOntem, compra_por: 'link' });
+  esquecerVendas();
+  mundo.chamadas = [];
+  v = await vendasDasVersoes(ENV);
+  ok(v[c.gid][outraVersao] && v[c.gid][outraVersao].vendas === 1 && v[c.gid][versaoDoUm].vendas === 1, `pedido antigo, só com a pessoa: continua indo para a versão do último direct dela (${outraVersao.toUpperCase()}), como antes`, JSON.stringify(v[c.gid]));
+  ok(mundo.chamadas.join(', ') === 'GET pedidos?toques, GET links, GET followups, GET respostas_gatilho', 'e a reserva é a de antes: o follow-up e os directs que a pessoa recebeu', mundo.chamadas.join(', '));
+  // Em Vendas (acoes-area.js) nada muda de nome: canal, campanha e conteúdo iguais para o pedido novo e para o antigo.
+  // E a pessoa que leva o complemento depois (o pedido herda a origem) conta uma vez, com o dinheiro dos dois.
+  comprou({ aluno_id: pedidoNovo.aluno_id, total_centavos: 2990, toques: origem6.lista, primeiro_toque: origem6.primeiro, ultimo_toque: origem6.ultimo, pedido_origem: pedidoNovo.id });
+  let resumo6 = await resumoVendas(ENV, { dias: 30 });
+  const linha6 = (lista, nome) => lista.find((x) => x.nome === nome) || {};
+  ok(linha6(resumo6.conteudos, 'curso').vendas === 2 && linha6(resumo6.conteudos, 'curso').centavos === 3790 + 3790 + 2990 && resumo6.conteudos.length === 1, 'Vendas, por conteúdo: "curso" aparece igual, com 2 pessoas (a do complemento conta uma vez) e a receita dos 3 pedidos', JSON.stringify(resumo6.conteudos));
+  ok(linha6(resumo6.canais, 'Direct do Comenta X').vendas === 2 && linha6(resumo6.canais, 'Direct do Comenta X').centavos === 10570 && linha6(resumo6.campanhas, 'posts').vendas === 2 && linha6(resumo6.campanhas, 'posts').centavos === 10570, 'Vendas, por canal e por campanha: "Direct do Comenta X" e a palavra, a mesma conta', JSON.stringify({ canais: resumo6.canais, campanhas: resumo6.campanhas }));
+  ok(resumo6.numeros.pagos === 3 && resumo6.numeros.compradores === 2 && resumo6.numeros.faturamento_centavos === 10570 && resumo6.origens.length === 1 && resumo6.origens[0].origem === 'Direct do Comenta X' && resumo6.origens[0].vendas === 2 && resumo6.origens[0].centavos === 10570, 'o topo continua contando pedidos (3) e diz quantas pessoas são (2); a receita é a de todos', JSON.stringify({ numeros: resumo6.numeros, origens: resumo6.origens }));
+  ok(linha6(resumo6.canais, 'Direct do Comenta X').visitas === 1 && !('compradores' in linha6(resumo6.canais, 'Direct do Comenta X')), 'as visitas do canal continuam contando gente, e a conta não vaza para a resposta', JSON.stringify(resumo6.canais));
+  const filtrado6 = await resumoVendas(ENV, { dias: 30, conteudo: 'curso' });
+  ok(filtrado6.numeros.pagos === 3 && (await resumoVendas(ENV, { dias: 30, conteudo: 'curso-topo' })).numeros.pagos === 0, 'o filtro de conteúdo "curso" continua achando esses pedidos');
+  // Com o botão do curso em cima ("curso_primeiro"): a marca é "curso-topo" e a versão vai do mesmo jeito.
+  c = await novoCenario({ pendentes: 2, vendasNaB: false });
+  comOferta({ curso_primeiro: true });
+  semente(32);
+  env = comContador(ENV_PAGO);
+  feito = await enviarRespostas(env);
+  const chamadasDe2 = chamadasFeitas(env);
+  const topo6 = mundo.directs.map((d) => ({ curso: partes(d.links[0]), material: codigoDoBotao(d.links[1]) }));
+  ok(feito.enviadas === 2 && topo6.every((x) => x.curso.utm_content === 'curso-topo' && x.curso.l === x.material && !!x.material && x.curso.utm_term === c.post), 'com o curso em cima: "curso-topo" no primeiro botão, com o código da versão do material que vem embaixo', JSON.stringify(topo6[0]));
+  const marcasTopo = marcasDe(new URL(mundo.directs[0].links[0]));
+  await registrarToque(ENV, 'visitante6b', marcasTopo, { pagina: '/cursos/posts-automaticos' });
+  const origemTopo = await toquesDoVisitante(ENV, 'visitante6b');
+  comprou({ toques: origemTopo.lista, ultimo_toque: origemTopo.ultimo });
+  resumo6 = await resumoVendas(ENV, { dias: 30 });
+  esquecerVendas();
+  v = await vendasDasVersoes(ENV);
+  ok(linha6(resumo6.conteudos, 'curso-topo').vendas === 1 && v[c.gid][versaoDoDirect(mundo.directs[0])].vendas === 1, '"curso-topo" aparece igual em Vendas e a venda cai na versão certa', JSON.stringify({ conteudos: resumo6.conteudos, versoes: v[c.gid] }));
+  // Nenhuma leitura a mais por direct: 4 directs a mais custam o mesmo de sempre (até 7 chamadas cada).
+  ok((chamadasDe6 - chamadasDe2) / 4 <= 7, 'levar a versão no botão não custa chamada nenhuma por direct', `${chamadasDe2} chamadas para 2 directs, ${chamadasDe6} para 6`);
+  // Material de fora do site não tem link curto: o botão do curso sai sem o código e a conta fica na reserva (a pessoa).
+  c = await novoCenario({ pendentes: 1, vendasNaB: false });
+  comOferta();
+  Object.assign(tab('gatilhos')[0], { recurso: null, link: 'https://exemplo.com/material.pdf' });
+  feito = await enviarRespostas(comContador(ENV_PAGO));
+  const fora6 = partes((mundo.directs[0] || { links: [] }).links[1] || 'https://sem-botao.invalid/');
+  ok(feito.enviadas === 1 && fora6.utm_content === 'curso' && !('l' in fora6) && /^[a-f0-9]{10}$/.test(fora6.p || ''), 'material de fora do site (sem link curto): o botão do curso sai sem o código, só com a pessoa', JSON.stringify(fora6));
 } catch (e) {
   falhas++;
   console.error = erroDoConsole;

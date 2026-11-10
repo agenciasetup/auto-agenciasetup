@@ -115,7 +115,7 @@ export default function Vendas() {
       {n && (
         <div className="numeros">
           <div className="numero grande destaque"><b>{din(n.faturamento_centavos)}</b><span>Faturamento{cmp ? ` · ${cmp}` : ''} · {moeda === 'usd' ? `${numero(n.cartao)} no cartão` : `${numero(n.pix)} no Pix, ${numero(n.cartao)} no cartão`}{n.aguardando ? ` · ${numero(n.aguardando)} aguardando` : ''}</span></div>
-          <div className="numero"><b>{numero(n.pagos)}</b><span>Vendas pagas · {numero(n.anterior.pagos)} no período anterior</span></div>
+          <div className="numero"><b>{numero(n.pagos)}</b><span>Vendas pagas{typeof n.compradores === 'number' ? ` de ${numero(n.compradores)} ${n.compradores === 1 ? 'pessoa' : 'pessoas'}` : ''} · {numero(n.anterior.pagos)} no período anterior</span></div>
           <div className="numero"><b>{din(n.ticket_centavos)}</b><span>Ticket médio</span></div>
           <div className="numero"><b>{n.conversao == null ? '–' : `${Math.round(n.conversao * 100)}%`}</b><span>Pedidos que viraram venda · {din(n.nao_pagos_centavos)} ficaram no checkout</span></div>
           <div className="numero"><b>{numero(n.reembolsados + n.contestados)}</b><span>Reembolsos e contestações</span></div>
@@ -132,7 +132,7 @@ export default function Vendas() {
         </div>
       )}
       {d?.canais?.length > 0 && (
-        <Grupo titulo="De onde vieram as vendas" rodape={<>Último toque antes da compra. Visitas são pessoas diferentes que chegaram por um link{moeda === 'usd' || produto ? ' (só no real e sem filtro de produto)' : ''}. Toque numa linha para filtrar.</>}>
+        <Grupo titulo="De onde vieram as vendas" rodape={<>Último toque antes da compra. Aqui, em Campanhas e em Conteúdos, as vendas contam pessoas: quem comprou duas vezes conta uma, e o dinheiro dos dois pedidos soma. Visitas são pessoas diferentes que chegaram por um link{moeda === 'usd' || produto ? ' (só no real e sem filtro de produto)' : ''}. Toque numa linha para filtrar.</>}>
           <TabelaOrigem linhas={d.canais.map((c: any) => ({ ...c, chave: c.nome }))} ativo={canal} escolher={setCanal} din={din} coluna="Canal" />
         </Grupo>
       )}

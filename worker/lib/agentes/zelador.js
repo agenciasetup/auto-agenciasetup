@@ -1,16 +1,20 @@
 // O Zelador (docs/escritorio.md, sala Sistema): de hora em hora confere a saúde do escritório. Só regras, sem IA, custo zero.
 // O que ele olha:
-// 1. Tarefa do computador que não rodou. As tarefas agendadas do Claude gravam um turno (tabela turnos). Passaram 45
-//    minutos da hora esperada e não tem turno desde então: é alerta.
+// 1. Tarefa do computador que não rodou. As tarefas agendadas do Claude gravam um turno (tabela turnos). As diárias:
+//    passaram 45 minutos da hora esperada e não tem turno de hoje, é alerta. A rodada do direct (9 por dia): cada
+//    rodada tem de ter o seu turno, entre a hora dela e 7 minutos depois da hora cheia seguinte (rodadasDoDia).
 // 2. Erros: turno com erro nas últimas 24 horas, atendimento do direct com erro, fila do Atendente parada (mensagem
 //    esperando há mais de 5 minutos) e conversa que ficou no meio do caminho (a execução caiu depois de pegar a mensagem
 //    e ninguém respondeu).
 // 3. Gasto: o gasto de IA do dia passou de 80% do teto.
 // 4. O aviso da Meta parou: nenhuma mensagem nem comentário chegando na hora por 5 horas no horário de pico, ou
 //    comentários entrando só pela leitura do relógio.
-// 5. Entrega do Combo parada: quem pagou há mais de 6 horas e ainda não foi adicionado na Hubla.
+// 5. Entrega do Combo parada: a tarefa "entregar-combo-hubla" roda às 11h e às 17h e não grava turno. Quem pagou antes
+//    de uma rodada e continua fora da Hubla depois dela mostra que a rodada não rodou ou não conseguiu.
 // 6. O resumo das 8h não saiu: depois das 9h, o resumo de hoje não existe ou ficou pela metade ou com erro.
 // 7. Turno preso: aberto ("rodando") há mais de 2 horas, sem turno mais novo do mesmo agente.
+// 8. Cópia do banco parada: o sinal que scripts/backup.mjs grava (config.backup_ultimo) não existe, tem mais de 36
+//    horas ou veio com zero tabelas ou zero linhas. Cópia em dia, mas com aviso dentro, é alerta menor.
 // O que ele faz com um alerta: um aviso no celular (tipo "escritorio") e, quando o problema se repete (2 dias seguidos
 // ou 3 vezes em 24 horas), um cartão na mesa, com o número e a hora como prova.
 // Quando o aviso sai e nenhum aparelho recebe, o que não chegou vira cartão na mesa (um por dia, no máximo), dizendo
@@ -30,7 +34,15 @@ const HORA = 3_600_000;
 const DIA = 86_400_000;
 const FUSO = 3 * HORA; // o Worker roda em UTC; Brasília é UTC menos 3, sem horário de verão
 const TOLERANCIA = 45 * MINUTO; // quanto a tarefa pode atrasar antes de virar alerta
+// A rodada do direct grava o turno quando termina, e a conferência roda no minuto 7 de cada hora. O turno de uma rodada
+// vale até 7 minutos depois da hora cheia seguinte: são os mesmos 67 minutos que ela já tinha para aparecer, e a rodada
+// que demora um pouco mais de uma hora não vira alarme.
+const FOLGA_DA_RODADA = 7 * MINUTO;
+const JANELA_DA_RODADA = HORA + FOLGA_DA_RODADA;
+const SAIDA_CEDO = 3 * MINUTO; // a rodada sem ninguém para puxar grava "sem_trabalho" em um ou dois minutos
+const TURNOS_JUNTOS = 2 * MINUTO; // os dois vendedores gravam o turno da mesma rodada um logo depois do outro
 const AVISAR_DE_NOVO = 6 * HORA; // o mesmo alerta, sem mudar, só volta ao celular depois disso
+const AVISAR_MENOR_DE_NOVO = 3 * DIA; // o alerta menor (marcado com "menor"), sem mudar, só volta depois disso
 const EM_ORDEM_A_CADA = 6 * HORA; // o turno "Tudo em ordem" entra no máximo uma vez nesse tempo
 const FILA_PARADA = 5 * MINUTO;
 const JANELA_DA_FILA = 6 * HORA; // o Atendente só pega mensagem de até 6 horas (função atendente_fila)
@@ -46,21 +58,33 @@ const GASTO_ALTO = 0.8;
 const COSTUME_DIAS = 14; // quantos dias de turnos ele lê para saber a que horas a tarefa do dia costuma chegar
 const CARTAO_DE_NOVO = 7 * DIA; // um cartão por problema; outro só depois de uma semana
 const GUARDAR = 3 * DIA;
-const ENTREGA_PARADA = 6 * HORA; // quem pagou o Combo espera no máximo isso para entrar na Hubla
+// A tarefa "entregar-combo-hubla" do computador (Agendadas, no app do Claude): as horas de Brasília em que começa. Ela
+// não grava turno (sem comprador novo, termina sem abrir o navegador), então a conferência é pela lista de entregas.
+const ENTREGA_HORAS = [11, 17];
+const ENTREGA_MARGEM = 10 * MINUTO; // quem pagou nos últimos minutos antes da rodada pode não ter entrado na lista dela
 const TURNO_PRESO = 2 * HORA; // turno aberto há mais que isso: a tarefa caiu no meio
 const TURNO_PRESO_ATE = 2 * DIA; // depois disso deixa de ser alarme (a tarefa que não rodou já cobra por outro lado)
 const CHEFE = 'chefe-de-gabinete';
 const RESUMO_DO_CHEFE = 'escritorio_resumo_dia'; // a linha de config que o Chefe de gabinete grava (chefe-de-gabinete.js)
 const HORA_DO_RESUMO = 9; // o resumo sai às 8h02 (e tenta de novo às 8h22 e 8h42): às 9h já devia existir
+const COPIA = 'backup_ultimo'; // a linha de config que scripts/backup.mjs grava no fim de cada cópia que deu certo
+// A cópia é diária (de madrugada, pelo Agendador do Windows). 36 horas: a de ontem não saiu e a de hoje já devia ter saído.
+const COPIA_PARADA = 36 * HORA;
 // A lista de entregas exige cargo (acoes-entregas.js). O Zelador é o sistema lendo, sem pessoa por trás.
 const DO_SISTEMA = { papel: 'administrador' };
 
 // As tarefas agendadas do Claude no computador e a hora de Brasília em que cada uma começa (as mesmas do app, em
-// Agendadas: direct-followup, posts-de-frase-do-dia e carrossel-em-alta-do-dia). agentes: basta um deles ter turno.
+// Agendadas: direct-followup, posts-de-frase-do-dia, carrossel-em-alta-do-dia e fazer-aprovadas). agentes: basta um deles ter turno.
 // horas: uma rodada em cada hora marcada. diaria: uma vez por dia. Para as diárias a hora é só o ponto de partida: o
 // Zelador aprende, nos turnos, a que horas o turno costuma chegar (horaDeCostume).
 // tarefa: desde 10/11/2026 o Redator e o Designer trabalham nas duas tarefas de post (frase às 8h, carrossel às 10h), e
 // cada turno diz de qual tarefa veio (dados.tarefa). Turno antigo, sem tarefa, conta pelo agente de antes (legado).
+// A quarta tarefa agendada, "entregar-combo-hubla" (11h e 17h), não grava turno: é conferida pela lista de entregas
+// (entregasParadas, mais abaixo).
+// minuto: para a diária que não começa na hora cheia. admitido: a tarefa só é cobrada com o agente no cadastro e ativo
+// (as outras, por segurança, são cobradas também quando o agente não aparece na lista). É o caso da "fazer-aprovadas"
+// (docs/tarefa-aprovadas.md): sem o Executor no cadastro, pausado ou em vaga aberta, ela sai sem trabalhar e sem turno.
+// O Executor só trabalha nessa tarefa, então qualquer turno dele vale (sem "tarefa" marcada, como na rodada do direct).
 const TAREFAS = [
   {
     tipo: 'nao-rodou:direct', nome: 'A rodada do direct', problema: 'A rodada do direct está falhando',
@@ -79,6 +103,12 @@ const TAREFAS = [
     agentes: ['redator-de-frase', 'redator-de-carrossel'], tarefa: 'carrossel-em-alta-do-dia', legado: 'redator-de-carrossel', diaria: 10,
     acao: 'Ver se o computador ficou ligado de manhã e rodar a tarefa "carrossel-em-alta-do-dia" à mão.',
     ganho: 'O tema quente do dia não passa sem carrossel.',
+  },
+  {
+    tipo: 'nao-rodou:executor', nome: 'A tarefa dos cartões aprovados', problema: 'A tarefa dos cartões aprovados está falhando',
+    agentes: ['executor'], diaria: 7, minuto: 10, admitido: true,
+    acao: 'Ver se o computador ficou ligado de manhã e rodar a tarefa "fazer-aprovadas" à mão. Para desligar de propósito, pausar o Executor no Escritório.',
+    ganho: 'O cartão aprovado pequeno do dia é feito sem ninguém precisar pedir.',
   },
 ];
 
@@ -140,38 +170,83 @@ function horaDeCostume(turnos, agendada, agora) {
 // O turno é desta tarefa? Sem tarefa marcada (a rodada do direct), qualquer turno dos agentes dela vale.
 export const daTarefa = (t, x) => t.agentes.includes(x.agente_id) && (!t.tarefa || (x.tarefa ? x.tarefa === t.tarefa : x.agente_id === t.legado));
 
+// A rodada do direct: cada rodada com o seu turno. Antes bastava qualquer turno depois da hora marcada; em rodadas
+// seguidas (9h e 10h; 18h a 22h) o turno da rodada anterior, gravado pouco depois da hora cheia, valia também pela
+// rodada seguinte e escondia uma rodada perdida. Agora cada rodada fica com um turno só e cada turno serve a uma só:
+// - a janela da rodada vai da hora dela até a hora cheia seguinte mais a folga (JANELA_DA_RODADA);
+// - os turnos que os dois vendedores gravam juntos, no fim da mesma rodada (os dois "ok"), contam como um;
+// - na folga pode chegar também o turno da rodada seguinte. É dela o turno que saiu cedo ("sem_trabalho" até 3
+//   minutos depois da hora) e o que foi aberto no começo (ainda "rodando", ou com o fim gravado depois do início). O
+//   resto é o fim atrasado da rodada anterior, se ela ainda está sem turno.
+// As rodadas são atendidas em ordem, a mais antiga primeiro: uma rodada só fica sem turno quando falta turno de verdade.
+function sinaisDeRodada(turnos) {
+  const sinais = [];
+  for (const x of [...turnos].sort((a, b) => Date.parse(a.inicio) - Date.parse(b.inicio))) {
+    const em = Date.parse(x.inicio);
+    const u = sinais[sinais.length - 1];
+    if (u && u.status === 'ok' && x.status === 'ok' && em - u.em <= TURNOS_JUNTOS && !u.agentes.includes(x.agente_id)) { u.agentes.push(x.agente_id); continue; }
+    sinais.push({ em, status: x.status, agentes: [x.agente_id], noComeco: x.status === 'rodando' || Date.parse(x.fim || '') - em > MINUTO });
+  }
+  return sinais;
+}
+
+// horas: as horas de Brasília das rodadas. turnos: os da tarefa. Devolve as rodadas de hoje que já começaram, cada uma
+// com { h, de (o começo), venceu (a janela já fechou), sinal (o turno que ficou com ela, ou null) }.
+export function rodadasDoDia(horas, turnos, agora) {
+  const hoje = meiaNoiteBR(agora);
+  const comecos = new Set(horas.map((h) => hoje + h * HORA));
+  const livres = sinaisDeRodada(turnos.filter((x) => { const em = Date.parse(x.inicio); return em >= hoje && em <= agora; }));
+  const rodadas = horas.map((h) => ({ h, de: hoje + h * HORA })).filter((r) => r.de <= agora);
+  for (const r of rodadas) {
+    const seguinte = r.de + HORA;
+    const daSeguinte = (s) => comecos.has(seguinte) && s.em >= seguinte && (s.noComeco || (s.status === 'sem_trabalho' && s.em - seguinte <= SAIDA_CEDO));
+    const i = livres.findIndex((s) => s.em >= r.de && s.em < r.de + JANELA_DA_RODADA && !daSeguinte(s));
+    r.sinal = i >= 0 ? livres.splice(i, 1)[0] : null;
+    r.venceu = r.de + JANELA_DA_RODADA <= agora;
+  }
+  return rodadas;
+}
+
 export function tarefasQueNaoRodaram(turnos, agentes, agora) {
   const alertas = [];
   const hoje = meiaNoiteBR(agora);
   const dia = diaBR(agora);
   // Agente pausado ou demitido não é cobrado. Sem a lista de agentes (leitura falhou), cobra todos.
   const ativo = (id) => !agentes[id] || agentes[id].estado === 'ativo';
+  // Tarefa com "admitido": só é cobrada com o agente no cadastro e ativo (fora do cadastro, em vaga aberta, pausado,
+  // demitido ou sem a lista, não). E só a partir do dia seguinte ao da entrada dele: no dia em que o agente é criado a
+  // hora da tarefa pode já ter passado, e cobrar seria alarme falso.
+  const admitido = (id) => podeTrabalhar(agentes[id]) && !(Date.parse(agentes[id].criado_em) >= hoje);
   for (const t of TAREFAS) {
-    if (!t.agentes.some(ativo)) continue;
+    if (!t.agentes.some(t.admitido ? admitido : ativo)) continue;
     const dele = turnos.filter((x) => daTarefa(t, x)).map((x) => Date.parse(x.inicio));
     const ultimo = dele.length ? Math.max(...dele) : 0;
     const ultimoTxt = ultimo ? `O último turno foi ${quandoFoi(ultimo, agora)}.` : `Nenhum turno nos últimos ${COSTUME_DIAS} dias.`;
     if (t.horas) {
       // Só a rodada mais recente que já venceu: as anteriores foram conferidas nas horas anteriores.
-      const vencidas = t.horas.filter((h) => hoje + h * HORA + TOLERANCIA <= agora);
+      const vencidas = rodadasDoDia(t.horas, turnos.filter((x) => daTarefa(t, x)), agora).filter((r) => r.venceu);
       if (!vencidas.length) continue;
-      const h = vencidas[vencidas.length - 1];
-      if (dele.some((em) => em >= hoje + h * HORA)) continue;
-      // Para a prova: quantas rodadas de hoje ficaram sem turno, cada uma até a hora da rodada seguinte.
-      const faltaram = vencidas.filter((x, i) => {
-        const de = hoje + x * HORA;
-        const ate = i + 1 < t.horas.length ? hoje + t.horas[i + 1] * HORA : hoje + DIA;
-        return !dele.some((em) => em >= de && em < ate);
-      });
+      const r = vencidas[vencidas.length - 1];
+      if (r.sinal) continue;
+      const h = r.h;
+      // Para a prova: quantas rodadas de hoje ficaram sem turno.
+      const faltaram = vencidas.filter((x) => !x.sinal);
+      const antes = dele.filter((em) => em < r.de);
+      const antesTxt = antes.length ? `O último turno antes dela foi ${quandoFoi(Math.max(...antes), agora)}.` : `Nenhum turno antes dela nos últimos ${COSTUME_DIAS} dias.`;
+      // Um turno só chegou logo depois da hora desta rodada e ficou com a anterior, que estava sem nenhum: uma das duas
+      // não rodou, e o turno não diz qual.
+      const anterior = vencidas[vencidas.length - 2];
+      const dividido = anterior && anterior.sinal && anterior.sinal.em >= r.de ? anterior : null;
+      const umSo = dividido ? `Para as rodadas das ${dividido.h}h e das ${h}h chegou um turno só, às ${horaBR(dividido.sinal.em)}` : '';
       alertas.push({
         tipo: t.tipo, assinatura: `${dia}T${dois(h)}`, problema: t.problema,
-        titulo: `${t.nome} das ${h}h não rodou`,
-        corpo: `Sem turno desde as ${h}h (conferido às ${horaBR(agora)}). ${ultimoTxt}`,
-        prova: `Hoje, ${diaMes(agora)}, ${faltaram.length} de ${vencidas.length} ${vencidas.length === 1 ? 'rodada ficou' : 'rodadas ficaram'} sem turno: ${juntar(faltaram.map((x) => `${x}h`))}. ${ultimoTxt}`,
+        titulo: dividido ? `${t.nome}: a das ${dividido.h}h ou a das ${h}h não rodou` : `${t.nome} das ${h}h não rodou`,
+        corpo: dividido ? `${umSo} (conferido às ${horaBR(agora)}).` : `Sem turno da rodada das ${h}h (conferido às ${horaBR(agora)}). ${antesTxt}`,
+        prova: `Hoje, ${diaMes(agora)}, ${faltaram.length} de ${vencidas.length} ${vencidas.length === 1 ? 'rodada ficou' : 'rodadas ficaram'} sem turno: ${juntar(faltaram.map((x) => `${x.h}h`))}. ${dividido ? `${umSo}.` : antesTxt}`,
         acao: t.acao, ganho: t.ganho,
       });
     } else {
-      const costume = horaDeCostume(turnos.filter((x) => daTarefa(t, x)), t.diaria * 60, agora);
+      const costume = horaDeCostume(turnos.filter((x) => daTarefa(t, x)), t.diaria * 60 + (t.minuto || 0), agora);
       if (hoje + costume.min * MINUTO + TOLERANCIA > agora) continue;
       if (dele.some((em) => em >= hoje)) continue; // qualquer turno de hoje vale, mesmo antes da hora de costume
       const esperado = costume.aprendeu ? `O turno dela costuma chegar por volta das ${horaDoDia(costume.min)}` : `Ela está agendada para as ${horaDoDia(costume.min)}`;
@@ -358,22 +433,31 @@ function gastoAlto(o, agora) {
 // ---------------------------------------------------------------- 5) entrega do Combo parada
 // Quem pagou um produto entregue fora da nossa área (o Combo, na Hubla) e ainda não foi adicionado lá. A lista é a
 // mesma do conector (entregasPendentes). O alerta não leva nome nem e-mail de ninguém: só a conta e a hora.
+// Desde 10/11/2026 a entrega é a tarefa agendada "entregar-combo-hubla", às 11h e às 17h, e ela não grava turno. A
+// conferência é pelo resultado: quem pagou antes de uma rodada e continua na lista depois dela mostra que a rodada não
+// rodou ou não conseguiu. Quem pagou depois da última rodada está só esperando a próxima, e não é alarme (antes a regra
+// era "há mais de 6 horas", que tocaria de madrugada para toda compra feita à noite).
 export function entregasParadas(entregas, agora) {
   if (!entregas || !Array.isArray(entregas.pendentes)) return [];
+  // A rodada mais recente que já teve tempo de terminar, de hoje ou de ontem.
+  const hoje = meiaNoiteBR(agora);
+  const rodadas = [hoje - DIA, hoje].flatMap((dia) => ENTREGA_HORAS.map((h) => ({ h, de: dia + h * HORA }))).filter((r) => r.de + TOLERANCIA <= agora);
+  const rodada = rodadas[rodadas.length - 1];
   const em = (p) => Date.parse(p.pago_em);
-  const velhas = entregas.pendentes.filter((p) => agora - em(p) > ENTREGA_PARADA);
+  const velhas = entregas.pendentes.filter((p) => em(p) < rodada.de - ENTREGA_MARGEM);
   if (!velhas.length) return [];
   const antiga = velhas.reduce((a, b) => (em(b) < em(a) ? b : a));
   const n = `${velhas.length} ${velhas.length === 1 ? 'entrega do Combo esperando' : 'entregas do Combo esperando'}`;
   const onde = String(antiga.plataforma || 'Hubla').replace(/[<>]/g, '').slice(0, 30);
   const desde = `O pagamento mais antigo foi ${quandoFoi(em(antiga), agora)}, há ${espera(agora - em(antiga))}.`;
+  const qual = `das ${rodada.h}h${rodada.de < hoje ? ' de ontem' : ''}`;
   return [{
     // A assinatura é o pedido mais antigo da lista: enquanto for o mesmo, é o mesmo problema.
     tipo: 'entrega-parada', assinatura: String(antiga.pedido_id), problema: 'As entregas do Combo estão ficando paradas',
-    titulo: `${n} há mais de 6 horas`,
-    corpo: `Quem pagou e ainda não entrou na ${onde}. ${desde}`,
-    prova: `${n} há mais de 6 horas (pedidos pagos e ainda não marcados como entregues na ${onde}), conferido às ${horaBR(agora)}. ${desde}`,
-    acao: `Rodar /vigiar no Claude, que adiciona na ${onde} pelo Chrome e marca como entregue (roteiro em docs/entrega-hubla.md). Para não depender de alguém lembrar, agendar essa tarefa 2 vezes por dia.`,
+    titulo: `${n} depois da rodada ${qual}`,
+    corpo: `Quem pagou antes da rodada ${qual} e ainda não entrou na ${onde}: a tarefa "entregar-combo-hubla" não rodou ou não conseguiu. ${desde}`,
+    prova: `${n} depois da rodada ${qual} (pedidos pagos antes dela e ainda não marcados como entregues na ${onde}), conferido às ${horaBR(agora)}. ${desde}`,
+    acao: `Ver se o computador estava ligado na hora da rodada e se o Chrome do Windows continua logado na ${onde}. Depois rodar /vigiar no Claude, que adiciona na ${onde} pelo Chrome e marca como entregue (roteiro em docs/entrega-hubla.md).`,
     ganho: 'Quem pagou o Combo recebe o acesso no mesmo dia.',
   }];
 }
@@ -427,6 +511,66 @@ export function turnosPresos(turnos, agentes, agora) {
   }];
 }
 
+// ---------------------------------------------------------------- 8) cópia do banco parada
+// O Supabase está no plano grátis e não guarda backup (docs/backup.md). A cópia é feita no computador da agência, uma
+// vez por dia (scripts/backup.mjs), e cada cópia que dá certo grava o sinal em config.backup_ultimo:
+// { em, tabelas, linhas, bytes, avisos }. É alerta quando o sinal não existe, quando a última cópia tem mais de 36
+// horas e quando ela veio com zero tabelas ou zero linhas. Com a cópia em dia e algum aviso dentro dela (um extra que
+// ficou de fora, por exemplo), o alerta é menor: sai uma vez, só volta depois de 3 dias e não segura o "Tudo em ordem".
+// linha: a linha de config (objeto vazio quando ainda não existe; null quando a leitura falhou, e aí não afirma nada).
+// Os avisos são texto do script: entram cortados, sem sinal de marcação e sem travessão.
+export function copiaDoBanco(linha, agora) {
+  if (!linha) return [];
+  const v = linha.valor && typeof linha.valor === 'object' ? linha.valor : {};
+  const em = Date.parse(v.em || '');
+  const semBackup = 'O Supabase está no plano grátis e não guarda backup: esta cópia é a única.';
+  const fazer = 'Rode "node scripts/backup.mjs" no computador da agência (passo a passo em docs/backup.md).';
+  const parada = {
+    tipo: 'copia-parada', problema: 'A cópia do banco está parando',
+    acao: 'Abrir docs/backup.md. No computador da agência, rodar "node scripts/backup.mjs" e ver no Agendador de Tarefas do Windows se a tarefa "AgenciaSetup-Backup" existe e está ligada.',
+    ganho: 'O banco volta a ter uma cópia de no máximo um dia para o caso de perda.',
+  };
+  if (!Number.isFinite(em)) {
+    return [{
+      ...parada, assinatura: 'sem-sinal', titulo: 'A cópia do banco nunca avisou que rodou',
+      corpo: `O sinal da última cópia não existe (conferido às ${horaBR(agora)}). ${fazer}`,
+      prova: `Hoje, ${diaMes(agora)} às ${horaBR(agora)}, a linha ${COPIA} da tabela config não existe ou está sem data. ${semBackup}`,
+    }];
+  }
+  const feita = `A última cópia foi ${quandoFoi(em, agora)}`;
+  if (agora - em > COPIA_PARADA) {
+    const ha = espera(agora - em);
+    return [{
+      // A assinatura é a última cópia: enquanto não sair outra, é o mesmo problema.
+      ...parada, assinatura: String(v.em), titulo: `A cópia do banco está parada há ${ha}`,
+      corpo: `${feita} (conferido às ${horaBR(agora)}). ${fazer}`,
+      prova: `${feita}, há ${ha}. Ela é diária e a folga é de ${COPIA_PARADA / HORA} horas (config ${COPIA}, conferido às ${horaBR(agora)}). ${semBackup}`,
+    }];
+  }
+  const tabelas = Number(v.tabelas) || 0;
+  const linhas = Number(v.linhas) || 0;
+  if (!tabelas || !linhas) {
+    return [{
+      ...parada, assinatura: `${v.em}:vazia`, titulo: 'A última cópia do banco saiu vazia',
+      corpo: `${feita} e veio vazia (tabelas: ${tabelas}, linhas: ${linhas}). ${fazer}`,
+      prova: `${feita} e gravou o sinal com tabelas: ${tabelas} e linhas: ${linhas} (config ${COPIA}, conferido às ${horaBR(agora)}). ${semBackup}`,
+    }];
+  }
+  const avisos = (Array.isArray(v.avisos) ? v.avisos : []).map((a) => String(a ?? '').replace(/[<>]/g, '').replace(/\s*[—–]\s*/g, ', ').replace(/\s+/g, ' ').trim().slice(0, 160)).filter(Boolean);
+  if (!avisos.length) return [];
+  const n = `${avisos.length} ${avisos.length === 1 ? 'aviso' : 'avisos'}`;
+  const primeiro = /[.!?]$/.test(avisos[0]) ? avisos[0] : `${avisos[0]}.`;
+  return [{
+    // A assinatura é o primeiro aviso, sem os números: o mesmo aviso em cópias seguidas é o mesmo problema.
+    tipo: 'copia-com-aviso', menor: true, assinatura: avisos[0].replace(/\d+/g, '#').slice(0, 80), problema: 'A cópia do banco está saindo com aviso',
+    titulo: `A cópia do banco saiu com ${n}`,
+    corpo: `${feita} e foi gravada. ${avisos.length === 1 ? 'O aviso' : 'O primeiro aviso'}: ${primeiro} Rode "node scripts/backup.mjs" no computador da agência para ver ${avisos.length === 1 ? 'se continua' : 'todos'} (ajuda em docs/backup.md).`,
+    prova: `${feita}, com ${n} no sinal (config ${COPIA}, conferido às ${horaBR(agora)}). ${avisos.length === 1 ? 'O aviso' : 'O primeiro'}: ${primeiro}`,
+    acao: 'Rodar "node scripts/backup.mjs" no computador da agência e ler os avisos que ele mostra. Aviso de extra que ficou de fora costuma ser o token da conta do Supabase vencido (SUPABASE_ACCESS_TOKEN no .env.local). Os limites da cópia estão em docs/backup.md.',
+    ganho: 'A cópia volta a sair inteira, sem nada de fora.',
+  }];
+}
+
 // ---------------------------------------------------------------- aviso, cartão e turno
 // O aviso saiu e nenhum aparelho recebeu: o que não chegou vira cartão na mesa, com o jeito de ligar os avisos.
 export function cartaoSemAparelho(avisar, agora) {
@@ -459,21 +603,23 @@ function cartaoDe(a, estado) {
 // quando: o instante da conferência (o relógio manda a hora marcada). simular: devolve o que acharia, sem avisar e
 // sem gravar nada.
 // Para chamar uma vez por hora, perto do minuto 7: as tarefas gravam o turno quando terminam (a rodada das 21h de
-// 09/11/2026 gravou às 21h59), e no minuto 7 a rodada da hora anterior já teve 67 minutos para aparecer.
+// 09/11/2026 gravou às 21h59), e no minuto 7 a rodada da hora anterior já teve 67 minutos para aparecer. A janela de
+// cada rodada do direct fecha nesse mesmo minuto (FOLGA_DA_RODADA): se o minuto do relógio mudar, mude a folga junto.
 export async function rodarZelador(env, quando = Date.now(), { simular = false } = {}) {
   // As leituras, de uma vez: oito chamadas de antes, mais a lista de entregas (até 4) e, depois das 9h, a linha do
   // resumo do dia (1). A do estado não pode falhar em silêncio (sem ela ele repetiria todos os avisos); as outras, se
-  // falharem, só pulam a conferência que dependia delas.
+  // falharem, só pulam a conferência que dependia delas. O sinal da cópia do banco não custa chamada: vem na mesma
+  // leitura de config que já trazia o modo do Atendente.
   const pular = (nome) => (e) => { console.error('zelador', nome, e && e.message); return null; };
   const horaDoResumo = noBrasil(quando).getUTCHours() >= HORA_DO_RESUMO;
-  const [linhaEstado, listaAgentes, turnosLidos, atendimentos, gasto, comentarios, cfgAtendente, entregas, resumoDoDia] = await Promise.all([
+  const [linhaEstado, listaAgentes, turnosLidos, atendimentos, gasto, comentarios, linhasDeConfig, entregas, resumoDoDia] = await Promise.all([
     db.um(env, 'config', { chave: `eq.${CHAVE}` }),
-    db.select(env, 'agentes', { select: 'id,nome,apelido,estado', limite: 300 }).catch(pular('agentes')),
-    db.select(env, 'turnos', { filtros: { inicio: `gte.${new Date(quando - COSTUME_DIAS * DIA).toISOString()}` }, select: 'id,agente_id,status,inicio,tarefa:dados->>tarefa', ordem: 'inicio.desc', limite: 1000 }).catch(pular('turnos')),
+    db.select(env, 'agentes', { select: 'id,nome,apelido,estado,criado_em', limite: 300 }).catch(pular('agentes')),
+    db.select(env, 'turnos', { filtros: { inicio: `gte.${new Date(quando - COSTUME_DIAS * DIA).toISOString()}` }, select: 'id,agente_id,status,inicio,fim,tarefa:dados->>tarefa', ordem: 'inicio.desc', limite: 1000 }).catch(pular('turnos')),
     lerAtendimentos(env, quando).catch(pular('atendimentos')),
     orcamento(env).catch(pular('gasto')),
     lerComentarios(env, quando).catch(pular('comentarios')),
-    db.um(env, 'config', { chave: 'eq.atendente' }).catch(pular('atendente')),
+    db.select(env, 'config', { filtros: { chave: `in.(atendente,${COPIA})` }, select: 'chave,valor', limite: 2 }).catch(pular('config')),
     entregasPendentes({ env, u: DO_SISTEMA }).catch(pular('entregas')),
     // Antes das 9h o resumo ainda pode estar saindo: nem lê. Linha que não existe vira objeto vazio (leitura que falhou, null).
     horaDoResumo ? db.um(env, 'config', { chave: `eq.${RESUMO_DO_CHEFE}` }).then((l) => l || {}).catch(pular('resumo')) : null,
@@ -483,7 +629,11 @@ export async function rodarZelador(env, quando = Date.now(), { simular = false }
   // do caminho só vale daqui para a frente.
   const estreia = !estado.orfas_desde;
   if (estreia) estado.orfas_desde = new Date(quando).toISOString();
+  const cfg = linhasDeConfig ? Object.fromEntries(linhasDeConfig.map((l) => [l.chave, l])) : null;
+  const cfgAtendente = cfg && cfg.atendente;
   const ensaio = !!(cfgAtendente && cfgAtendente.valor && cfgAtendente.valor.modo === 'ensaio');
+  // O sinal da cópia do banco: objeto vazio quando a linha ainda não existe, null quando a leitura falhou.
+  const copia = cfg ? cfg[COPIA] || {} : null;
   const agentes = Object.fromEntries((listaAgentes || []).map((a) => [a.id, a]));
   // Pausado, demitido ou vaga aberta: não avisa nem grava (a mesma regra de todos os agentes do Worker). Ele é o vigia:
   // sem a lista de agentes (a leitura falhou) ou sem a própria linha no cadastro, continua olhando.
@@ -499,6 +649,7 @@ export async function rodarZelador(env, quando = Date.now(), { simular = false }
     ...gastoAlto(gasto, quando),
     ...entregasParadas(entregas, quando),
     ...resumoQueNaoSaiu(resumoDoDia, listaAgentes ? agentes : null, quando),
+    ...copiaDoBanco(copia, quando),
   ];
 
   // O que é novo, o que já foi avisado e o que está se repetindo.
@@ -508,7 +659,7 @@ export async function rodarZelador(env, quando = Date.now(), { simular = false }
   for (const a of alertas) {
     const reg = estado.avisos[a.tipo];
     a.novo = !reg || reg.assinatura !== a.assinatura;
-    a.avisar = a.novo || passou(reg.avisado_em, AVISAR_DE_NOVO, quando);
+    a.avisar = a.novo || passou(reg.avisado_em, a.menor ? AVISAR_MENOR_DE_NOVO : AVISAR_DE_NOVO, quando);
     if (a.novo) estado.vezes.push({ tipo: a.tipo, em: agora, dia: hoje });
     if (a.avisar) estado.avisos[a.tipo] = { assinatura: a.assinatura, avisado_em: agora };
     const vezes = estado.vezes.filter((v) => v.tipo === a.tipo);
@@ -519,7 +670,9 @@ export async function rodarZelador(env, quando = Date.now(), { simular = false }
   const avisar = alertas.filter((a) => a.avisar);
   // Um cartão por rodada, para caber nas chamadas do plano grátis. O próximo sai na hora seguinte.
   const paraCartao = alertas.find((a) => a.repete && passou(estado.cartoes[a.tipo], CARTAO_DE_NOVO, quando)) || null;
-  const emOrdem = !alertas.length && passou(estado.em_ordem_em, EM_ORDEM_A_CADA, quando);
+  // O alerta menor não segura o turno "em ordem": ele pode durar semanas, e o Zelador ficaria sem dar sinal de vida.
+  const menores = alertas.filter((a) => a.menor);
+  const emOrdem = alertas.length === menores.length && passou(estado.em_ordem_em, EM_ORDEM_A_CADA, quando);
   const proposta = paraCartao ? cartaoDe(paraCartao, estado) : null;
   if (paraCartao) estado.cartoes[paraCartao.tipo] = agora;
   if (emOrdem) estado.em_ordem_em = agora;
@@ -542,6 +695,8 @@ export async function rodarZelador(env, quando = Date.now(), { simular = false }
         turnos_abertos: turnos ? turnos.filter((t) => t.status === 'rodando').length : null,
         atendimentos_com_erro_24h: errosAtendente, mensagens_esperando: esperando, comentarios_5h: comentarios ? comentarios.length : null, atendente_em_ensaio: ensaio, gasto,
         entregas_pendentes: entregas ? entregas.total_pendentes : null,
+        // Quando foi a última cópia do banco (data ISO), "não existe" ou null se a leitura falhou.
+        copia_do_banco: !copia ? null : (copia.valor && copia.valor.em) || 'não existe',
         resumo_do_dia: !horaDoResumo ? 'ainda não é hora de conferir' : !resumoDoDia ? null : (resumoDoDia.valor && resumoDoDia.valor.dia === hoje ? resumoDoDia.valor.status : 'não existe'),
       },
     };
@@ -593,7 +748,7 @@ export async function rodarZelador(env, quando = Date.now(), { simular = false }
     turno = await registrarTurno(env, { agente: AGENTE, status: 'ok', resumo, dados: { alertas: alertas.slice(0, 12).map((a) => ({ tipo: a.tipo, titulo: a.titulo })), aparelhos, cartao: cartao ? cartao.id : null } })
       .catch((e) => { console.error('zelador turno', e && e.message); return null; });
   } else if (emOrdem) {
-    turno = await registrarTurno(env, { agente: AGENTE, status: 'sem_trabalho', resumo: 'Tudo em ordem.', dados: { turnos_lidos: turnos ? turnos.length : null, gasto_hoje_usd: gasto ? gasto.gasto_hoje_usd : null } })
+    turno = await registrarTurno(env, { agente: AGENTE, status: 'sem_trabalho', resumo: menores.length ? `Nada grave. ${menores.map((a) => a.titulo).join('. ')}.` : 'Tudo em ordem.', dados: { turnos_lidos: turnos ? turnos.length : null, gasto_hoje_usd: gasto ? gasto.gasto_hoje_usd : null } })
       .catch((e) => { console.error('zelador turno', e && e.message); return null; });
   }
   return { alertas: alertas.length, avisados: avisar.length, aparelhos, cartao, turno: turno ? turno.status : null };

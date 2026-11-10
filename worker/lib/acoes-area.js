@@ -96,12 +96,24 @@ async function calcularVendas(env, { de, ate, dias, moeda = 'brl', produto, cana
   // Cada lista ignora o próprio filtro: escolher um canal não some com os outros da tabela, e dá para comparar.
   const produtos = {}, canais = {}, campanhas = {}, conteudos = {};
   for (const p of reais.filter((q) => pagoEm(q, ini, fim) && passa(q.ultimo_toque))) for (const f of fatias(p)) somar(produtos, f.id, { id: f.id, nome: f.nome, bump: 0 }, 1, f.centavos), produtos[f.id].bump += f.bump ? 1 : 0;
+  // Em canal, campanha e conteúdo, "vendas" são pessoas que compraram, para a conversão comparar gente com gente (as
+  // visitas também são pessoas). Quem leva o complemento depois conta uma vez na linha e o dinheiro dos dois pedidos
+  // soma: o pedido de upsell herda a origem do original (vendas.js), e a compra feita de dentro do curso costuma chegar
+  // com o mesmo último toque. Os números do topo e a lista de produtos continuam contando pedidos.
+  const comprador = (p) => p.aluno_id || p.id;
+  const venda = (mapa, chave, base, p) => {
+    somar(mapa, chave, base, 0, valor(p));
+    const c = mapa[chave];
+    (c.compradores = c.compradores || new Set()).add(comprador(p));
+    c.vendas = c.compradores.size;
+  };
   for (const p of pagos) {
     const t = p.ultimo_toque || {};
-    if (passa(t, 'canal')) somar(canais, canalDe(t), { nome: canalDe(t) }, 1, valor(p));
-    if (t.campanha && passa(t, 'campanha')) somar(campanhas, t.campanha, { nome: t.campanha }, 1, valor(p));
-    if (t.conteudo && passa(t, 'conteudo')) somar(conteudos, t.conteudo, { nome: t.conteudo }, 1, valor(p));
+    if (passa(t, 'canal')) venda(canais, canalDe(t), { nome: canalDe(t) }, p);
+    if (t.campanha && passa(t, 'campanha')) venda(campanhas, t.campanha, { nome: t.campanha }, p);
+    if (t.conteudo && passa(t, 'conteudo')) venda(conteudos, t.conteudo, { nome: t.conteudo }, p);
   }
+  for (const mapa of [canais, campanhas, conteudos]) for (const c of Object.values(mapa)) delete c.compradores;
   if (toq.linhas) {
     const gente = (mapa, base, chave, v) => { somar(mapa, chave, base, 0, 0); (mapa[chave].gente = mapa[chave].gente || new Set()).add(v); };
     for (const t of toq.linhas) {
@@ -127,7 +139,8 @@ async function calcularVendas(env, { de, ate, dias, moeda = 'brl', produto, cana
     resumo: {
       moeda: m, de: iso(ini), ate: iso(fim), cortou: ped.cortou || toq.cortou,
       numeros: {
-        pagos: n, faturamento_centavos: fat(filtrados), ticket_centavos: n ? Math.round(fat(filtrados) / n) : 0,
+        // pagos conta pedidos; compradores, as pessoas (quem levou o complemento depois tem dois pedidos).
+        pagos: n, compradores: new Set(filtrados.map(comprador)).size, faturamento_centavos: fat(filtrados), ticket_centavos: n ? Math.round(fat(filtrados) / n) : 0,
         pix: filtrados.filter((p) => p.metodo === 'pix').length, cartao: filtrados.filter((p) => p.metodo === 'cartao').length,
         aguardando: nasceram.filter((p) => p.status === 'aguardando').length,
         nao_pagos: naoPagos.length, nao_pagos_centavos: fat(naoPagos),

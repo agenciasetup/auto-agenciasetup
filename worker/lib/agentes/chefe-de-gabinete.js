@@ -7,11 +7,13 @@
 // 1. Antes das 8h não lê nada. Depois, uma linha de config (escritorio_resumo_dia) diz se o resumo de hoje já saiu.
 // 2. Marca o dia como "fazendo" antes de gastar: duas execuções do relógio ao mesmo tempo não mandam dois avisos.
 //    Pausado, demitido ou vaga aberta, ele sai aqui, quieto: não lê o resto, não gasta e não avisa.
-// 3. Lê tudo em paralelo (11 chamadas ao banco) e monta os dados, com os valores em dinheiro já escritos.
+// 3. Lê tudo em paralelo (11 chamadas ao banco, e mais uma quando há cartão aprovado: o andamento deles) e monta os
+//    dados, com os valores em dinheiro já escritos.
 // 4. Uma chamada ao Claude devolve o resumo e de 0 a 3 decisões. O código confere antes de sair: sem travessão, sem
 //    link, tela do painel conhecida e nenhum valor em dinheiro que não esteja nos dados.
 // 5. O código (sem IA) acrescenta a cobrança do que está parado: cartão aprovado há mais de 2 dias sem resultado e
-//    cartão em "Depois" há mais de 7 dias. As decisões da IA são só do que é novo.
+//    cartão em "Depois" há mais de 7 dias. O que o Executor já fez e só espera publicar (docs/tarefa-aprovadas.md) não
+//    é "parado": é cobrado como "pronto, falta publicar". As decisões da IA são só do que é novo.
 // 6. Guarda o resumo em config, anota o turno e avisa no celular (tipo "escritorio").
 // Rodada que falhou ou ficou pela metade tenta mais uma vez no mesmo dia, pelo menos 15 minutos depois.
 //
@@ -20,7 +22,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { db } from '../../nucleo/db.js';
 import { anotarConsumo } from '../consumo.js';
-import { ESFORCOS, SALAS, orcamento, podeTrabalhar, registrarTurno } from '../escritorio.js';
+import { ESFORCOS, SALAS, lerAndamentos, orcamento, podeTrabalhar, registrarTurno } from '../escritorio.js';
 import { INTERESSES, placarFollowup } from '../followup.js';
 import { prepararIntegracoes } from '../integracoes.js';
 import { numerosDaArea } from '../plataforma.js';
@@ -36,6 +38,7 @@ const MAX_TENTATIVAS = 2;
 const ENTRE_TENTATIVAS = 15 * 60_000;
 const MAX_DECISOES = 3;
 const MAX_AVISO = 900; // letras do corpo do aviso do celular
+const MIN_RESUMO = 120; // o resumo encolhe até aqui para as decisões e as 3 linhas da cobrança caberem inteiras
 const PARADA_DIAS = 2; // cartão aprovado há mais que isso, sem resultado, entra na cobrança
 const DEPOIS_DIAS = 7; // cartão em "Depois" há mais que isso: o aviso pergunta se ainda vale
 const DIA = 86_400_000;
@@ -125,7 +128,7 @@ function ha(iso, agora) {
   return h < 48 ? `há ${h} h` : `há ${Math.round(h / 24)} dias`;
 }
 
-// ---------------------------------------------------------------- a leitura (11 chamadas ao banco, só leitura)
+// ---------------------------------------------------------------- a leitura (11 ou 12 chamadas ao banco, só leitura)
 // A lista de agentes é lida à parte, antes (uma chamada): diz se o Chefe pode trabalhar e dá os nomes para a cobrança.
 const lerAgentes = (env) => db.select(env, 'agentes', { select: 'id,nome,apelido,estado', limite: 300 });
 async function ler(env, quando) {
@@ -133,7 +136,7 @@ async function ler(env, quando) {
   const inicioOntem = inicioHoje - DIA;
   const iso = (ms) => new Date(ms).toISOString();
   const [propostas, duvidas, colmeia, numeros, placar, atividade, resumo, orc, turnos, atendimentos] = await Promise.all([
-    db.select(env, 'propostas', { filtros: { status: 'in.(nova,aprovada,depois)' }, select: 'agente_id,sala,titulo,prova,acao,esforco,ganho,status,criado_em,decidida_em', ordem: 'criado_em.desc', limite: 80 }),
+    db.select(env, 'propostas', { filtros: { status: 'in.(nova,aprovada,depois)' }, select: 'id,agente_id,sala,titulo,prova,acao,esforco,ganho,status,criado_em,decidida_em', ordem: 'criado_em.desc', limite: 80 }),
     db.select(env, 'followups', { filtros: { fase: 'eq.duvida' }, select: 'perfil,interesse,duvida,duvida_em', ordem: 'duvida_em.asc.nullslast', limite: 8, contar: true }),
     db.select(env, 'colmeia', { filtros: { status: 'eq.proposta' }, select: 'tipo,produto,titulo,texto,autor,criado_em', ordem: 'criado_em.asc', limite: 8, contar: true }),
     // As vendas saem da mesma função da tela Números (uma chamada): pagas, sem teste, pelo dia do pagamento em Brasília.
@@ -146,7 +149,10 @@ async function ler(env, quando) {
     db.select(env, 'turnos', { filtros: { inicio: `gte.${iso(inicioOntem)}`, agente_id: `neq.${AGENTE}` }, select: 'agente_id,status,resumo,inicio', ordem: 'inicio.desc', limite: 120 }),
     db.select(env, 'atendimentos', { filtros: { and: `(criado_em.gte.${iso(inicioOntem)},criado_em.lt.${iso(inicioHoje)})` }, select: 'classe,custo_usd', limite: 1000 }),
   ]);
-  return { propostas, duvidas, colmeia, numeros, placar, atividade, resumo: resumo || {}, orc, turnos, atendimentos };
+  // O andamento das aprovadas (escritorio.js): o que o Executor já deixou pronto, para a cobrança não chamar de
+  // "parado" o que só espera publicar. Uma chamada a mais, só quando há cartão aprovado. Se falhar, cobra como antes.
+  const andamentos = await lerAndamentos(env, propostas.filter((p) => p.status === 'aprovada'), quando).catch((e) => { console.error('chefe andamentos', e && e.message); return null; });
+  return { propostas, duvidas, colmeia, numeros, placar, atividade, resumo: resumo || {}, orc, turnos, atendimentos, andamentos };
 }
 
 // ---------------------------------------------------------------- os dados que a IA lê
@@ -224,7 +230,7 @@ function montarDados(l, quando) {
 // Tem o que dizer? Sem nada na mesa, sem nada parado e sem movimento ontem, a IA nem é chamada.
 const temMateria = (d, c = {}) => d.mesa.na_mesa + d.duvidas_do_direct.total + d.colmeia_esperando_aprovacao.total
   + d.vendas.ontem.vendas + d.atendente_ontem.mensagens + d.agentes.turnos_desde_ontem.length
-  + (c.aprovadas_paradas || []).length + (c.depois_antigas || []).length > 0;
+  + (c.falta_publicar || []).length + (c.aprovadas_paradas || []).length + (c.depois_antigas || []).length > 0;
 
 function mensagemPara(dados, quando) {
   const hoje = diaBr(quando);
@@ -270,31 +276,44 @@ export function conferirResumo(e, dados) {
 
 // ---------------------------------------------------------------- a cobrança do que está parado (só código, sem IA)
 // O dono já decidiu sobre estes cartões: não são decisão do dia. São cobrança.
-// - aprovadas_paradas: aprovado há mais de 2 dias e sem resultado anotado (ninguém começa sozinho um cartão aprovado);
+// - falta_publicar: aprovado, já feito no projeto pelo Executor e esperando o ok para ir ao ar. Não é "parado": é
+//   cobrado como "pronto, falta publicar", desde o primeiro dia;
+// - aprovadas_paradas: aprovado há mais de 2 dias e sem resultado anotado (o Executor ainda não pegou, não conseguiu ou
+//   não pode fazer sozinho; o motivo aparece no cartão, na tela);
 // - depois_antigas: em "Depois" há mais de 7 dias (ainda vale?).
 // agentes: a lista do cadastro, para dizer de quem é o cartão pelo nome da tela. Os mais antigos vêm primeiro.
-export function cobrancaDe(propostas, agentes, quando = Date.now()) {
+// andamentos: o andamento de cada aprovada (lerAndamentos, em escritorio.js). Sem ele, toda aprovada conta como parada.
+export function cobrancaDe(propostas, agentes, quando = Date.now(), andamentos = null) {
   const nomes = Object.fromEntries((agentes || []).map((a) => [a.id, a.apelido || a.nome]));
+  const titulo = (p) => limpo(texto(p.titulo), 70) || 'sem título';
+  const de = (p) => limpo(texto(p.agente_id ? nomes[p.agente_id] || p.agente_id : SALAS[p.sala] || 'sem agente'), 40);
+  const pronto = (p) => { const a = p.status === 'aprovada' && andamentos ? andamentos[p.id] : null; return a && a.estado === 'falta_publicar' ? a : null; };
   const parados = (status, minimo) => (propostas || [])
-    .filter((p) => p.status === status)
-    .map((p) => ({ titulo: limpo(texto(p.titulo), 70) || 'sem título', de: limpo(texto(p.agente_id ? nomes[p.agente_id] || p.agente_id : SALAS[p.sala] || 'sem agente'), 40), ha: quando - Date.parse(p.decidida_em || p.criado_em) }))
+    .filter((p) => p.status === status && !pronto(p))
+    .map((p) => ({ titulo: titulo(p), de: de(p), ha: quando - Date.parse(p.decidida_em || p.criado_em) }))
     .filter((p) => p.ha > minimo * DIA)
     .sort((a, b) => b.ha - a.ha)
     .map((p) => ({ titulo: p.titulo, de: p.de, dias: Math.floor(p.ha / DIA) }));
-  return { aprovadas_paradas: parados('aprovada', PARADA_DIAS), depois_antigas: parados('depois', DEPOIS_DIAS) };
+  const falta = (propostas || []).filter(pronto)
+    .map((p) => ({ titulo: titulo(p), de: de(p), em: Date.parse(pronto(p).em) || quando }))
+    .sort((a, b) => a.em - b.em)
+    .map((p) => ({ titulo: p.titulo, de: p.de, feito_em: diaMes(diaBr(p.em)), dias: Math.max(0, Math.floor((quando - p.em) / DIA)) }));
+  return { falta_publicar: falta, aprovadas_paradas: parados('aprovada', PARADA_DIAS), depois_antigas: parados('depois', DEPOIS_DIAS) };
 }
 // As frases da cobrança. curto: para o aviso do celular (só o cartão mais antigo de cada tipo e quantos mais).
 export function textoDaCobranca(c, { curto = false } = {}) {
-  const frase = (lista, inicio, fim) => {
+  const frase = (lista, inicio, fim, detalhe) => {
     if (!lista || !lista.length) return [];
     const mostra = lista.slice(0, curto ? 1 : 5);
     const resto = lista.length - mostra.length;
-    const nomes = mostra.map((p) => `"${curto ? limpo(p.titulo, 50) : p.titulo}" (${p.de}, ${p.dias} dias)`).join('; ');
+    const nomes = mostra.map((p) => `"${curto ? limpo(p.titulo, 50) : p.titulo}" (${detalhe(p)})`).join('; ');
     return [`${inicio}: ${nomes}${resto > 0 ? ` e mais ${resto}` : ''}. ${fim}`];
   };
+  const parado = (p) => `${p.de}, ${p.dias} dias`;
   return [
-    ...frase(c && c.aprovadas_paradas, 'Aprovado e parado', 'Ninguém começa sozinho: peça ao Claude para fazer.'),
-    ...frase(c && c.depois_antigas, `Em "Depois" há mais de ${DEPOIS_DIAS} dias`, 'Ainda vale?'),
+    ...frase(c && c.falta_publicar, 'Pronto, falta publicar', 'Dê o ok ao Claude para pôr no ar.', (p) => `feito em ${p.feito_em}`),
+    ...frase(c && c.aprovadas_paradas, 'Aprovado e parado', 'Peça ao Claude para fazer.', parado),
+    ...frase(c && c.depois_antigas, `Em "Depois" há mais de ${DEPOIS_DIAS} dias`, 'Ainda vale?', parado),
   ];
 }
 
@@ -303,11 +322,12 @@ export function textoDaCobranca(c, { curto = false } = {}) {
 export function textoDoAviso({ resumo, decisoes = [], cobranca = null }) {
   const n = decisoes.length;
   const parado = textoDaCobranca(cobranca, { curto: true });
+  const pronto = !!(cobranca && cobranca.falta_publicar && cobranca.falta_publicar.length);
   const fixo = [...decisoes.map((d, i) => `${i + 1}. ${d.titulo}`), ...parado];
   const sobra = MAX_AVISO - fixo.reduce((s, l) => s + l.length + 1, 0);
   return {
-    titulo: n ? `Resumo das 8h: ${n} ${n === 1 ? 'decisão' : 'decisões'} para hoje` : parado.length ? 'Resumo das 8h: nada novo para decidir, tem cartão parado' : 'Resumo das 8h: nada para decidir hoje',
-    corpo: [cortar(String(resumo || ''), Math.max(160, sobra)), ...fixo].join('\n').slice(0, MAX_AVISO),
+    titulo: n ? `Resumo das 8h: ${n} ${n === 1 ? 'decisão' : 'decisões'} para hoje` : parado.length ? `Resumo das 8h: nada novo para decidir, tem cartão ${pronto ? 'pronto para publicar' : 'parado'}` : 'Resumo das 8h: nada para decidir hoje',
+    corpo: [cortar(String(resumo || ''), Math.max(MIN_RESUMO, sobra)), ...fixo].join('\n').slice(0, MAX_AVISO),
   };
 }
 
@@ -334,7 +354,7 @@ export async function rodarChefeDeGabinete(env, quando = Date.now(), { forcar = 
   if (simular) {
     const [agentes, lido] = await Promise.all([listaDeAgentes(), ler(env, quando)]);
     const dados = montarDados(lido, quando);
-    const cobranca = cobrancaDe(lido.propostas, agentes, quando);
+    const cobranca = cobrancaDe(lido.propostas, agentes, quando, lido.andamentos);
     return {
       dados, cobranca, cobranca_no_aviso: textoDaCobranca(cobranca, { curto: true }), instrucao: SISTEMA, mensagem: mensagemPara(dados, quando),
       tem_materia: temMateria(dados, cobranca), orcamento: lido.orc, agente_liberado: liberado(agentes),
@@ -372,7 +392,7 @@ export async function rodarChefeDeGabinete(env, quando = Date.now(), { forcar = 
     await registrarTurno(env, {
       agente: AGENTE, status, resumo: [resumo, ...decisoes.map((d, i) => `${i + 1}. ${d.titulo} (${d.onde})`), ...parado].join('\n'),
       custo_usd: custoUsd, tokens_entrada: gasto ? gasto.tokens_entrada : null, tokens_saida: gasto ? gasto.tokens_saida : null,
-      modelo: MODELO, inicio, dados: { dia: hoje, decisoes, parados: cobranca ? { aprovadas: cobranca.aprovadas_paradas.length, depois: cobranca.depois_antigas.length } : null },
+      modelo: MODELO, inicio, dados: { dia: hoje, decisoes, parados: cobranca ? { aprovadas: cobranca.aprovadas_paradas.length, depois: cobranca.depois_antigas.length, falta_publicar: cobranca.falta_publicar.length } : null },
     }).catch(async (e) => {
       console.error('chefe turno', e && e.message);
       if (gasto) await anotarConsumo(env, AGENTE, MODELO, gasto.uso, 'resumo');
@@ -385,7 +405,7 @@ export async function rodarChefeDeGabinete(env, quando = Date.now(), { forcar = 
   try {
     const lido = await ler(env, quando);
     const dados = montarDados(lido, quando);
-    cobranca = cobrancaDe(lido.propostas, agentes, quando);
+    cobranca = cobrancaDe(lido.propostas, agentes, quando, lido.andamentos);
     if (!temMateria(dados, cobranca)) return await fechar('sem_trabalho', 'Nada na mesa, nada parado e nenhum movimento ontem: hoje não tem resumo.');
     if (lido.orc && lido.orc.sobra_usd <= 0) return await fechar('sem_trabalho', `O teto de gasto de IA de hoje (${dolar(lido.orc.teto_dia_usd)}) já foi usado: o resumo das 8h não saiu.`);
     await prepararIntegracoes(env).catch(() => {}); // a chave do Claude mora em Integrações, cifrada

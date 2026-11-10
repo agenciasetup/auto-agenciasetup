@@ -13,7 +13,9 @@ import { CartaoIdeia, ItemAgora } from './planoComum';
 // o número, a frase e um botão só. Os cartões ficam sempre no mesmo lugar: o que está zerado aparece apagado e sem
 // botão; com tudo zerado, o bloco vira uma linha. O número vem null para quem não pode abrir aquela tela (o cartão
 // não aparece). Carrega à parte: se falhar, o resto do Início continua de pé.
-type Espera = { id: string; n: number; titulo: string; um: string; varios: string; url: string | null };
+// nota: uma frase a mais, em letra pequena (na mesa, as aprovadas que estão prontas para publicar ou esperando o dono).
+// Cartão com nota não apaga nem perde o botão, mesmo com o número zerado.
+type Espera = { id: string; n: number; titulo: string; um: string; varios: string; url: string | null; nota?: string | null };
 // Lugar sem tela para abrir: no lugar do botão vai a frase que diz quem resolve.
 const QUEM_RESOLVE: Record<string, string> = { entregas: 'O Claude libera na Hubla nas rodadas das 11h e das 17h.' };
 
@@ -26,18 +28,20 @@ function EsperandoVoce() {
   const lugares: Espera[] = (Array.isArray(dados.itens) ? dados.itens : []).filter((i: any) => i && typeof i.n === 'number');
   // Ninguém para mostrar (o cargo não abre nenhuma dessas telas): o bloco não aparece.
   if (!lugares.length) return null;
-  if (!lugares.some((i) => i.n > 0)) return <p className="esp-linha"><CheckCircle2 />Nada esperando você agora.</p>;
+  if (!lugares.some((i) => i.n > 0 || i.nota)) return <p className="esp-linha"><CheckCircle2 />Nada esperando você agora.</p>;
   return (
     <Grupo titulo="Esperando você">
       <div className="esp-lista">
         {lugares.map((i) => {
-          const tem = i.n > 0;
+          const nota = typeof i.nota === 'string' && i.nota ? i.nota : null;
+          const tem = i.n > 0 || !!nota;
           const abre = typeof i.url === 'string' && i.url.startsWith('/');
           return (
-            <article className={`esp-cartao ${tem ? '' : 'esp-zero'}`} key={i.id}>
+            <article className={`esp-cartao ${tem ? (i.n > 0 ? '' : 'esp-so-nota') : 'esp-zero'}`} key={i.id}>
               <h3>{i.titulo}</h3>
               <b>{numero(i.n)}</b>
               <span>{i.n === 1 ? i.um : i.varios}</span>
+              {nota && <p className="esp-nota">{nota}</p>}
               {tem && abre && <div className="esp-pe"><Link className="bt bt-mini bt-tingido" para={i.url!} aria-label={`Abrir ${i.titulo}`}>Abrir<ChevronRight /></Link></div>}
               {tem && !abre && QUEM_RESOLVE[i.id] && <div className="esp-pe esp-pe-frase"><p className="mudo">{QUEM_RESOLVE[i.id]}</p></div>}
             </article>

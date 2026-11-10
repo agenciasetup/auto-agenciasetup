@@ -881,6 +881,8 @@ export async function criarUpsell(env, { pedido, oferta, metodo }) {
   const pag = provedorDoPedido(env, p);
   const cliente = p.aluno && p.aluno.asaas_cliente;
   if (!cliente) throw new Erro(409, 'Não achei o seu cadastro de pagamento.');
+  // O pedido do complemento herda a origem do original, para o dinheiro cair no mesmo canal. Quem conta vendas por
+  // origem conta a pessoa uma vez só (calcularVendas em acoes-area.js, vendasPorVersao em comenta.js).
   const [novo] = await db.insert(env, 'pedidos', {
     aluno_id: p.aluno_id, oferta_id: o.id, itens: preco.itens, subtotal_centavos: preco.subtotal, desconto_centavos: preco.desconto, juros_centavos: preco.juros,
     total_centavos: preco.total, metodo: met, parcelas: preco.parcelas, status: 'aberto', provedor: pag.nome, teste: p.teste,

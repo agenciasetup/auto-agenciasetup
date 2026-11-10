@@ -251,9 +251,11 @@ export function chanceDeSerAMelhor(variantes, stats = {}) {
 //     o código dele diz de qual palavra e de qual versão é (tabela links: gatilho_id e variante). Quando a visita ficou
 //     sem o código (a página abriu antes de o clique ser gravado), ele é refeito pelas marcas: campanha (a palavra),
 //     conteúdo ("palavra-versão") e termo (o post).
-//  2. Toque no botão do mini curso (conteúdo "curso" ou "curso-topo"): o endereço não diz a versão, mas leva o código
-//     de quem recebeu ("&p=", pessoa.js). A versão é a do último direct que essa pessoa recebeu daquela palavra antes
-//     do toque (respostas_gatilho: usuario e variante).
+//  2. Toque no botão do mini curso (conteúdo "curso" ou "curso-topo"). Desde 10/11/2026 o endereço leva o código do
+//     link curto da versão que saiu no mesmo direct ("&l=", gatilhos.js e pessoa.js): a visita guarda o código e a
+//     conta é a mesma do item 1, direta. Reserva, para os pedidos de antes e para quando o código não resolve (link
+//     apagado, material de fora do site): o endereço leva o código de quem recebeu ("&p=", pessoa.js) e a versão é a
+//     do último direct que essa pessoa recebeu daquela palavra antes do toque (respostas_gatilho: usuario e variante).
 // "material-topo" (a faixa do curso no topo do material) não diz versão nem pessoa: vale o toque do material que veio
 // antes dele. Venda sem nenhum toque desses não entra na conta de nenhuma versão. Reembolso e pedido de teste ficam fora.
 // "vendas" conta pessoas que pagaram (quem levou o complemento depois conta uma vez); "vendas_centavos" soma tudo.
@@ -272,6 +274,8 @@ export function codigoDoLink(campanha, versao, post) {
 }
 
 // As pistas de um pedido, da mais nova para a mais antiga: { codigo (do link curto), pessoa, campanha, quando }.
+// O código é a pista direta: vem do clique no link curto do material ou, desde 10/11/2026, do endereço do botão do mini
+// curso (os dois ficam em "link" na visita). A pessoa é a reserva.
 export function pistasDoPedido(pedido) {
   const toques = (Array.isArray(pedido && pedido.toques) ? pedido.toques : []).filter((t) => t && t.meio === 'dm');
   return toques.map((t) => {
@@ -291,8 +295,11 @@ export function vendasPorVersao(pedidos, links = {}, envios = {}) {
   for (const p of pedidos || []) {
     let dono = null;
     for (const pista of pistasDoPedido(p)) {
+      // Primeiro a pista direta: o código do link curto diz a palavra e a versão.
       const link = pista.codigo ? links[pista.codigo] : null;
       if (link && link.gatilho_id && link.variante) { dono = link; break; }
+      // Reserva (pedido de antes do código no botão do mini curso, ou código que não resolve): o último direct que a
+      // pessoa recebeu daquela palavra.
       const dele = pista.pessoa ? (envios[pista.pessoa] || []).filter((e) => e.campanha === pista.campanha) : [];
       // Cinco minutos de tolerância: o registro do envio é gravado logo depois de o direct sair.
       const antes = dele.filter((e) => e.em <= pista.quando + 5 * 60_000);
@@ -336,8 +343,9 @@ async function lerVendas(env) {
     const l = await db.select(env, 'links', { filtros: { codigo: `in.(${parte.join(',')})`, gatilho_id: 'not.is.null', variante: 'not.is.null' }, select: 'codigo,gatilho_id,variante', limite: 1000 });
     for (const x of l || []) links[x.codigo] = { gatilho_id: x.gatilho_id, variante: x.variante };
   }
-  // Quem só deixou o código da pessoa (clicou direto no botão do mini curso). O follow-up sabe o @ de quem comprou
-  // (followup_compras, na volta de 10 minutos); o código é refeito do perfil e do @ e tem de bater com o do toque.
+  // Quem só deixou o código da pessoa (clicou no botão do mini curso antes de ele levar a versão, ou o código do link
+  // não resolveu). Toque com a pista direta não entra aqui e não custa estas leituras. O follow-up sabe o @ de quem
+  // comprou (followup_compras, na volta de 10 minutos); o código é refeito do perfil e do @ e tem de bater com o do toque.
   const pessoas = new Set(pistas.filter((p) => p.pessoa && !(p.codigo && links[p.codigo])).map((p) => p.pessoa));
   const envios = {};
   if (pessoas.size) {

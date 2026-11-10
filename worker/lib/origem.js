@@ -2,7 +2,7 @@
 // Sem IP e sem perfil: só origem, meio, campanha, conteúdo e a página. Ver docs/area-de-membros.md, seção 5.
 import { db } from '../nucleo/db.js';
 import { aleatorio } from '../nucleo/util.js';
-import { codigoValido, lerConversa } from './pessoa.js';
+import { codigoDeLink, codigoValido, lerConversa } from './pessoa.js';
 
 export const COOKIE = 'as_v';
 const MARCAS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
@@ -49,6 +49,9 @@ export function marcasDe(url, referrer) {
     clid: s.get('fbclid') ? 'fbclid' : s.get('gclid') ? 'gclid' : s.get('ttclid') ? 'ttclid' : null,
     // A pessoa do Instagram que recebeu o link: "&p=código" nos botões do Comenta X.
     pessoa: codigoValido(s.get('p')),
+    // A versão da mensagem: "&l=código" no botão do mini curso do Comenta X (pessoa.js). É o código do link curto da
+    // versão que saiu no mesmo direct, e fica no mesmo campo que o clique no link curto preenche.
+    link: codigoDeLink(s.get('l')),
   };
   const de = limpa(s.get('de'), 60);
   if (de && !t.origem) {
@@ -71,7 +74,8 @@ export async function registrarToque(env, visitante, marcas, extra = {}) {
   if (ultimo && iguais(ultimo, marcas)) return;
   await db.inserirRapido(env, 'toques', {
     visitante, ...marcas,
-    link: extra.link || null,
+    // O código do link curto: o do clique (extra.link) ou o que veio no endereço do botão do mini curso (marcas.link).
+    link: extra.link || marcas.link || null,
     referer: limpa(extra.referer, 120),
     pagina: limpa(extra.pagina, 200),
     pais: extra.pais || null,
