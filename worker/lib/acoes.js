@@ -32,6 +32,7 @@ export * from './acoes-seo.js';
 export * from './acoes-escritorio.js';
 export * from './acoes-colmeia.js';
 export * from './acoes-treino.js';
+export * from './acoes-chamados.js';
 export * from './acoes-esperando.js';
 export * from './acoes-video.js';
 export * from './acoes-design.js';

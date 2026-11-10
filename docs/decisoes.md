@@ -812,6 +812,18 @@ Pedido do dono: "ao invés do MCP atual, construa o MCP estilo code mode do Clou
 - **A migration ficou fora da pasta até o ok do dono**, porque outra conversa poderia aplicar junto. O código lê e grava sem a coluna nova se ela ainda não existir.
 - **Não feito, de propósito:** reescrever os itens gigantes e os títulos crus, e tirar os preços escritos dentro dos itens. É conteúdo do dono: fica para ele decidir, item por item.
 
+## Tomadas em 10/11/2026 (chamados de suporte e arrumação da Colmeia)
+
+- **O nome é "chamado", não "pedido".** No painel, pedido já é a compra (Vendas > Pedidos).
+- **Problema de curso comprado vai para o time, pela tela Suporte**, e não para a fila de dúvidas do dono. O Atendente colhe o curso, o e-mail e o problema, uma pergunta por vez; telefone e nome, só se a pessoa disser.
+- **O chamado nasce assim que a pessoa conta o problema**, mesmo sem e-mail: o time tem o @ e abre o direct. O que ela disser depois completa o mesmo chamado (um aberto por pessoa, garantido por índice no banco).
+- **E-mail e telefone só entram se a pessoa escreveu de verdade.** O código confere contra as mensagens dela: a IA não inventa contato.
+- **Resolver é de gente, no painel.** Pelo conector um agente lê e abre chamado, mas não resolve nem reabre.
+- **Sem aviso no celular para chamado novo.** O time abre a tela todo dia; o contador fica no menu Suporte e no bloco Esperando você.
+- **A arrumação da Colmeia entra como proposta, item por item**, pelo mesmo caminho de qualquer agente (`colmeia_salvar` com `substitui`). Nada do conteúdo do dono muda sem o sim dele. Reorganização sem número nem link novo continua sendo palavra do dono.
+- **Preço de campanha não fica escrito em item.** O vendedor fala "o preço de hoje", que vem da oferta. Exceção: curso sem oferta no sistema (Formação Design), que fica com o preço no item.
+- **Regra é para o que vale em toda conversa.** Os itens gigantes eram regras e entravam em todas as conversas; divididos, viraram perguntas e situações, que só entram na conversa que tem a ver.
+
 ## Em aberto
 
 - **Follow-up do direct:** no ar desde 08/11/2026 (versão `8267d516`) com a tarefa `direct-followup`. Falta a primeira rodada com o dono olhando e conferir na primeira semana se o "achado pelo nome" erra. Sete rodadas por dia lendo o direct gastam bastante do limite semanal do Claude: se apertar, ficar com 9h, 14h e 20h.

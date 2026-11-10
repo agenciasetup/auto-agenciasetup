@@ -340,6 +340,7 @@ function Item({ i, nomes, semProduto, podeEditar, editar, mudarStatus, responder
   const quem = doTreino
     ? (proposta ? 'Aprendido no Treino. Vale para todo mundo?' : 'Aprendido no Treino')
     : juncao ? `${i.autor || 'Conciliador'} ${proposta ? (pergunta ? 'propôs juntar e espera a sua resposta' : 'propôs juntar e espera o seu sim') : 'juntou'}`
+      : troca ? `${i.autor || 'Um agente'} ${proposta ? 'propôs reescrever e espera o seu sim' : 'reescreveu'}`
       : dono ? (proposta ? `Você respondeu assim${i.autor ? ` (${i.autor})` : ''}. Vale para todo mundo?` : 'Você ensinou') : i.origem === 'agente' ? `Agente${i.autor ? `: ${i.autor}` : ''}` : 'Já estava no roteiro';
   const aprovado = juncao ? 'Junção aprovada. Os itens de antes foram arquivados e este já vale.' : troca ? 'Aprovado. O item antigo foi arquivado e este já vale no lugar.' : 'Aprovado. Já vale para todos os vendedores.';
   return (
@@ -358,7 +359,7 @@ function Item({ i, nomes, semProduto, podeEditar, editar, mudarStatus, responder
           {proposta ? 'Se você aprovar, o antigo é arquivado e este passa a valer.' : 'O antigo está arquivado. Se você desfizer a troca, ele volta a valer e este sai.'}
         </p>
       )}
-      {(i.porque ?? i.prova) && <p className="mudo col-prova"><b>{juncao ? 'Por quê:' : doTreino ? 'De onde veio:' : 'Prova:'}</b> {i.porque ?? i.prova}</p>}
+      {(i.porque ?? i.prova) && <p className="mudo col-prova"><b>{doTreino ? 'De onde veio:' : juntou.length ? 'Por quê:' : 'Prova:'}</b> {i.porque ?? i.prova}</p>}
       {pergunta && (
         <div className="col-pergunta">
           <label htmlFor={`col-fala-${i.id}`}><b>{quemPergunta} pergunta:</b> {pergunta}</label>
@@ -414,6 +415,7 @@ function Testar() {
           <div className="col-resposta" aria-live="polite">
             <b>{NOME[r.classe] || r.classe}{r.espera ? ', avisando a pessoa que a resposta já vem' : ''}</b>
             {r.mensagens?.length > 0 && <div className="col-baloes">{r.mensagens.map((m: string, k: number) => <span key={k}>{m}</span>)}</div>}
+            {r.suporte && <p className="mudo"><b>Abriria um chamado no Suporte:</b> {r.suporte.problema}{r.suporte.curso ? ` · curso: ${r.suporte.curso}` : ''}{r.suporte.email ? ` · e-mail: ${r.suporte.email}` : ''}{r.suporte.telefone ? ` · telefone: ${r.suporte.telefone}` : ''}</p>}
             {r.motivo && <p className="mudo">{r.motivo}</p>}
           </div>
         )}

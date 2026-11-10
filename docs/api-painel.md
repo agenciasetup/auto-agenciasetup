@@ -219,6 +219,13 @@ Fora do painel: `/checkout/<oferta>`, `/checkout/obrigado?pedido=`, `POST /api/c
   - `POST /treino/recomecar` → a sala com uma conversa limpa. `POST /treino/salvar` `{ id, titulo? }` → a sala nova e `salva`
   - `POST /treino/aprender` `{ id }` → `{ itens (propostas criadas na Colmeia), ja_sabia, fora, resumo, aprendizado, custo_usd }`. Uma chamada ao Claude, na conta do Conciliador
   - `POST /treino/:id` `{ status: "descartada" }` → tira uma conversa salva da lista
+- `POST /colmeia` pelo conector aceita `substitui: [ids]` (de 1 a 5 itens que valem): a proposta nasce apontando para eles e, aprovada, fica no lugar
+- Chamados de suporte (`worker/lib/acoes-chamados.js`; `suporte.ver` para ler, `suporte.atender` para o resto):
+  - `GET /chamados?status=aberto|resolvido` → `{ itens: [{ id, followup_id, usuario, nome, email, telefone, curso, problema, origem: atendente|vendedor|painel, status, nota, resolvido_por, resolvido_em, criado_em, abrir }], abertos, nomes }`
+  - `POST /chamados` `{ followup_id?, usuario?, nome?, email?, telefone?, curso?, problema }` → abre o chamado, ou completa o que a pessoa já tem aberto. Devolve `criado`
+  - `POST /chamados/:id` `{ status: resolvido|aberto, nota? }` → resolve, reabre ou anota. Só pelo painel
+  - `POST /followup/atendente/testar` devolve também `suporte`: o chamado que o Atendente abriria (`{ curso, email, telefone, nome, problema }` ou null). No teste nada é gravado
+  - `GET /esperando` ganhou o item `chamados` (quantos estão abertos), que vira o contador do menu Suporte
 - `POST /followup/atendente/testar` aceita `{ texto (uma mensagem por linha), nome, usuario, ha_min, modelo }` e devolve também `espera`, `modelo`, `tokens` e `contexto`
 - `POST /followup/atendente` aceita `modelo: claude-haiku-5-5|claude-sonnet-5-5`
 

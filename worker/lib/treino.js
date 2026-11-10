@@ -121,6 +121,12 @@ export async function responderNoTreino(env, { id } = {}) {
   }[r.classe];
   const linhas = respondeu.map((texto) => ({ treino_id: treino.id, papel: 'atendente', texto, autor: 'Atendente (IA)', ia: true }));
   if (nota) linhas.push({ treino_id: treino.id, papel: 'nota', texto: `${nota}${r.motivo ? ` Motivo: ${String(r.motivo).replace(/\s+/g, ' ').slice(0, 400)}` : ''}`.slice(0, 1000), autor: 'Atendente (IA)', ia: true });
+  // O chamado que ele abriria na tela Suporte: no treino nada é aberto, só aparece na conversa para conferir.
+  if (r.suporte) {
+    const s = r.suporte;
+    const dados = [s.curso ? `curso: ${s.curso}` : '', s.email ? `e-mail: ${s.email}` : '', s.telefone ? `telefone: ${s.telefone}` : '', s.nome ? `nome: ${s.nome}` : ''].filter(Boolean).join('; ');
+    linhas.push({ treino_id: treino.id, papel: 'nota', texto: `O Atendente abriria um chamado no Suporte. Problema: ${s.problema}${dados ? ` (${dados})` : ' (ainda sem curso nem contato)'}`.slice(0, 1000), autor: 'Atendente (IA)', ia: true });
+  }
   const novas = linhas.length ? await db.insert(env, 'treino_mensagens', linhas, { select: CAMPOS_FALA }) : [];
   return { ok: true, classe: r.classe, mensagens: novas, custo_usd: r.custo_usd || 0, itens_da_colmeia: r.itens_da_colmeia || 0 };
 }

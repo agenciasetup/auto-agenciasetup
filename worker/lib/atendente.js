@@ -27,6 +27,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { contarChamada, db, folgaDeChamadas } from '../nucleo/db.js';
 import { Erro } from '../nucleo/util.js';
 import { avisarSeTokenMorreu } from '../plataformas/credenciais.js';
+import { abrirChamado, lerChamadoDaIa } from './chamados.js';
 import { conhecimentoPara } from './colmeia.js';
 import { armarDespertador } from './despertador.js';
 import { anotarConsumo } from './consumo.js';
@@ -90,12 +91,25 @@ const FORMAL = /prezad[oa]|senhor[a]?\b|atenciosamente|cordialmente|gostaria de 
 const NEGA = /n[aã]o (?:tenho|temos|conhe[cç]o|sei)\b|n[aã]o (?:est[aá]|tem|consta) (?:aqui )?na (?:minha|nossa) lista/i;
 
 const ESQUEMA = {
-  type: 'object', additionalProperties: false, required: ['classe', 'mensagens', 'interesse', 'espera', 'motivo'],
+  type: 'object', additionalProperties: false, required: ['classe', 'mensagens', 'interesse', 'espera', 'motivo', 'suporte'],
   properties: {
+    // O chamado para o time de suporte (chamados.js). O código confere e-mail e telefone contra o que a pessoa escreveu.
+    suporte: {
+      type: 'object', additionalProperties: false, required: ['abrir', 'curso', 'email', 'telefone', 'nome', 'problema'],
+      description: 'O chamado para o time de suporte. abrir true só quando a pessoa tem um problema com um curso que comprou e já contou qual é. No resto, abrir false e os campos vazios.',
+      properties: {
+        abrir: { type: 'boolean' },
+        curso: { type: 'string', description: 'O curso, ou o que ela lembra dele. Vazio se ela ainda não disse.' },
+        email: { type: 'string', description: 'O e-mail que ela escreveu, igual. Vazio se ela não escreveu.' },
+        telefone: { type: 'string', description: 'O telefone que ela escreveu, igual. Vazio se ela não escreveu.' },
+        nome: { type: 'string', description: 'O nome dela, se ela disse. Senão, vazio.' },
+        problema: { type: 'string', description: 'O problema em uma frase, com as palavras dela.' },
+      },
+    },
     classe: { type: 'string', enum: ['responder', 'duvida', 'nao_sei', 'ignorar'] },
     mensagens: { type: 'array', items: { type: 'string' }, description: 'De 1 a 3 mensagens curtas, na ordem. Lista vazia quando a classe não é responder.' },
     interesse: { type: 'string', enum: ['posts', 'combo', 'videos', 'material', 'outro', 'nao_sei'] },
-    espera: { type: 'boolean', description: 'true só na classe duvida, quando é uma pergunta de verdade sobre os produtos ou um problema já explicado de acesso, aula ou pagamento que o Filipe vai resolver: a pessoa recebe um aviso de que a resposta já vem. false para pedido de dinheiro, reclamação, parceria e o que não é sobre os produtos.' },
+    espera: { type: 'boolean', description: 'true só na classe duvida, quando é uma pergunta de verdade sobre os produtos que o Filipe vai responder: a pessoa recebe um aviso de que a resposta já vem. false para pedido de dinheiro, reclamação, parceria e o que não é sobre os produtos.' },
     motivo: { type: 'string', description: 'Até 15 palavras. Na classe duvida, a pergunta que o Filipe precisa responder.' },
   },
 };
@@ -315,7 +329,8 @@ Regras:
 ${base.regras.map((r) => `- ${r.titulo}: ${r.texto}`).join('\n')}
 - Preço só os de cima, mais o "+39,90" do vitalício e o "597" de antes do combo. Nenhum desconto, prazo ou promessa nova.
 - De 1 a 3 mensagens curtas (até 200 letras cada), respondendo de uma vez tudo o que ela mandou.
-- Se a pessoa já é aluna (fase "comprou"): não oferte nem mande link de venda; dúvida de acesso, aula ou pagamento é classe "duvida".
+- Se a pessoa já é aluna (fase "comprou"): não oferte nem mande link de venda.
+- Chamado de suporte (campo "suporte"): quando a pessoa tem um problema com um curso que comprou (não consegue entrar, perdeu o acesso, aula que não abre, pagamento, não recebeu o que comprou), quem resolve é o time de suporte, que lê o chamado no painel. O seu papel é colher os dados, uma pergunta de cada vez, sem interrogatório: qual curso (ou o que ela lembra dele), o e-mail da compra e o que está acontecendo. Telefone e nome, só se ela disser. Assim que ela contar o problema, marque abrir true e preencha o que ela já disse, copiando e-mail e telefone como ela escreveu; a cada mensagem dela, preencha de novo com tudo o que já se sabe. Com o chamado aberto, a classe é "responder": peça o dado que falta ou diga que passou para o suporte, do jeito que a base ensinar. Não prometa prazo e não diga que já está resolvido.
 - Nunca repita uma pergunta ou frase que já está em <conversa>. Se ela respondeu o que você perguntou, siga adiante com o que ela disse. As regras da base valem mais que a sua suposição.
 - Nunca negue ("não tenho", "não conheço", "não sei", "não está na minha lista"): quando não souber, direcione, sem dizer sim nem não.
 - Não deduza o que a base não diz sobre os dois produtos (para quem serve, o que inclui, que resultado dá, se parcela): isso é classe "duvida", com espera true. Direcionar para o WhatsApp é para curso ou assunto que não é desses dois produtos.
@@ -328,7 +343,7 @@ ${(base.licoes || []).length ? `
 O que os vendedores observaram em outras conversas (é só observação, para ajudar a escolher o jeito de responder: não é regra, não é frase liberada, e nenhum número, link ou promessa daqui pode sair na resposta):
 ${base.licoes.map((i) => `- ${i.tipo === 'vendeu' ? 'Vendeu' : 'Não vendeu'}: ${i.titulo}. ${String(i.texto).slice(0, 220)}`).join('\n')}
 ` : ''}
-Classes: "responder" (a base cobre; direcionar a pessoa para o WhatsApp do time, quando uma regra manda, também é "responder"), "duvida" (nenhuma regra nem item da base diz o que fazer: não está na base, ou é desconto, cupom, reembolso, acesso, pagamento, reclamação, parceria, dinheiro: o Filipe responde), "ignorar" (reação, risada, "ok"), "nao_sei" (não deu para entender).
+Classes: "responder" (a base cobre; direcionar a pessoa para o WhatsApp do time, quando uma regra manda, também é "responder"), "duvida" (nenhuma regra nem item da base diz o que fazer: não está na base, ou é desconto, cupom, reembolso, reclamação, parceria, dinheiro: o Filipe responde; problema de acesso, aula ou pagamento de curso comprado não é dúvida, é chamado de suporte), "ignorar" (reação, risada, "ok"), "nao_sei" (não deu para entender).
 Use a ferramenta decidir_resposta. Não escreva nada fora dela.`;
   const contexto = [
     `Pessoa: ${pessoa.nome ? String(pessoa.nome).slice(0, 80) : 'sem nome'} (fase: ${pessoa.fase || 'nova'}; interesse anotado: ${pessoa.interesse || 'nao_sei'}${pessoa.origem === 'story' ? '; chegou respondendo a um story' : ''}).`,
@@ -366,6 +381,9 @@ Use a ferramenta decidir_resposta. Não escreva nada fora dela.`;
   const bloco = r.stop_reason === 'refusal' ? null : r.content.find((b) => b.type === 'tool_use' && b.name === 'decidir_resposta');
   const d = bloco && bloco.input;
   if (!d || !ESQUEMA.properties.classe.enum.includes(d.classe)) return { ...fim, classe: 'nao_sei', mensagens: [], interesse: 'nao_sei', motivo: 'A IA não devolveu uma decisão.' };
+  // O chamado de suporte que a IA pediu, conferido contra o que a pessoa escreveu (agora e antes). Vai junto em toda
+  // saída daqui para a frente; quem grava é tratar().
+  fim.suporte = lerChamadoDaIa(d.suporte, [...linhas, ...t.antes.filter((m) => m.de === 'pessoa').map((m) => m.texto)].join(' '));
   let saida = (Array.isArray(d.mensagens) ? d.mensagens : []).map((m) => String(m || '').replace(/\s+/g, ' ').trim()).filter(Boolean)
     .map((m) => (m.startsWith('http') && !m.includes(' ') ? m.replace(/[.,!?)]+$/, '') : m)); // link sem ponto no fim
   const interesse = ESQUEMA.properties.interesse.enum.includes(d.interesse) ? d.interesse : 'nao_sei';
@@ -680,6 +698,12 @@ async function tratar(env, t, cfg, contaDe, orcamentoDaVez) {
     d = await decidir(env, { mensagens: agora, pessoa: { nome: f.nome, fase: f.fase, interesse: f.interesse, origem: f.origem }, tempo, modelo: cfg.modelo, recado });
   }
   const gasto = { custo_usd: d.custo_usd || 0, tokens_entrada: d.tokens_entrada || null, tokens_saida: d.tokens_saida || null, modelo: d.modelo || null, colmeia: d.colmeia || [] };
+  // Ela contou um problema com um curso que comprou: o chamado entra na tela Suporte, ou é completado com o que ela
+  // disse a mais. Uma falha aqui nunca segura a resposta dela.
+  if (d.suporte) {
+    await abrirChamado(env, { ...d.suporte, nome: d.suporte.nome || f.nome, followup_id: f.id, perfil: f.perfil, usuario: f.usuario, origem: 'atendente' })
+      .catch((e) => console.error('atendente chamado', e && e.message));
+  }
   const temLink = (l) => l.some((t) => /https?:\/\//i.test(t));
   // Aluno não recebe link de venda: se a resposta montada tem um, vai para o dono.
   if (d.classe === 'responder' && comprador && temLink(d.mensagens)) Object.assign(d, { classe: 'duvida', mensagens: [], espera: false, motivo: `Aluno escreveu: "${agora.join(' / ').slice(0, 200)}". A resposta montada tinha link de venda e foi barrada.` });
@@ -768,7 +792,8 @@ export async function simular(env, { texto, nome, usuario, modelo, ha_min, conta
   }
   const cfg = await configAtendente(env);
   const d = await decidir(env, { mensagens: linhas, pessoa, tempo, origem: 'teste', modelo: MODELOS_ATENDENTE[modelo] ? modelo : cfg.modelo });
-  return { classe: d.classe, mensagens: d.mensagens, interesse: d.interesse, motivo: d.motivo, espera: !!d.espera, modelo: d.modelo, custo_usd: d.custo_usd || 0, tokens: { entrada: d.tokens_entrada || 0, saida: d.tokens_saida || 0 }, itens_da_colmeia: (d.colmeia || []).length, contexto };
+  // suporte: o chamado que ele abriria (ou completaria) na tela Suporte. No teste nada é gravado.
+  return { classe: d.classe, mensagens: d.mensagens, interesse: d.interesse, motivo: d.motivo, espera: !!d.espera, suporte: d.suporte || null, modelo: d.modelo, custo_usd: d.custo_usd || 0, tokens: { entrada: d.tokens_entrada || 0, saida: d.tokens_saida || 0 }, itens_da_colmeia: (d.colmeia || []).length, contexto };
 }
 
 // Dá para mandar pela API? Só com o id da pessoa e dentro das 24 horas da última mensagem dela.

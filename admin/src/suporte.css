@@ -64,3 +64,18 @@
   .pessoa-acoes .bt-whats { flex: 1; justify-content: center; min-height: 40px; }
   .pessoa-email { max-width: none; flex: 1; }
 }
+
+/* --------------------------------------------------------------- chamados do direct (o que o Atendente colheu) */
+.cha-lista { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.cha-item { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: var(--raio-s); background: var(--fundo); box-shadow: 0 0 0 1px var(--borda); }
+.cha-topo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 15px; }
+.cha-topo .mudo { font-size: 12.5px; }
+.cha-quando { margin-left: auto; }
+.cha-problema { margin: 0; font-size: 14.5px; line-height: 1.5; overflow-wrap: anywhere; }
+.cha-dados { display: grid; gap: 6px; margin: 0; padding: 10px 12px; border-radius: var(--raio-s); background: var(--fundo-3); }
+.cha-dados div { display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; gap: 8px; }
+.cha-dados dt { font-size: 11px; font-weight: 650; letter-spacing: 0.05em; text-transform: uppercase; color: var(--mudo); }
+.cha-dados dd { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; font-size: 14px; overflow-wrap: anywhere; min-width: 0; }
+.cha-nota { margin: 0; font-size: 13px; }
+.cha-pe { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; margin-top: auto; padding-top: 4px; font-size: 12px; }
+@media (max-width: 900px) { .cha-lista { grid-template-columns: minmax(0, 1fr); } }

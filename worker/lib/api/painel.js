@@ -282,6 +282,10 @@ const rotas = roteador([
   ['POST', '/colmeia', async (x) => A.salvarNaColmeia(x, await corpoJson(x.request))],
   ['POST', '/colmeia/:id', async (x) => A.salvarNaColmeia(x, await corpoJson(x.request), x.params.id)],
   // O Treino da Colmeia: a conversa de ensaio entre duas pessoas do time (uma como cliente, outra como atendente).
+  // Chamados de suporte: o que o Atendente colheu no direct, para o time resolver (tela Suporte).
+  ['GET', '/chamados', (x) => A.verChamados(x, Object.fromEntries(x.url.searchParams))],
+  ['POST', '/chamados', async (x) => A.abrirUmChamado(x, await corpoJson(x.request))],
+  ['POST', '/chamados/:id', async (x) => A.mudarUmChamado(x, x.params.id, await corpoJson(x.request))],
   ['GET', '/treino', (x) => A.verTreino(x, Object.fromEntries(x.url.searchParams))],
   ['POST', '/treino/mensagem', async (x) => A.falarNoTreinoDaColmeia(x, await corpoJson(x.request))],
   ['POST', '/treino/responder', async (x) => A.pedirRespostaNoTreino(x, await corpoJson(x.request))],

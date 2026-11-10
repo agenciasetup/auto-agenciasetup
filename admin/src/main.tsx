@@ -133,7 +133,7 @@ function itensDoMenu(pode: (a: string) => boolean, p: any, esperando: any): Item
     ...(pode('recuperar.ver') ? [{ id: 'recuperar', para: '/recuperar', t: 'Recuperar vendas', i: <MessageCircle />, secao: 'Vendas' }] : []),
     ...(pode('colmeia.ver') ? [{ id: 'colmeia', para: '/colmeia', t: 'Colmeia', i: <Hexagon />, secao: 'Vendas', n: espera.colmeia }] : []),
     ...(pode('numeros.ver') ? [{ id: 'numeros', para: '/numeros', t: 'Números do curso', i: <TrendingUp />, secao: 'Vendas' }] : []),
-    ...(pode('suporte.ver') ? [{ id: 'suporte', para: '/suporte', t: 'Suporte', i: <Headset />, secao: 'Alunos' }] : []),
+    ...(pode('suporte.ver') ? [{ id: 'suporte', para: '/suporte', t: 'Suporte', i: <Headset />, secao: 'Alunos', n: espera.chamados }] : []),
     ...(pode('alunos.ver') ? [{ id: 'alunos', para: '/alunos', t: 'Alunos', i: <UsersRound />, secao: 'Alunos' }] : []),
     ...(pode('cursos.ver') ? [{ id: 'area', para: '/area', t: 'Área de membros', i: <MonitorPlay />, secao: 'Alunos' }] : []),
     ...(pode('comunidade.ver') ? [{ id: 'comunidade', para: '/comunidade', t: 'Comunidade', i: <MessagesSquare />, secao: 'Alunos', n: (p?.comunidade || 0) || undefined }] : []),

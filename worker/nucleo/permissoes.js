@@ -21,6 +21,7 @@ export const REGRAS = {
   'alunos.ver': AES,
   'alunos.editar': AES,
   'suporte.ver': AES,
+  'suporte.atender': AES,
   'vendas.ver': AE,
   'vendas.reembolsar': A,
   'ofertas.editar': AE,

@@ -6,6 +6,7 @@ import { db } from '../nucleo/db.js';
 import { pode } from '../nucleo/permissoes.js';
 import { entregasPendentes } from './acoes-entregas.js';
 import { filaDoExecutor, lerAndamentos } from './escritorio.js';
+import { contarChamadosAbertos } from './chamados.js';
 
 const contar = async (env, tabela, filtros) => {
   const r = await db.select(env, tabela, { filtros, select: 'id', limite: 1, contar: true });
@@ -48,14 +49,16 @@ export function esquecerEsperando() { guardado = { em: 0, valor: null }; }
 async function numeros(x) {
   if (guardado.valor && Date.now() - guardado.em < VALIDADE) return guardado.valor;
   const seguro = (fn) => fn().catch((e) => { console.error('esperando', e && e.message); return null; });
-  const [mesa, duvidas, colmeia, entregas] = await Promise.all([
+  const [mesa, duvidas, colmeia, entregas, chamados] = await Promise.all([
     seguro(() => mesaDoEscritorio(x.env)),
     seguro(() => contar(x.env, 'followups', { fase: 'eq.duvida' })),
     seguro(() => contar(x.env, 'colmeia', { status: 'eq.proposta' })),
     // Quem pagou o Combo e ainda não foi adicionado na Hubla (a mesma lista da tela e do conector).
     seguro(async () => Number((await entregasPendentes({ ...x, u: { ...x.u, papel: 'administrador' } }, { limite: 1 })).total_pendentes) || 0),
+    // Quem contou no direct um problema com um curso que comprou e espera o time de suporte (chamados.js).
+    seguro(() => contarChamadosAbertos(x.env)),
   ]);
-  guardado = { em: Date.now(), valor: { mesa: mesa ? mesa.novas : null, aprovadas: mesa ? mesa.aprovadas : null, duvidas, colmeia, entregas } };
+  guardado = { em: Date.now(), valor: { mesa: mesa ? mesa.novas : null, aprovadas: mesa ? mesa.aprovadas : null, duvidas, colmeia, entregas, chamados } };
   return guardado.valor;
 }
 
@@ -70,6 +73,7 @@ export async function verEsperando(x) {
     { id: 'duvidas', n: ve('followup.ver') ? n.duvidas : null, titulo: 'Dúvidas do direct', um: 'pessoa esperando a sua resposta', varios: 'pessoas esperando a sua resposta', url: '/followup?fase=duvida' },
     { id: 'colmeia', n: ve('colmeia.ver') ? n.colmeia : null, titulo: 'Colmeia', um: 'item esperando o seu sim', varios: 'itens esperando o seu sim', url: '/colmeia' },
     { id: 'entregas', n: ve('alunos.ver') ? n.entregas : null, titulo: 'Entregas do Combo', um: 'compra para liberar na Hubla', varios: 'compras para liberar na Hubla', url: null },
+    { id: 'chamados', n: ve('suporte.ver') ? n.chamados : null, titulo: 'Chamados de suporte', um: 'pessoa do direct esperando o time', varios: 'pessoas do direct esperando o time', url: '/suporte' },
   ];
   return { itens, total: itens.reduce((s, i) => s + (Number(i.n) || 0), 0) };
 }

@@ -8,6 +8,7 @@ import { get } from '../nucleo/api';
 import { Abas, BotaoCopiar, Carregando, ErroCarga, Etiqueta, Grupo, Modal, Segredo, Titulo, Vazio, useCarregar } from '../nucleo/ui';
 import { data, dinheiro, haQuanto, iniciais, numero } from '../nucleo/util';
 import { DetalheAluno } from './Alunos';
+import Chamados from './SuporteChamados';
 import '../suporte.css';
 
 const PERIODOS = [{ d: 7, t: '7 dias' }, { d: 30, t: '30 dias' }, { d: 90, t: '90 dias' }, { d: 0, t: 'Tudo' }];
@@ -65,7 +66,8 @@ export default function Suporte() {
 
   return (
     <div className="tela">
-      <Titulo titulo="Suporte" sub="Quem comprou, até onde chegou no curso e quem precisa de ajuda agora. Fale com a pessoa antes de virar problema." />
+      <Titulo titulo="Suporte" sub="Quem pediu ajuda no direct, quem comprou, até onde chegou no curso e quem precisa de ajuda agora. Fale com a pessoa antes de virar problema." />
+      <Chamados />
       <div className="filtros">
         <div className="chips" role="group" aria-label="Período da compra">
           {PERIODOS.map((p) => <button key={p.d} className={`chip ${dias === p.d ? 'ativo' : ''}`} onClick={() => setDias(p.d)}>{p.t}</button>)}

@@ -25,6 +25,13 @@ export const STATUS_COLMEIA = { ativa: 'Valendo', proposta: 'Esperando você', a
 export const MODOS = { frase: 'Frase pronta', explicacao: 'Explicação' };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const limpo = (v, max) => String(v ?? '').replace(/[—–]/g, ',').replace(/\s+/g, ' ').trim().slice(0, max);
+// Os números de um texto, num formato só ("39,90", "39.90" e "39,9" viram "39,9"; "597,00" vira "597"), e os links,
+// sites e @, sem "https://", sem "www." e sem a pontuação do fim. Servem para saber se um texto novo traz número ou
+// link que o texto de antes não tinha (a mesma conferência do Conciliador e do Treino).
+export const numerosDoTexto = (t) => [...String(t || '').matchAll(/\d+(?:[.,]\d+)*/g)].map((n) => n[0].replace(/\./g, ',').replace(/,(\d{1,2})$/, (_, c) => { const d = c.replace(/0+$/, ''); return d ? `,${d}` : ''; }));
+const TERMINACOES = 'com|br|net|org|io|app|me|ly|link|site|dev|co|ai|page|bio|to|gg|tv|store|shop|online';
+const LINK = new RegExp(`(?:https?:\\/\\/|www\\.)[^\\s"'<>]+|\\b[a-z0-9][a-z0-9-]*(?:\\.[a-z0-9-]+)*\\.(?:${TERMINACOES})\\b(?:\\/[^\\s"'<>]*)?|@[a-z0-9_][a-z0-9_.]+`, 'gi');
+export const linksDoTexto = (t) => (String(t || '').match(LINK) || []).map((l) => l.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/[.,!?)"':;\]]+$/, '').replace(/\/+$/, '')).filter(Boolean);
 // A frase pronta guarda as quebras de linha: cada linha é uma mensagem.
 export const limpoEmLinhas = (v, max) => String(v ?? '').replace(/[—–]/g, ',').split(/\r?\n/).map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n').slice(0, max);
 
@@ -97,6 +104,21 @@ export async function salvarColmeia(env, d = {}, { id, quemNome = '', agente = f
   const observacao = m.tipo === 'vendeu' || m.tipo === 'nao_vendeu';
   if (agente && observacao && !m.prova) throw new Erro(400, 'Lição de vendedor precisa da prova: o que aconteceu, com número ou com a conversa.');
   const linha = { produto: 'geral', ...m, origem: agente ? 'agente' : 'dono', autor: limpo(quemNome, 80) || null, status: agente && !observacao ? 'proposta' : 'ativa' };
+  // Proposta de agente que reescreve ou divide itens que já valem (d.substitui: os ids deles). Aprovada, os antigos
+  // são arquivados e ela fica no lugar. Se todos os antigos são do dono e o texto novo não traz número nem link que
+  // eles não tinham, a proposta continua sendo palavra do dono (o Atendente só repete número e link de item do dono).
+  if (agente && !observacao && Array.isArray(d.substitui) && d.substitui.length) {
+    const ids = [...new Set(d.substitui.map((x) => String(x || '')))];
+    if (ids.length > 5 || ids.some((x) => !UUID.test(x))) throw new Erro(400, 'substitui aceita de 1 a 5 ids de itens da Colmeia.');
+    const antigos = await db.select(env, 'colmeia', { filtros: { id: `in.(${ids.join(',')})`, status: 'eq.ativa' }, select: 'id,titulo,texto,origem' });
+    if (antigos.length !== ids.length) throw new Erro(400, 'Algum item de substitui não existe ou não está valendo.');
+    const antes = antigos.map((a) => `${a.titulo} ${a.texto}`).join(' ');
+    const novo = `${linha.titulo} ${linha.texto}`;
+    // Um algarismo sozinho ("1 ano") não conta como número novo: a conferência do Atendente também deixa passar.
+    const novidade = numerosDoTexto(novo).some((n) => !/^\d$/.test(n) && !numerosDoTexto(antes).includes(n)) || linksDoTexto(novo).some((l) => !linksDoTexto(antes).includes(l));
+    linha.substitui = antigos.map((a) => ({ id: a.id, titulo: limpo(a.titulo, 200) }));
+    if (!novidade && antigos.every((a) => a.origem === 'dono' || a.origem === 'semente')) linha.origem = 'dono';
+  }
   const [i] = await gravar((o) => db.insert(env, 'colmeia', [o]), linha);
   esquecerColmeia();
   return { ok: true, criado: true, ...i };
