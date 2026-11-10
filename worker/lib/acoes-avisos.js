@@ -3,10 +3,11 @@
 // O envio de verdade e o texto de cada aviso ficam em push.js.
 import { auditar, exigir } from '../nucleo/auth.js';
 import { Erro } from '../nucleo/util.js';
-import { MAX_APARELHOS, TIPOS_AVISO, TIPOS_PADRAO, chavesPush, gravarAparelhos, lerAparelhos, mandarPara } from './push.js';
+import { MAX_APARELHOS, TIPOS_AVISO, TIPOS_PADRAO, TODOS_OS_TIPOS, chavesPush, gravarAparelhos, lerAparelhos, mandarPara, tiposDoAparelho } from './push.js';
 import { deB64u, endpointAceito } from './webpush.js';
 
-const doAparelho = (i) => ({ id: i.id, aparelho: i.aparelho, eventos: i.eventos || [], criado_em: i.criado_em, ultimo_ok: i.ultimo_ok || null, ultimo_erro: i.ultimo_erro || null });
+// eventos: o que o aparelho recebe de verdade, com os tipos novos que ele ainda não conhecia (push.js, querTipo).
+const doAparelho = (i) => ({ id: i.id, aparelho: i.aparelho, eventos: tiposDoAparelho(i), criado_em: i.criado_em, ultimo_ok: i.ultimo_ok || null, ultimo_erro: i.ultimo_erro || null });
 const tiposValidos = (l) => (Array.isArray(l) ? [...new Set(l.map(String))].filter((t) => TIPOS_AVISO[t]) : null);
 
 function quem(x) {
@@ -38,14 +39,14 @@ export async function ligarAvisos(x, d = {}) {
   const aparelho = String(d.aparelho || 'Aparelho').replace(/\s+/g, ' ').trim().slice(0, 60);
   const lista = await lerAparelhos(x.env);
   const ja = lista.find((i) => i.endpoint === endpoint);
-  const eventos = tiposValidos(d.eventos) || (ja && ja.equipe_id === eu ? ja.eventos : null) || TIPOS_PADRAO;
+  const eventos = tiposValidos(d.eventos) || (ja && ja.equipe_id === eu ? tiposDoAparelho(ja) : null) || TIPOS_PADRAO;
   let item;
   if (ja) {
-    Object.assign(ja, { equipe_id: eu, p256dh, auth, aparelho, eventos, ultimo_erro: null });
+    Object.assign(ja, { equipe_id: eu, p256dh, auth, aparelho, eventos, conhece: TODOS_OS_TIPOS, ultimo_erro: null });
     item = ja;
   } else {
     if (lista.filter((i) => i.equipe_id === eu).length >= MAX_APARELHOS) throw new Erro(400, `Você já tem ${MAX_APARELHOS} aparelhos com avisos. Desligue um antes.`);
-    item = { id: crypto.randomUUID(), equipe_id: eu, endpoint, p256dh, auth, aparelho, eventos, criado_em: new Date().toISOString() };
+    item = { id: crypto.randomUUID(), equipe_id: eu, endpoint, p256dh, auth, aparelho, eventos, conhece: TODOS_OS_TIPOS, criado_em: new Date().toISOString() };
     lista.push(item);
   }
   await gravarAparelhos(x.env, lista);
@@ -61,6 +62,7 @@ export async function mudarAvisos(x, id, d = {}) {
   const eventos = tiposValidos(d.eventos);
   if (!eventos) throw new Erro(400, 'Mande a lista dos avisos que este aparelho recebe.');
   item.eventos = eventos;
+  item.conhece = TODOS_OS_TIPOS; // a pessoa escolheu vendo todos os tipos de hoje: o que ficou de fora é desligado de propósito
   await gravarAparelhos(x.env, lista);
   await auditar(x.env, x.u, 'avisos.mudar', `aparelho:${item.id}`, { eventos });
   return doAparelho(item);

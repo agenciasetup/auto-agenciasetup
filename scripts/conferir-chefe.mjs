@@ -3,12 +3,14 @@
 //    qualquer endereço que não seja o banco), e mostra o tamanho de cada parte, a instrução que iria para a IA e
 //    quantas chamadas ao banco a leitura fez;
 // 2. passa respostas de mentira pela conferência do que pode sair (travessão, link, mais de 3 decisões, tela que não
-//    existe, valor em dinheiro inventado) e monta o aviso do celular, sem mandar.
+//    existe, valor em dinheiro inventado) e monta o aviso do celular, sem mandar;
+// 3. confere a cobrança do que está parado (cartão aprovado há mais de 2 dias sem resultado e cartão em "Depois" há
+//    mais de 7 dias), com cartões de mentira, e se o aviso continua cabendo no limite do celular.
 // A IA não é chamada: no computador não existe a chave do Claude.
 // Uso: node scripts/conferir-chefe.mjs [--dados] [--quando 2026-11-10T11:00:00Z]
 //   --dados mostra também os dados e a mensagem inteira. Têm texto de clientes: é para olhar aqui, não para colar fora.
 import { env as local } from './env.mjs';
-import { conferirResumo, rodarChefeDeGabinete, textoDoAviso } from '../worker/lib/agentes/chefe-de-gabinete.js';
+import { cobrancaDe, conferirResumo, rodarChefeDeGabinete, textoDaCobranca, textoDoAviso } from '../worker/lib/agentes/chefe-de-gabinete.js';
 
 const args = process.argv.slice(2);
 const verDados = args.includes('--dados');
@@ -56,15 +58,19 @@ console.log(`\nInstrução: ${r.instrucao.length} caracteres. Mensagem com os da
 console.log(`Entrada estimada: uns ${tokens(r.instrucao.length + r.mensagem.length)} tokens (conta de cabeça: 3,5 letras por token).`);
 const d = r.dados;
 console.log('\nContagens (sem texto de ninguém):');
-console.log(`  propostas na mesa: ${d.mesa.na_mesa} (${d.mesa.propostas.length} na lista) · aprovadas sem fazer: ${d.mesa.aprovadas_sem_fazer} (${d.mesa.aprovadas.length} na lista)`);
+console.log(`  propostas na mesa: ${d.mesa.na_mesa} (${d.mesa.propostas.length} na lista)`);
+console.log(`  cobrança (só código, fora da IA): ${r.cobranca.aprovadas_paradas.length} aprovadas há mais de 2 dias sem resultado · ${r.cobranca.depois_antigas.length} em "Depois" há mais de 7 dias`);
+for (const l of r.cobranca_no_aviso) console.log(`    no aviso: ${l}`);
+console.log(`  o Chefe está liberado no Escritório (ativo): ${r.agente_liberado ? 'sim' : 'não, a rodada de verdade sairia quieta'}`);
 console.log(`  dúvidas do direct: ${d.duvidas_do_direct.total} · Colmeia esperando: ${d.colmeia_esperando_aprovacao.total} · vendedores no placar: ${d.vendedores.length}`);
 console.log(`  vendas ontem (${d.vendas.ontem.dia}): ${d.vendas.ontem.vendas} · no mês até ontem: ${d.vendas.mes_ate_ontem.vendas} em ${d.vendas.mes_ate_ontem.dias} dias`);
 console.log(`  atendente ontem: ${d.atendente_ontem.mensagens} mensagens, ${d.atendente_ontem.respondidas} respondidas, ${d.atendente_ontem.duvidas_para_o_dono} dúvidas`);
 console.log(`  agentes com turno desde ontem: ${d.agentes.turnos_desde_ontem.length} · turnos com erro: ${d.agentes.erros.length}`);
 console.log(`  tem o que dizer (chamaria a IA): ${r.tem_materia ? 'sim' : 'não'} · orçamento lido: ${r.orcamento ? `sobra US$ ${r.orcamento.sobra_usd} de US$ ${r.orcamento.teto_dia_usd}` : 'não'}`);
 
-confere('a leitura coube em 11 chamadas', chamadas.length <= 11, `${chamadas.length}`);
+confere('a leitura coube em 12 chamadas (11 dos dados e a lista de agentes)', chamadas.length <= 12, `${chamadas.length}`);
 confere('os dados têm todas as partes', ['vendas', 'mesa', 'duvidas_do_direct', 'colmeia_esperando_aprovacao', 'vendedores', 'atendente_ontem', 'agentes', 'gasto_de_ia'].every((k) => d[k] !== undefined));
+confere('o que o dono já aprovou não vai para a IA como decisão', d.mesa.aprovadas === undefined && d.mesa.aprovadas_sem_fazer === undefined && !/aprovada que ninguém fez/.test(r.instrucao) && /não é decisão de hoje/.test(r.instrucao));
 confere('texto de fora não fecha a marcação', !json.includes('<') && !json.includes('>'));
 confere('a mensagem põe os dados entre marcações', /<dados>\n[\s\S]+\n<\/dados>$/.test(r.mensagem));
 confere('a instrução não tem travessão', !/[—–]/.test(r.instrucao));
@@ -112,6 +118,44 @@ const avisoVazio = textoDoAviso(nada.problema ? { resumo: '', decisoes: [] } : n
 confere('aviso com decisões', aviso.titulo === 'Resumo das 8h: 3 decisões para hoje' && aviso.corpo.split('\n').length === 4, aviso.titulo);
 confere('aviso sem decisões', avisoVazio.titulo === 'Resumo das 8h: nada para decidir hoje', avisoVazio.titulo);
 confere('o aviso cabe no limite do push (3000)', JSON.stringify({ ...aviso, url: '/admin/escritorio', tipo: 'escritorio', em: Date.now(), tag: 'resumo-2026-11-10' }).length < 3000);
+
+// ---------------------------------------------------------------- 3. a cobrança do que está parado (cartões de mentira)
+console.log('\nA cobrança do que está parado (com cartões de mentira):');
+const DIA = 86_400_000;
+const agora = Date.parse('2026-11-20T11:02:00Z');
+const ha = (dias) => new Date(agora - dias * DIA).toISOString();
+const agentes = [{ id: 'olheiro-visual', nome: 'Olheiro visual', apelido: 'Sara L.' }, { id: 'zelador', nome: 'Zelador', apelido: null }];
+const cartoes = [
+  { agente_id: 'olheiro-visual', sala: 'design', titulo: 'Capas fora da curva: bicho perto da lente — cor cheia', status: 'aprovada', criado_em: ha(9), decidida_em: ha(5.5) },
+  { agente_id: 'zelador', sala: 'sistema', titulo: 'A rodada do direct está falhando: veja https://exemplo.com/x <b>agora</b>', status: 'aprovada', criado_em: ha(4), decidida_em: ha(3.2) },
+  { agente_id: null, sala: 'video', titulo: 'Aprovada ontem', status: 'aprovada', criado_em: ha(3), decidida_em: ha(1.1) },
+  { agente_id: 'roteirista', sala: 'video', titulo: 'Roteiro (tela): fica para depois da Black Friday', status: 'depois', criado_em: ha(12), decidida_em: ha(9) },
+  { agente_id: 'zelador', sala: 'sistema', titulo: 'Depois recente', status: 'depois', criado_em: ha(6), decidida_em: ha(6) },
+  { agente_id: 'zelador', sala: 'sistema', titulo: 'Na mesa há 30 dias', status: 'nova', criado_em: ha(30), decidida_em: null },
+  { agente_id: 'zelador', sala: 'sistema', titulo: 'Feita', status: 'feita', criado_em: ha(30), decidida_em: ha(20) },
+];
+const c = cobrancaDe(cartoes, agentes, agora);
+confere('aprovada há mais de 2 dias sem resultado entra, da mais antiga para a mais nova', c.aprovadas_paradas.length === 2 && c.aprovadas_paradas[0].dias === 5 && c.aprovadas_paradas[1].dias === 3, JSON.stringify(c.aprovadas_paradas));
+confere('aprovada ontem, cartão na mesa e cartão feito ficam de fora', !JSON.stringify(c).includes('Aprovada ontem') && !JSON.stringify(c).includes('Na mesa há') && !JSON.stringify(c).includes('Feita'));
+confere('"Depois" só entra com mais de 7 dias', c.depois_antigas.length === 1 && c.depois_antigas[0].dias === 9, JSON.stringify(c.depois_antigas));
+confere('diz de quem é o cartão pelo nome da tela (ou pelo id, sem cadastro)', c.aprovadas_paradas[0].de === 'Sara L.' && c.aprovadas_paradas[1].de === 'Zelador' && c.depois_antigas[0].de === 'roteirista');
+confere('título de cartão sai sem travessão, sem link e sem marcação', !/[—–<>]|https?:/.test(JSON.stringify(c)), JSON.stringify(c.aprovadas_paradas.map((p) => p.titulo)));
+const linhas = textoDaCobranca(c);
+confere('a cobrança diz o título, de quem é e há quantos dias', linhas.length === 2 && linhas[0].includes('(Sara L., 5 dias)') && linhas[0].includes('(Zelador, 3 dias)'), linhas[0]);
+confere('aprovado: avisa que ninguém começa sozinho', /^Aprovado e parado: /.test(linhas[0]) && /Ninguém começa sozinho: peça ao Claude para fazer\.$/.test(linhas[0]));
+confere('"Depois": pergunta se ainda vale', /^Em "Depois" há mais de 7 dias: /.test(linhas[1]) && /\(roteirista, 9 dias\)\. Ainda vale\?$/.test(linhas[1]), linhas[1]);
+const curtas = textoDaCobranca(c, { curto: true });
+confere('no celular vai só o mais antigo de cada tipo e quantos mais', curtas[0].includes('5 dias) e mais 1.') && !curtas[0].includes('Zelador'), curtas[0]);
+confere('sem nada parado, a cobrança não escreve nada', textoDaCobranca(cobrancaDe([], agentes, agora)).length === 0 && textoDaCobranca(null).length === 0);
+const comCobranca = textoDoAviso({ ...boa, cobranca: c });
+confere('o aviso leva as decisões e, embaixo, a cobrança', comCobranca.titulo === 'Resumo das 8h: 3 decisões para hoje' && comCobranca.corpo.split('\n').length === 6 && comCobranca.corpo.endsWith('Ainda vale?'), comCobranca.corpo);
+const soCobranca = textoDoAviso({ ...nada, cobranca: c });
+confere('sem decisão nova mas com cartão parado, o título diz isso', soCobranca.titulo === 'Resumo das 8h: nada novo para decidir, tem cartão parado' && soCobranca.corpo.includes('Aprovado e parado'), soCobranca.titulo);
+// O pior caso de tamanho: resumo no limite, 3 decisões no limite e muitos cartões parados com título comprido.
+const cheio = cobrancaDe(Array.from({ length: 30 }, (_, i) => ({ agente_id: 'olheiro-visual', sala: 'design', titulo: `Cartão ${i} ${'com um título bem comprido '.repeat(8)}`, status: i % 2 ? 'aprovada' : 'depois', criado_em: ha(200), decidida_em: ha(120 + i) })), [{ id: 'olheiro-visual', nome: 'Olheiro visual', apelido: 'Um apelido bem comprido para o agente da sala' }], agora);
+const grande = textoDoAviso({ resumo: `${'Ontem entraram vendas acima da média do mês. '.repeat(13)}`.trim(), decisoes: [1, 2, 3].map((i) => ({ titulo: `${i} ${'decisão comprida '.repeat(6)}`.slice(0, 90), por_que: 'x', onde: '/admin/escritorio' })), cobranca: cheio });
+confere('o aviso continua em até 900 letras, com as decisões e a cobrança inteiras', grande.corpo.length <= 900 && grande.corpo.includes('3. 3 decisão') && grande.corpo.endsWith('Ainda vale?') && grande.corpo.includes('Ninguém começa sozinho'), `${grande.corpo.length} letras`);
+confere('quem encolhe é o resumo, e ele continua lá', grande.corpo.split('\n')[0].length >= 160 && grande.corpo.split('\n').length === 6, `${grande.corpo.split('\n')[0].length} letras de resumo`);
 
 console.log(falhas ? `\n${falhas} conferência(s) falharam.` : '\nTudo certo.');
 process.exit(falhas ? 1 : 0);

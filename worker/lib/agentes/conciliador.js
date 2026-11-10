@@ -24,7 +24,7 @@ import { db } from '../../nucleo/db.js';
 import { Erro } from '../../nucleo/util.js';
 import { TIPOS, gravarJuncoes, idsDaJuncao, lerParaConciliar, lerProva, marcaDaColmeia, provaComPergunta } from '../colmeia.js';
 import { anotarConsumo } from '../consumo.js';
-import { orcamento, registrarTurno } from '../escritorio.js';
+import { agenteLiberado, orcamento, registrarTurno } from '../escritorio.js';
 import { prepararIntegracoes } from '../integracoes.js';
 import { avisarEquipe } from '../push.js';
 import { custo } from '../tutor.js';
@@ -129,7 +129,11 @@ const soNovos = (novos, antes) => { const tem = new Set(antes); return [...new S
 // ---------------------------------------------------------------- quando trabalhar
 // A memória do Worker: a última marca da Colmeia que já está conferida. Com ela, o minuto parado custa uma leitura.
 let lembrado = null;
-export function esquecerConciliador() { lembrado = null; }
+// Agente pausado ou demitido no Escritório: para a mesma marca, ele só olha o próprio estado de novo depois de 5
+// minutos. Sem isto, a Colmeia mudada com o agente em pausa custaria 3 leituras por minuto, para sempre.
+let parado = null; // { marca, ate }
+const PARADO_POR = 5 * 60_000;
+export function esquecerConciliador() { lembrado = null; parado = null; }
 
 // estado: o que está em config (conciliador_estado). marca: a hora da última mudança no que vale na Colmeia.
 // Devolve { rodar } e, quando não é para rodar, o motivo. lembrar: essa marca não precisa mais ler o estado.
@@ -413,10 +417,15 @@ export async function rodarConciliador(env, quando = Date.now(), { forcar = fals
   const marca = await marcaDaColmeia(env);
   if (!marca) return null;
   if (!forcar && lembrado === marca) return null;
+  if (!forcar && parado && parado.marca === marca && quando < parado.ate) return null;
   const linha = await db.um(env, 'config', { chave: `eq.${CHAVE}` });
   const estado = (linha && linha.valor) || {};
   const s = situacao(estado, marca, quando);
   if (!forcar && !s.rodar) { if (s.lembrar) lembrado = marca; return null; }
+  // Só agora, quando ia trabalhar de verdade, confere se o agente está liberado no Escritório (pausar e demitir valem
+  // também com forcar). Em pausa sai quieto: não marca estado, não gasta, não grava turno.
+  if (!(await agenteLiberado(env, AGENTE))) { parado = { marca, ate: quando + PARADO_POR }; return { pulou: 'agente_parado' }; }
+  parado = null;
 
   const inicio = new Date().toISOString();
   const tentativas = s.tentativas || 0;

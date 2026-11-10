@@ -4,11 +4,13 @@
 // vendas, e testa como o Atendente responderia. Lógica em worker/lib/colmeia.js (migration 39).
 // Item que o Conciliador escreveu para juntar itens que se contradiziam (migration 40) mostra quem ele juntou e tem o
 // botão de desfazer: o item novo sai e os de antes voltam a valer.
+// O que foi arquivado ou descartado não some: fica no bloco "Arquivados", no fim da tela, fechado até a pessoa abrir,
+// e cada item tem o botão de voltar a valer.
 import { useEffect, useState } from 'react';
 import { Archive, Check, FlaskConical, Pencil, Plus, Search, Send, Undo2, X } from 'lucide-react';
 import { get, post } from '../nucleo/api';
 import { Carregando, ErroCarga, Etiqueta, Grupo, Titulo, Vazio, avisar, useCarregar, useSessao } from '../nucleo/ui';
-import { numero } from '../nucleo/util';
+import { haQuanto, numero } from '../nucleo/util';
 
 const COR: Record<string, string> = { resposta: 'verde', regra: 'ambar', objecao: 'laranja', produto: 'azul', vendeu: 'verde', nao_vendeu: 'vermelho' };
 // O que o dono ensina à mão. O que vendeu e o que não vendeu vêm dos vendedores, com a prova.
@@ -43,6 +45,12 @@ export default function Colmeia() {
   const d: any = dados;
   const [f, setF] = useState<any>(VAZIO);
   const [salvando, setSalvando] = useState(false);
+  // Arquivados: o que foi arquivado ou descartado. A lista só é pedida quando a pessoa abre o bloco.
+  const [verArquivados, setVerArquivados] = useState(false);
+  const arquivo = useCarregar<any>(() => (verArquivados ? get('/colmeia?status=arquivada') : Promise.resolve(null)), [verArquivados]);
+  const [voltando, setVoltando] = useState('');
+  // Toda mudança de status mexe nas duas listas (a que vale e a arquivada): as duas são lidas de novo.
+  const recarregarTudo = () => { recarregar(); if (verArquivados) arquivo.recarregar(); };
 
   const guardar = async () => {
     setSalvando(true);
@@ -54,8 +62,26 @@ export default function Colmeia() {
     setSalvando(false);
   };
   const mudarStatus = async (id: string, status: string, ok: string, extra: Record<string, unknown> = {}) => {
-    try { await post(`/colmeia/${id}`, { status, ...extra }); avisar(ok); recarregar(); }
+    try { await post(`/colmeia/${id}`, { status, ...extra }); avisar(ok); recarregarTudo(); }
     catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
+  };
+  // Junções que estão valendo. O item arquivado que uma delas substitui, se voltar sozinho, vale junto com a junção.
+  const juncoesValendo: any[] = (d?.itens || []).filter((i: any) => i.status === 'ativa' && Array.isArray(i.substitui) && i.substitui.length > 0);
+  const juntadoEm = (id: string) => juncoesValendo.find((j: any) => j.substitui.some((s: any) => s && s.id === id)) || null;
+  // "Voltar a valer" num item arquivado. Quando o item é uma junção, o servidor arquiva os itens que ela juntava.
+  const voltarAValer = async (i: any) => {
+    const ehJuncao = Array.isArray(i.substitui) && i.substitui.length > 0;
+    const junta = juntadoEm(i.id);
+    setVoltando(i.id);
+    try {
+      const r: any = await post(`/colmeia/${i.id}`, { status: 'ativa' });
+      // "Está valendo", e não "voltou": proposta descartada também mora nos arquivados, e essa nunca tinha valido.
+      avisar(ehJuncao
+        ? (r?.arquivados > 0 ? 'Está valendo. Os itens que ele juntava foram arquivados e fica só este no lugar.' : 'Está valendo. Os itens que ele juntava continuam arquivados.')
+        : junta ? `Está valendo. A junção “${junta.titulo}” continua valendo também.` : 'Está valendo. Os vendedores já usam.');
+      recarregarTudo();
+    } catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
+    setVoltando('');
   };
   const editar = (i: any) => { setF({ id: i.id, tipo: i.tipo, produto: i.produto, titulo: i.titulo, texto: i.texto }); document.getElementById('col-ensinar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   // A resposta do dono a uma pergunta do Conciliador: ele reescreve o item e o cartão volta com o texto novo.
@@ -71,6 +97,7 @@ export default function Colmeia() {
   const termo = busca.trim().toLowerCase();
   const itens = (d?.itens || []).filter((i: any) => (!tipo || i.tipo === tipo) && (!termo || `${i.titulo} ${i.texto}`.toLowerCase().includes(termo)));
   const propostas = (d?.itens || []).filter((i: any) => i.status === 'proposta');
+  const arquivados: any[] = Array.isArray(arquivo.dados?.itens) ? arquivo.dados.itens : [];
 
   return (
     <div className="tela">
@@ -139,7 +166,60 @@ export default function Colmeia() {
           ) : <Vazio titulo="Nada aqui ainda" texto={tipo === 'vendeu' || tipo === 'nao_vendeu' ? 'Os vendedores anotam aqui o que funcionou e o que não funcionou nas conversas, com a prova.' : 'Use o bloco Ensinar para guardar o primeiro item.'} />}
         </Grupo>
       )}
+
+      {d && (
+        <Grupo
+          titulo={verArquivados && arquivo.dados ? `Arquivados (${numero(arquivados.length)})` : 'Arquivados'}
+          acoes={<button type="button" className="bt bt-mini" aria-expanded={verArquivados} onClick={() => setVerArquivados(!verArquivados)}><Archive />{verArquivados ? 'Esconder arquivados' : 'Ver arquivados'}</button>}
+        >
+          {!verArquivados ? (
+            <p className="mudo col-nota">O que você arquivou ou descartou fica guardado aqui. Os vendedores não usam, e dá para fazer voltar a valer.</p>
+          ) : arquivo.erro ? (
+            <ErroCarga erro={arquivo.erro} tentar={arquivo.recarregar} />
+          ) : !arquivo.dados ? (
+            <Carregando />
+          ) : arquivados.length ? (
+            <div className="col-lista">
+              {arquivados.map((i: any) => <Arquivado key={i.id} i={i} nomes={d.nomes} podeEditar={podeEditar} junta={juntadoEm(i.id)} voltando={voltando === i.id} voltar={voltarAValer} />)}
+            </div>
+          ) : <Vazio icone={<Archive />} titulo="Nada arquivado" texto="Quando você arquivar um item ou descartar uma proposta, ele vem para cá." />}
+        </Grupo>
+      )}
     </div>
+  );
+}
+
+// Um item arquivado ou descartado: só leitura, com um botão para voltar a valer. junta: a junção que está valendo no
+// lugar dele, quando existe.
+function Arquivado({ i, nomes, podeEditar, junta, voltando, voltar }: { i: any; nomes: any; podeEditar: boolean; junta: any; voltando: boolean; voltar: (i: any) => void }) {
+  const juntou: any[] = Array.isArray(i.substitui) ? i.substitui : [];
+  const quem = i.origem === 'dono' ? 'Escrito por você' : i.origem === 'agente' ? `Escrito por ${i.autor || 'um agente'}` : 'Já estava no roteiro';
+  return (
+    <article className="col-item">
+      <div className="col-item-topo">
+        <Etiqueta cor={COR[i.tipo] || 'cinza'}>{nomes.tipos[i.tipo] || i.tipo}</Etiqueta>
+        {i.produto !== 'geral' && <span className="mudo">{nomes.produtos[i.produto]}</span>}
+      </div>
+      <h3>{i.titulo}</h3>
+      <p>{i.texto}</p>
+      {juntou.length > 0 && (
+        <p className="mudo col-prova">
+          <b>Juntava estes itens:</b>{' '}
+          {juntou.map((s: any, k: number) => <span key={s.id || k}>{k > 0 ? ' · ' : ''}“{s.titulo}”</span>)}.{' '}
+          Se este voltar a valer, eles são arquivados e fica só este no lugar.
+        </p>
+      )}
+      {junta && <p className="mudo col-prova"><b>Foi juntado em:</b> “{junta.titulo}”, que está valendo. Se este voltar, os dois valem ao mesmo tempo. Para trocar um pelo outro, use "Desfazer a junção" no item que está valendo.</p>}
+      {(i.porque ?? i.prova) && <p className="mudo col-prova"><b>{juntou.length > 0 ? 'Por quê:' : 'Prova:'}</b> {i.porque ?? i.prova}</p>}
+      <div className="col-item-pe">
+        <span className="mudo">{quem}{i.atualizado_em ? ` · arquivado ${haQuanto(i.atualizado_em)}` : ''}</span>
+        {podeEditar && (
+          <span className="rec-acoes">
+            <button type="button" className="bt bt-mini bt-tingido" disabled={voltando} onClick={() => voltar(i)}><Undo2 />{voltando ? 'Voltando' : 'Voltar a valer'}</button>
+          </span>
+        )}
+      </div>
+    </article>
   );
 }
 
@@ -195,7 +275,8 @@ function Item({ i, nomes, podeEditar, editar, mudarStatus, responder }: { i: any
           <span className="rec-acoes">
             {proposta && <button type="button" className={`bt bt-mini ${pergunta ? 'bt-texto' : 'bt-tinta'}`} disabled={indo} onClick={() => mudarStatus(i.id, 'ativa', juncao ? 'Junção aprovada. Os itens de antes foram arquivados e este já vale.' : 'Aprovado. Já vale para todos os vendedores.')}><Check />{pergunta ? 'Aprovar como está' : juncao ? 'Aprovar a junção' : 'Aprovar'}</button>}
             {juncao && !proposta && <button type="button" className="bt bt-mini bt-texto" onClick={() => mudarStatus(i.id, 'arquivada', 'Junção desfeita. Os itens de antes voltaram a valer.', { desfazer: true })}><Undo2 />Desfazer a junção</button>}
-            <button type="button" className="bt bt-mini bt-texto" onClick={() => editar(i)}><Pencil />Mudar</button>
+            {/* O que vendeu e o que não vendeu são lições dos vendedores, com a prova: o formulário de ensinar não tem esses tipos. */}
+            {ENSINA.includes(i.tipo) && <button type="button" className="bt bt-mini bt-texto" onClick={() => editar(i)}><Pencil />Mudar</button>}
             <button type="button" className="bt bt-mini bt-texto" onClick={() => mudarStatus(i.id, 'arquivada', proposta ? (juncao ? 'Proposta descartada. Os itens de antes continuam valendo.' : 'Proposta descartada.') : juncao ? 'Arquivado. Os itens de antes continuam arquivados.' : 'Arquivado. Os vendedores param de usar.')}>{proposta ? <X /> : <Archive />}{proposta ? 'Descartar' : 'Arquivar'}</button>
           </span>
         )}

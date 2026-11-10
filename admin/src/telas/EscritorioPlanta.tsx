@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { ArrowDown, ArrowLeft, ArrowUp, Maximize2, Pause, Pencil, Play, UserMinus, UserPlus, X } from 'lucide-react';
 import { get, post } from '../nucleo/api';
-import { avisar } from '../nucleo/ui';
+import { Etiqueta, avisar } from '../nucleo/ui';
 import { dataHora, haQuanto, numero } from '../nucleo/util';
 import folhaDoCalango from '../img/escritorio-calango.webp';
 
@@ -40,6 +40,16 @@ const ANDAR: Record<string, number[][]> = {
 const NOME_TURNO: Record<string, string> = { rodando: 'trabalhando agora', ok: 'deu certo', erro: 'deu erro', sem_trabalho: 'não tinha o que fazer' };
 const NOME_SINAL: Record<string, string> = { bem: 'Indo bem', neutro: 'Neutro', mal: 'Precisa de atenção' };
 const curto = (t: string, n = 46) => (t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t);
+// De qual tarefa agendada foi o turno (dados.tarefa): os posts de frase das 8h e o carrossel das 10h gravam nos mesmos
+// agentes. Tarefa que não está na lista aparece com o próprio nome.
+const NOME_TAREFA: Record<string, string> = { 'posts-de-frase-do-dia': 'Posts de frase', 'carrossel-em-alta-do-dia': 'Carrossel do dia', 'direct-followup': 'Rodada do direct' };
+export const nomeDaTarefa = (t?: string | null) => (t ? NOME_TAREFA[t] || curto(String(t).replace(/-/g, ' '), 28) : '');
+// O rótulo da tarefa ao lado do turno. Sem tarefa informada, nada.
+export function Tarefa({ t }: { t?: string | null }) {
+  const nome = nomeDaTarefa(t);
+  return nome ? <span className="pl-tarefa" title="A tarefa agendada que gravou este turno">{nome}</span> : null;
+}
+const COR_STATUS: Record<string, string> = { nova: 'ambar', aprovada: 'azul', depois: 'cinza', descartada: 'cinza', feita: 'verde' };
 // Valor pequeno aparece com 4 casas, para meio centavo não virar zero.
 export const dolar = (v?: number | null) => { const n = Number(v) || 0; const casas = n > 0 && n < 0.1 ? 4 : 2; return `US$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas })}`; };
 const mil = (v?: number | null) => { const n = Number(v) || 0; if (n >= 1e6) return `${(n / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mi`; if (n >= 1000) return `${(n / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil`; return numero(n); };
@@ -321,6 +331,8 @@ export function Perfil({ a, nomes, foto, fechar, mudou, podeEditar }: { a: any; 
     if (det.controla && estado === 'pausado') acoes.push({ rotulo: 'Voltar ao trabalho', icone: <Play />, corpo: { estado: 'ativo' }, ok: `${chamado(a)} voltou ao trabalho.` });
     if (det.controla && (estado === 'ativo' || estado === 'pausado')) acoes.push({ rotulo: 'Demitir', icone: <UserMinus />, corpo: { estado: 'desligado' }, ok: `${chamado(a)} foi demitido.`, perigo: true });
     if (det.controla && estado === 'desligado') acoes.push({ rotulo: 'Readmitir', icone: <UserPlus />, corpo: { estado: 'ativo' }, ok: `${chamado(a)} foi readmitido.` });
+    // Vaga aberta de quem já tem o trabalho pronto no sistema: só começa quando o dono contrata.
+    if (det.controla && estado === 'planejado') acoes.push({ rotulo: 'Contratar', icone: <UserPlus />, corpo: { estado: 'ativo' }, ok: `${chamado(a)} foi contratado.` });
   }
 
   return (
@@ -357,7 +369,7 @@ export function Perfil({ a, nomes, foto, fechar, mudou, podeEditar }: { a: any; 
 
           <h3>O que está fazendo</h3>
           <p>{fazendo({ ...a, estado })}</p>
-          {u && estado !== 'planejado' && <p className="mudo">Último turno {haQuanto(u.inicio)}: {NOME_TURNO[u.status] || u.status}.</p>}
+          {u && estado !== 'planejado' && <p className="mudo">Último turno {haQuanto(u.inicio)}: {NOME_TURNO[u.status] || u.status}. <Tarefa t={u.tarefa} /></p>}
           {!u && a.trabalho?.ultimo && <p className="mudo">Mais recente: {haQuanto(a.trabalho.ultimo)}.</p>}
           {(a.placar || a.vendas) && (
             <ul className="pl-placar">
@@ -388,7 +400,7 @@ export function Perfil({ a, nomes, foto, fechar, mudou, podeEditar }: { a: any; 
 
           <h3>Carreira</h3>
           {!det && <p className="mudo">Carregando.</p>}
-          {det && estado === 'planejado' && !det.historico?.length && <p className="mudo">Vaga aberta. Este agente ainda não foi construído: ele é admitido sozinho no primeiro turno de trabalho.</p>}
+          {det && estado === 'planejado' && !det.historico?.length && <p className="mudo">{det.controla ? 'Vaga aberta. O trabalho deste agente já está pronto no sistema: ele começa quando você contratar.' : 'Vaga aberta. Este agente ainda não foi construído: ele é admitido sozinho no primeiro turno de trabalho.'}</p>}
           {det?.historico?.length > 0 && (
             <ol className="pl-carreira">
               {det.historico.map((h: any) => (
@@ -418,12 +430,29 @@ export function Perfil({ a, nomes, foto, fechar, mudou, podeEditar }: { a: any; 
             </div>
           )}
           {det && podeEditar && det.controla && <p className="mudo pl-nota">{det.controla}</p>}
-          {det && podeEditar && !det.controla && (estado === 'ativo' || estado === 'pausado') && <p className="mudo pl-nota">Pausar e demitir este agente ainda não dá por aqui: ele roda pelo relógio do sistema ou por tarefa agendada. Promover e rebaixar já valem.</p>}
+          {det && podeEditar && !det.controla && (estado === 'ativo' || estado === 'pausado') && <p className="mudo pl-nota">{det.sem_controle || 'Pausar e demitir não valem por aqui para este agente.'} Promover e rebaixar valem.</p>}
+
+          {det?.propostas?.length > 0 && (
+            <>
+              <h3>Cartões deste agente</h3>
+              <ol className="pl-cartoes">
+                {det.propostas.slice(0, 8).map((p: any) => (
+                  <li key={p.id}>
+                    <b>{p.titulo}</b> <Etiqueta cor={COR_STATUS[p.status] || 'cinza'}>{nomes.status[p.status] || p.status}</Etiqueta>
+                    <span className="mudo"> · {dataHora(p.criado_em)}</span>
+                    {p.motivo && <p><b>Seu recado:</b> {p.motivo}</p>}
+                    {p.resultado && <p><b>Resultado:</b> {p.resultado}</p>}
+                  </li>
+                ))}
+              </ol>
+              {det.le_recado && <p className="mudo pl-nota">Este agente lê o seu recado e o resultado antes de propor de novo. O recado se escreve no cartão, na mesa, na hora de aprovar, deixar para depois ou descartar.</p>}
+            </>
+          )}
 
           {det?.turnos?.length > 0 && (
             <>
               <h3>Últimos turnos</h3>
-              <ol className="pl-turnos">{det.turnos.slice(0, 8).map((t: any) => <li key={t.id}><span className="mudo">{dataHora(t.inicio)} · {NOME_TURNO[t.status] || t.status}{Number(t.custo_usd) > 0 ? ` · ${dolar(t.custo_usd)}` : ''}</span>{t.resumo ? ` ${t.resumo}` : ''}</li>)}</ol>
+              <ol className="pl-turnos">{det.turnos.slice(0, 8).map((t: any) => <li key={t.id}><span className="mudo">{dataHora(t.inicio)} · {NOME_TURNO[t.status] || t.status}{Number(t.custo_usd) > 0 ? ` · ${dolar(t.custo_usd)}` : ''}</span> <Tarefa t={t.tarefa} />{t.resumo ? ` ${t.resumo}` : ''}</li>)}</ol>
             </>
           )}
           {det && (

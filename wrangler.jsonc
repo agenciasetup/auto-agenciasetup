@@ -29,6 +29,11 @@
     { "pattern": "agenciasetup.com", "custom_domain": true },
     { "pattern": "www.agenciasetup.com", "custom_domain": true }
   ],
+  // O despertador do Atendente (Durable Object, incluso no Workers pago): faz a resposta do direct sair uns 20 segundos
+  // depois da última mensagem, sem esperar o relógio de minuto. Classe em worker/despertador.js; lógica e explicação em
+  // worker/lib/despertador.js. Liga e desliga em config.atendente.na_hora, sem publicar de novo.
+  "durable_objects": { "bindings": [{ "name": "DESPERTADOR", "class_name": "Despertador" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Despertador"] }],
   // Relógio: publica o que foi agendado (e, quando as redes forem conectadas, a fila delas).
   "triggers": { "crons": ["* * * * *"] },
   "observability": { "enabled": true },

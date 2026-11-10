@@ -28,6 +28,7 @@ import { contarChamada, db, folgaDeChamadas } from '../nucleo/db.js';
 import { Erro } from '../nucleo/util.js';
 import { avisarSeTokenMorreu } from '../plataformas/credenciais.js';
 import { conhecimentoPara } from './colmeia.js';
+import { armarDespertador } from './despertador.js';
 import { anotarConsumo } from './consumo.js';
 import { orcamento } from './escritorio.js';
 import { salvarFollowup, vendedorDe } from './followup.js';
@@ -50,6 +51,7 @@ const JANELA_API = 23.5 * HORA; // a Meta deixa responder pela API até 24 horas
 const SILENCIO_HUMANO = 12 * HORA; // conversa de gente em andamento: o Atendente só anota
 const FOLGA_ECO = 10 * MINUTO; // a reserva: um eco sem id conhecido, a até 10 minutos de um envio do sistema, é do sistema
 const ESPERA = 20; // segundos sem mensagem nova para considerar que a pessoa terminou de escrever
+export const ESPERA_DO_ATENDENTE_MS = ESPERA * 1000; // a mesma espera, para o despertador (despertador.js)
 const CONTINUA = 6 * HORA; // até aqui a conversa continua sem cumprimentar de novo
 const NOVO_DIA = 20 * HORA; // daqui para a frente, cumprimenta de novo
 const MAX_POR_PESSOA_DIA = 6;
@@ -115,6 +117,9 @@ export async function configAtendente(env) {
   return {
     ligado: typeof v.ligado === 'boolean' ? v.ligado : PADRAO.ligado, modo: MODOS_ATENDENTE[v.modo] ? v.modo : PADRAO.modo, modelo: MODELOS_ATENDENTE[v.modelo] ? v.modelo : PADRAO.modelo,
     contas_teste: Array.isArray(v.contas_teste) ? contasValidas(v.contas_teste) : [...CONTAS_TESTE_PADRAO],
+    // na_hora: a resposta sai uns 20 segundos depois da última mensagem, pelo despertador (despertador.js), em vez de
+    // esperar a volta do relógio de minuto. Desligado, vale só o relógio.
+    na_hora: v.na_hora === true,
   };
 }
 
@@ -123,6 +128,7 @@ export async function salvarConfigAtendente(env, d = {}) {
   const novo = {
     ligado: typeof d.ligado === 'boolean' ? d.ligado : atual.ligado, modo: MODOS_ATENDENTE[d.modo] ? d.modo : atual.modo, modelo: MODELOS_ATENDENTE[d.modelo] ? d.modelo : atual.modelo,
     contas_teste: Array.isArray(d.contas_teste) ? contasValidas(d.contas_teste) : atual.contas_teste,
+    na_hora: typeof d.na_hora === 'boolean' ? d.na_hora : atual.na_hora,
   };
   await db.insert(env, 'config', { chave: 'atendente', valor: novo }, { upsert: true, conflito: 'chave', select: 'chave' });
   return { ok: true, ...novo };
@@ -177,6 +183,39 @@ export function conferir(mensagens, p, liberados = [], linksDoDono = []) {
     }
   }
   return null;
+}
+
+// A conferência do toque que um agente manda pelo sistema (followup_mandar). Só o que pode custar caro: preço que não
+// é um dos liberados e link que não é um dos nossos. Tamanho e tom ficam com quem escreve (o toque do vendedor pode
+// ser mais comprido que a resposta do Atendente). O link pode vir com a etiqueta da pessoa ("?de=c-abc123").
+// Exportada para o ensaio (scripts/conferir-atendente.mjs).
+export function conferirToque(mensagens, p, liberados = [], linksDoDono = []) {
+  const valores = new Set([p.posts, p.combo, '39,90', '597', ...liberados].filter(Boolean));
+  const links = new Set([...Object.values(LINKS), ...linksDoDono]);
+  const semEtiqueta = (u) => u.replace(/[.,!?)]+$/, '').replace(/\?de=[a-z0-9-]+$/i, '');
+  for (const m of mensagens) {
+    const t = String(m || '');
+    if (TRAVESSAO.test(t)) return 'Mensagem com travessão';
+    for (const u of t.match(LINK) || []) if (!links.has(semEtiqueta(u))) return `Link que não é um dos liberados: ${u.slice(0, 60)}`;
+    const solto = (t.replace(LINK, ' ').match(ENDERECO_SOLTO) || []).find((e) => !SITE_DA_CASA.test(e.replace(/[.,!?)]+$/, '')));
+    if (solto) return `Link escrito sem "http", que não é um dos liberados: ${solto.slice(0, 60)}`;
+    // Só o que tem cara de dinheiro: "R$ 49", "49,90", "49 reais". "3 dias" e "18 aulas" passam.
+    for (const n of t.replace(LINK, ' ').matchAll(/(R\$\s*)?(\d+(?:[.,]\d+)*)(\s*reais)?/gi)) {
+      const dinheiro = !!n[1] || !!n[3] || /,\d{2}$/.test(n[2]);
+      if (dinheiro && !valores.has(normalNumero(n[2]))) return `Valor que não é um preço liberado: ${n[0].trim()}`;
+    }
+  }
+  return null;
+}
+// Os preços de hoje e o que o dono liberou para esta conversa: os números e links dos itens dele na Colmeia que têm a
+// ver com o texto, a resposta dele à dúvida da pessoa e a nota da ficha (a condição que ele aprovou para ela).
+export async function conferirToqueDoAgente(env, f, mensagens) {
+  const junto = mensagens.join(' ');
+  const [p, base] = await Promise.all([precos(env), conhecimentoPara(env, junto, { interesse: f.interesse, max: 7 }).catch(() => ({ regras: [], itens: [] }))]);
+  const doDono = [...base.regras, ...base.itens].filter((i) => i.origem === 'dono' || i.origem === 'semente');
+  const dele = `${f.nota || ''} ${f.resposta || ''}`;
+  const linksDe = (x) => (String(x || '').match(/https?:\/\/\S+/gi) || []).map((u) => u.replace(/[.,!?)"]+$/, ''));
+  return conferirToque(mensagens, p, [...doDono.flatMap((i) => numerosDe(`${i.titulo} ${i.texto}`)), ...numerosDe(dele)], [...doDono.flatMap((i) => linksDe(i.texto)), ...linksDe(dele)]);
 }
 
 // Conversa em andamento não recomeça com "Oláaa": tira o cumprimento do começo da resposta.
@@ -486,6 +525,8 @@ export async function atender(env, { conta, igsid, mid, texto, deStory = false, 
     else if (!cfg.ligado) { classe = 'anotou'; detalhe = 'Atendente desligado: só anotado na lista.'; }
     else if (!deStory && SEM_RESPOSTA.test(String(texto).trim())) classe = 'ignorou';
     await fechar(classe, { followup_id: salvo.id, ...(detalhe ? { detalhe } : {}) });
+    // Com o despertador ligado, a resposta sai logo depois da espera, sem aguardar o relógio de minuto.
+    if (classe === 'esperando' && cfg.na_hora) await armarDespertador(env, ESPERA_DO_ATENDENTE_MS);
     return classe === 'esperando' ? 'na fila' : classe === 'ignorou' ? 'ignorou' : 'anotou';
   } catch (e) {
     // A mensagem chegou e não deu para pôr na lista: fica como erro, com o motivo, para o Zelador avisar.
@@ -684,6 +725,8 @@ async function tratar(env, t, cfg, contaDe, orcamentoDaVez) {
 export async function levarResposta(env, f) {
   if (!podePelaApi(f)) return false;
   await db.insert(env, 'atendimentos', [{ mid: `resposta:${f.id}:${Date.now()}`, followup_id: f.id, perfil: f.perfil === 'en' ? 'en' : 'br', classe: 'esperando', criado_em: new Date(Date.now() - (ESPERA + 5) * 1000).toISOString() }], { select: 'id' });
+  // A resposta do dono não precisa esperar: com o despertador ligado, sai em um segundo.
+  if ((await configAtendente(env).catch(() => ({}))).na_hora) await armarDespertador(env, 0);
   return true;
 }
 

@@ -3,7 +3,7 @@
 // Claude não sabe responder aparece em "Dúvida com você": a sua resposta vai para a pessoa e vira exemplo para as
 // próximas. Desde 09/11/2026 os toques e as respostas conhecidas saem sozinhos, dentro dos tetos; dúvida nova,
 // desconto e reclamação continuam vindo para o dono. Lógica em worker/lib/followup.js.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, Copy, ExternalLink, HelpCircle, MessageCircle, RefreshCw, Search, Send } from 'lucide-react';
 import { get, post } from '../nucleo/api';
 import { Abas, Carregando, ErroCarga, Etiqueta, Grupo, Titulo, Vazio, avisar, useCarregar, useSessao } from '../nucleo/ui';
@@ -21,30 +21,78 @@ const VAZIOS: Record<string, { t: string; d: string }> = {
 };
 const COR_INTERESSE: Record<string, string> = { posts: 'laranja', combo: 'ambar', videos: 'azul', material: 'cinza', outro: 'cinza', nao_sei: 'vermelho' };
 const NOME_ORIGEM: Record<string, string> = { direct: 'direct', story: 'resposta ao story', comentario: 'comentário', manual: 'anotado à mão' };
-// Os três modos do Atendente, na ordem em que o botão troca. O rótulo mostra o modo de agora; o clique vai para o próximo.
-const MODOS_ATENDENTE = ['automatico', 'rascunho', 'ensaio'];
-const ROTULO_MODO: Record<string, string> = { automatico: 'Modo: responde sozinho', rascunho: 'Modo: só prepara a resposta', ensaio: 'Modo: ensaio' };
+// Quem a rodada do direct não toca agora (p.pausa): a conversa está com o dono ou com o Atendente. O motivo vem pronto.
+const NOME_PAUSA: Record<string, string> = { dono: 'Conversa com você', atendente: 'Com o Atendente' };
+// Os três modos do Atendente, com o nome e uma frase. O seletor mostra os três lado a lado e marca o que vale agora.
+type Opcao = { id: string; t: string; d: string };
+const MODOS_ATENDENTE: Opcao[] = [
+  { id: 'automatico', t: 'Responde sozinho', d: 'Responde na hora o que já está liberado na Colmeia.' },
+  { id: 'rascunho', t: 'Só prepara a resposta', d: 'Deixa pronta e espera você mandar.' },
+  { id: 'ensaio', t: 'Ensaio', d: 'Só responde as suas contas de teste.' },
+];
+// Quando a resposta sai: logo depois que a pessoa para de escrever (o despertador) ou na volta do relógio de minuto.
+const QUANDO_RESPONDE: Opcao[] = [
+  { id: 'na_hora', t: 'Em uns 20 segundos', d: 'Responde logo depois que a pessoa para de escrever.' },
+  { id: 'relogio', t: 'Na volta do relógio', d: 'Responde em até 1 minuto e meio. É o jeito antigo, que continua de reserva.' },
+];
+const nomeDoModo = (modo: string) => MODOS_ATENDENTE.find((m) => m.id === modo)?.t || modo;
 const AVISO_MODO: Record<string, string> = {
   automatico: 'O Atendente voltou a responder todo mundo sozinho.',
   rascunho: 'O Atendente agora só prepara a resposta e espera você mandar.',
   ensaio: 'Ensaio ligado: só as contas de teste recebem resposta.',
 };
-const proximoModo = (modo: string) => MODOS_ATENDENTE[(MODOS_ATENDENTE.indexOf(modo) + 1) % MODOS_ATENDENTE.length];
+// O modelo de IA do Atendente. A frase de cada opção vem do servidor como "Nome: explicação" (d.atendente.modelos):
+// o nome vira o título da opção e a explicação, a frase embaixo.
+const NOME_MODELO: Record<string, string> = { misto: 'Misto', 'claude-haiku-5-5': 'Só o barato', 'claude-sonnet-5-5': 'Só o cuidadoso' };
+function opcaoDeModelo(id: string, texto: unknown): Opcao {
+  const s = String(texto || '').trim();
+  const k = s.indexOf(': ');
+  const frase = (k > 0 ? s.slice(k + 2) : s).trim();
+  return { id, t: k > 0 ? s.slice(0, k) : NOME_MODELO[id] || id, d: frase ? `${frase.charAt(0).toUpperCase()}${frase.slice(1)}${/[.!?]$/.test(frase) ? '' : '.'}` : '' };
+}
+const faseDoEndereco = () => { try { return new URLSearchParams(window.location.search).get('fase') || ''; } catch { return ''; } };
 
 export default function Followup() {
   useEffect(() => { document.title = 'Follow-up do direct | Painel Agência Setup'; }, []);
   const { pode } = useSessao();
   // O aviso do celular abre a aba certa: /admin/followup?fase=duvida.
-  const [fase, setFase] = useState(() => { try { return new URLSearchParams(window.location.search).get('fase') || 'na_hora'; } catch { return 'na_hora'; } });
+  const [fase, setFase] = useState(() => faseDoEndereco() || 'na_hora');
+  // A aba de entrada. Sem ?fase= no endereço, a primeira carga decide: com dúvida esperando, a tela abre em "Dúvida
+  // com você". Só nessa vez: depois que a pessoa escolhe uma aba, ninguém troca por ela.
+  // decidir: esperando os números da primeira carga; pulando: trocou para as dúvidas e a lista delas está vindo.
+  const [entrada, setEntrada] = useState<'decidir' | 'pulando' | 'pronta'>(() => (faseDoEndereco() ? 'pronta' : 'decidir'));
   const [interesse, setInteresse] = useState('');
   const [busca, setBusca] = useState('');
   const [buscaFeita, setBuscaFeita] = useState('');
   const [sincronizando, setSincronizando] = useState(false);
+  const [mudandoAtendente, setMudandoAtendente] = useState(false);
   useEffect(() => { const t = setTimeout(() => setBuscaFeita(busca.trim()), 350); return () => clearTimeout(t); }, [busca]);
-  const { dados, erro, carregando, recarregar } = useCarregar(() => get(`/followup?fase=${fase}${interesse ? `&interesse=${interesse}` : ''}${buscaFeita ? `&busca=${encodeURIComponent(buscaFeita)}` : ''}`), [fase, interesse, buscaFeita]);
+  const { dados, setDados, erro, carregando, recarregar } = useCarregar(() => get(`/followup?fase=${fase}${interesse ? `&interesse=${interesse}` : ''}${buscaFeita ? `&busca=${encodeURIComponent(buscaFeita)}` : ''}`), [fase, interesse, buscaFeita]);
   const d: any = dados;
   const n = d?.numeros;
+  const antesDoPulo = useRef<any>(null);
+  useEffect(() => {
+    if (entrada === 'decidir' && n) {
+      if (n.duvida > 0 && fase !== 'duvida') { antesDoPulo.current = dados; setFase('duvida'); setEntrada('pulando'); } else setEntrada('pronta');
+    } else if (entrada === 'pulando' && (dados !== antesDoPulo.current || erro)) {
+      // A lista das dúvidas chegou (ou deu erro): a tela volta a mostrar a lista.
+      antesDoPulo.current = null;
+      setEntrada('pronta');
+    }
+  }, [entrada, n, dados, erro, fase]);
+  // Enquanto a aba de entrada troca sozinha, a lista da aba antiga não aparece (ela piscaria antes das dúvidas).
+  const trocandoDeAba = entrada === 'pulando' || (entrada === 'decidir' && !!n && n.duvida > 0 && fase !== 'duvida');
+  const escolherAba = (id: string) => { setEntrada('pronta'); setFase(id); };
   const podeMexer = pode('followup.editar');
+  const podeAtendente = pode('followup.atendente');
+  // A frase ao lado de "Ligado" ou "Desligado". Desligado: o que acontece com as mensagens e em que modo ele volta.
+  // Ensaio: quem recebe resposta. Nos outros modos o seletor logo abaixo já diz tudo; a frase fica só para quem não
+  // pode mexer no Atendente (e por isso não vê o seletor).
+  const at = d?.atendente;
+  const situacaoAtendente: string = !at ? ''
+    : !at.ligado ? `As mensagens que chegam são só anotadas na lista.${podeAtendente ? ` Ao ligar, ele volta no modo "${nomeDoModo(at.modo)}".` : ''}`
+    : at.modo === 'ensaio' ? `Ensaio: só responde as contas de teste (${(at.contas_teste || []).map((u: string) => `@${u}`).join(', ') || 'nenhuma conta na lista'}). Quem não é de teste fica esperando e recebe a resposta quando o modo voltar para "Responde sozinho", se a mensagem tiver menos de 6 horas.`
+    : podeAtendente ? '' : String(at.modos?.[at.modo] || '');
   const mudar = async (id: string, corpo: any, ok?: string) => {
     try { await post(`/followup/${id}`, corpo); if (ok) avisar(ok); recarregar(); }
     catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
@@ -60,8 +108,15 @@ export default function Followup() {
     catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
   };
   const atendente = async (corpo: any, ok: string) => {
-    try { await post('/followup/atendente', corpo); avisar(ok); recarregar(); }
+    setMudandoAtendente(true);
+    try {
+      const r: any = await post('/followup/atendente', corpo);
+      // A opção nova já aparece marcada com o que o servidor guardou, sem esperar a lista voltar.
+      if (r && typeof r.modo === 'string') setDados((x: any) => (x && x.atendente ? { ...x, atendente: { ...x.atendente, ligado: !!r.ligado, modo: r.modo, modelo: r.modelo } } : x));
+      avisar(ok); recarregar();
+    }
     catch (e: any) { avisar(e.message || 'Não deu certo. Tente de novo.', 'erro'); }
+    finally { setMudandoAtendente(false); }
   };
   const mandar = async (id: string) => {
     try { await post(`/followup/${id}/mandar`, {}); avisar('Mensagem enviada pelo sistema.'); recarregar(); }
@@ -108,19 +163,31 @@ export default function Followup() {
           <div className="fu-atendente">
             <span className={`esc-luz esc-luz-${d.atendente.ligado ? 'ativo' : 'pausado'}`} />
             <b>{d.atendente.ligado ? 'Ligado' : 'Desligado'}</b>
-            <span className="mudo">{!d.atendente.ligado
-              ? 'As mensagens que chegam são só anotadas na lista.'
-              : d.atendente.modo === 'ensaio'
-                ? `Ensaio: só responde as contas de teste (${(d.atendente.contas_teste || []).map((u: string) => `@${u}`).join(', ') || 'nenhuma conta na lista'}). Quem não é de teste fica esperando e recebe a resposta quando o modo voltar para "responde sozinho", se a mensagem tiver menos de 6 horas.`
-                : d.atendente.modos[d.atendente.modo]}</span>
-            {pode('followup.atendente') && (
+            {podeAtendente && (
               <span className="rec-acoes">
-                <button className="bt bt-mini bt-tingido" onClick={() => atendente({ ligado: !d.atendente.ligado }, d.atendente.ligado ? 'Atendente desligado.' : 'Atendente ligado.')}>{d.atendente.ligado ? 'Desligar' : 'Ligar'}</button>
-                {d.atendente.ligado && d.atendente.modelos && <button className="bt bt-mini bt-texto" title={d.atendente.modelos[d.atendente.modelo]} onClick={() => atendente({ modelo: d.atendente.modelo === 'misto' ? 'claude-haiku-5-5' : d.atendente.modelo === 'claude-haiku-5-5' ? 'claude-sonnet-5-5' : 'misto' }, 'Modelo do Atendente trocado.')}>{d.atendente.modelo === 'misto' ? 'Modelo: misto' : d.atendente.modelo === 'claude-haiku-5-5' ? 'Modelo: só o barato' : 'Modelo: só o cuidadoso'}</button>}
-                {d.atendente.ligado && <button className="bt bt-mini bt-texto" title={`Clique para trocar para: ${(ROTULO_MODO[proximoModo(d.atendente.modo)] || '').replace('Modo: ', '')}`} onClick={() => atendente({ modo: proximoModo(d.atendente.modo) }, AVISO_MODO[proximoModo(d.atendente.modo)] || 'Modo do Atendente mudado.')}>{ROTULO_MODO[d.atendente.modo] || 'Modo do Atendente'}</button>}
+                <button className="bt bt-mini bt-tingido" disabled={mudandoAtendente} onClick={() => atendente({ ligado: !d.atendente.ligado }, d.atendente.ligado ? 'Atendente desligado.' : `Atendente ligado no modo "${nomeDoModo(d.atendente.modo)}".`)}>{d.atendente.ligado ? 'Desligar' : 'Ligar'}</button>
               </span>
             )}
           </div>
+          {situacaoAtendente && <p className="mudo fu-situacao">{situacaoAtendente}</p>}
+          {podeAtendente && d.atendente.ligado && (
+            <>
+              <p className="fu-rotulo">Como ele responde</p>
+              <Opcoes rotulo="Como o Atendente responde" opcoes={MODOS_ATENDENTE} atual={d.atendente.modo} parado={mudandoAtendente}
+                escolher={(id) => atendente({ modo: id }, AVISO_MODO[id] || 'Modo do Atendente mudado.')} />
+              {d.atendente.modelos && (
+                <details className="fu-avancado">
+                  <summary>Avançado</summary>
+                  <p className="fu-rotulo">Quanto tempo ele leva para responder</p>
+                  <Opcoes rotulo="Quanto tempo o Atendente leva para responder" opcoes={QUANDO_RESPONDE} atual={d.atendente.na_hora ? 'na_hora' : 'relogio'} parado={mudandoAtendente}
+                    escolher={(id) => atendente({ na_hora: id === 'na_hora' }, id === 'na_hora' ? 'O Atendente passa a responder uns 20 segundos depois da última mensagem.' : 'O Atendente voltou a responder na volta do relógio.')} />
+                  <p className="fu-rotulo">Qual modelo de IA escreve as respostas</p>
+                  <Opcoes rotulo="Modelo de IA do Atendente" opcoes={Object.entries(d.atendente.modelos).map(([id, texto]) => opcaoDeModelo(id, texto))} atual={d.atendente.modelo} parado={mudandoAtendente}
+                    escolher={(id) => atendente({ modelo: id }, 'Modelo do Atendente trocado.')} />
+                </details>
+              )}
+            </>
+          )}
         </Grupo>
       )}
       {d?.placar?.length > 0 && (
@@ -138,7 +205,12 @@ export default function Followup() {
           </div>
         </Grupo>
       )}
-      <Abas abas={abas} atual={fase} mudar={setFase} />
+      {d?.tetos && (
+        <p className="mudo fu-tetos">
+          Mensagens puxadas hoje: <b>{numero(d.tetos.dia.usado)} de {numero(d.tetos.dia.teto)}</b>. Pessoas nesta rodada: <b>{numero(d.tetos.rodada.usado)} de {numero(d.tetos.rodada.teto)}</b>. Quem conta é o sistema, e a rodada para quando o teto fecha.
+        </p>
+      )}
+      <Abas abas={abas} atual={fase} mudar={escolherAba} />
       <div className="filtros">
         <select value={interesse} onChange={(e) => setInteresse(e.target.value)} aria-label="Interesse">
           <option value="">Todos os interesses</option>
@@ -146,13 +218,31 @@ export default function Followup() {
         </select>
         <input type="search" placeholder="@, nome ou e-mail" value={busca} onChange={(e) => setBusca(e.target.value)} aria-label="Buscar pessoa" />
       </div>
-      {carregando && !d && <Carregando />}
-      {d && (d.itens.length ? (
+      {((carregando && !d) || trocandoDeAba) && <Carregando />}
+      {d && !trocandoDeAba && (d.itens.length ? (
         <div className="rec-lista">{d.itens.map((p: any) => <Pessoa key={p.id} p={p} fases={d.fases} interesses={d.interesses} mudar={mudar} responder={responder} mandar={mandar} podeMexer={podeMexer} />)}</div>
       ) : (
         <Vazio icone={buscaFeita ? <Search /> : <MessageCircle />} titulo={buscaFeita ? 'Ninguém com esse @, nome ou e-mail nesta aba.' : VAZIOS[fase]?.t} texto={buscaFeita ? undefined : VAZIOS[fase]?.d} />
       ))}
-      {d && d.total > d.itens.length && <p className="mudo linha-pequena">Mostrando {d.itens.length} de {numero(d.total)}. Use a busca ou o filtro de interesse para achar as outras.</p>}
+      {d && !trocandoDeAba && d.total > d.itens.length && <p className="mudo linha-pequena">Mostrando {d.itens.length} de {numero(d.total)}. Use a busca ou o filtro de interesse para achar as outras.</p>}
+    </div>
+  );
+}
+
+// Seletor com todas as opções à vista, lado a lado (no celular, uma embaixo da outra), cada uma com o nome e uma
+// frase. A marcada é a que vale agora; tocar em outra troca na hora. Serve para o modo e para o modelo do Atendente.
+function Opcoes({ rotulo, opcoes, atual, escolher, parado }: { rotulo: string; opcoes: Opcao[]; atual: string; escolher: (id: string) => void; parado: boolean }) {
+  return (
+    <div className="fu-opcoes" role="group" aria-label={rotulo}>
+      {opcoes.map((o) => {
+        const marcada = o.id === atual;
+        return (
+          <button key={o.id} type="button" className={`fu-opcao ${marcada ? 'fu-opcao-marcada' : ''}`} aria-pressed={marcada} disabled={parado && !marcada} onClick={() => { if (!marcada) escolher(o.id); }}>
+            <b><span className="fu-opcao-bola" aria-hidden="true">{marcada && <Check />}</span>{o.t}</b>
+            {o.d && <span>{o.d}</span>}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -178,8 +268,11 @@ function Pessoa({ p, fases, interesses, mudar, responder, mandar, podeMexer }: {
           {p.na_hora && <Etiqueta cor="laranja">Na hora</Etiqueta>}
           {p.vendedor && <Etiqueta cor="cinza">Vendedor: {p.vendedor === 'pergunta' ? 'Pergunta antes' : 'Calango'}</Etiqueta>}
           {p.produto && <Etiqueta cor="verde">{p.fase === 'comprou' ? 'Comprou' : 'Já é aluno'}: {p.produto}</Etiqueta>}
+          {NOME_PAUSA[p.pausa] && <Etiqueta cor="cinza">{NOME_PAUSA[p.pausa]}</Etiqueta>}
         </div>
       </div>
+      {NOME_PAUSA[p.pausa] && p.pausa_motivo && <p className="rec-linha fu-pausa">{p.pausa_motivo}</p>}
+      {!p.pausa && p.pode_tocar === false && p.nao_tocar_motivo && ['novo', 'ofertado', 'conversando'].includes(p.fase) && <p className="rec-linha fu-pausa">Não recebe mensagem agora: {p.nao_tocar_motivo}</p>}
       <p className="rec-linha">
         {p.palavras?.length ? `Comentou ${p.palavras.join(', ')} · ` : ''}
         {p.toques ? `${p.toques} ${p.toques === 1 ? 'mensagem nossa' : 'mensagens nossas'}, a última ${haQuanto(p.nosso_em)}` : 'Nenhuma mensagem nossa ainda'}

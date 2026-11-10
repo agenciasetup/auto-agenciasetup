@@ -21,6 +21,21 @@ export const TIPOS_AVISO = {
   teste: { t: 'Pedidos de teste', sub: 'Compras simuladas e ofertas de teste também avisam.', padrao: false },
 };
 export const TIPOS_PADRAO = Object.keys(TIPOS_AVISO).filter((k) => TIPOS_AVISO[k].padrao);
+// Tipo novo de aviso chega a quem já tinha os avisos ligados (achado da revisão de 10/11/2026: o Escritório e o
+// direct avisavam 0 aparelhos, porque o único aparelho tinha sido ligado antes de esses dois tipos existirem).
+// Cada aparelho guarda em "conhece" os tipos que existiam quando a pessoa escolheu pela última vez. Tipo padrão que o
+// aparelho ainda não conhece vale como ligado; desligado de propósito continua desligado. Aparelho ligado antes desta
+// regra não tem "conhece": vale a lista dos tipos que existiam em 08/11/2026, quando o app Vendas nasceu.
+const TIPOS_DE_ANTES = ['venda', 'pedido', 'reembolso', 'recusado', 'fechamento', 'teste'];
+export const TODOS_OS_TIPOS = Object.keys(TIPOS_AVISO);
+export function querTipo(aparelho, tipo) {
+  if (!aparelho || !TIPOS_AVISO[tipo]) return false;
+  if ((aparelho.eventos || []).includes(tipo)) return true;
+  const conhece = Array.isArray(aparelho.conhece) ? aparelho.conhece : TIPOS_DE_ANTES;
+  return TIPOS_AVISO[tipo].padrao && !conhece.includes(tipo);
+}
+// Os tipos que o aparelho recebe de verdade (o que a tela mostra ligado).
+export const tiposDoAparelho = (aparelho) => TODOS_OS_TIPOS.filter((t) => querTipo(aparelho, t));
 export const MAX_APARELHOS = 10;
 
 // ---------------------------------------------------------------- chaves do servidor (VAPID)
@@ -71,7 +86,7 @@ export async function mandarPara(env, lista, alvo, dados) {
 export async function avisarEquipe(env, tipo, msg, { teste = false } = {}) {
   try {
     const lista = await lerAparelhos(env);
-    const quer = lista.filter((i) => (i.eventos || []).includes(tipo) && (!teste || (i.eventos || []).includes('teste')));
+    const quer = lista.filter((i) => querTipo(i, tipo) && (!teste || (i.eventos || []).includes('teste')));
     if (!quer.length) return 0;
     const ids = [...new Set(quer.map((i) => i.equipe_id).filter(Boolean))];
     const equipe = ids.length ? await db.select(env, 'equipe', { filtros: { id: `in.(${ids.join(',')})`, ativo: 'is.true' }, select: 'id,papel' }) : [];

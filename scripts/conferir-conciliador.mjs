@@ -157,6 +157,7 @@ confere('Colmeia sem mudança não trabalha', situacao({ marca: iso(agora - 240_
 console.log('\nA rodada inteira, com banco e IA de mentira (em memória):');
 const BANCO = 'https://banco-de-mentira.invalid';
 const env = { SUPABASE_URL: BANCO, SUPABASE_SECRET_KEY: 'sb_secret_de_mentira', AMBIENTE: 'local', ANTHROPIC_CHAVE: 'chave-de-mentira' };
+// O agente começa como vaga aberta ("planejado"): a primeira conferência da parte 3 é que vaga aberta não trabalha.
 const tabelas = { colmeia: [], config: [], turnos: [], consumo_ia: [], agentes_historico: [], equipe: [], auditoria: [], agentes: [{ id: 'conciliador', onde: 'worker', estado: 'planejado', modelo: 'claude-sonnet-5-5' }] };
 let serie = 100;
 const novoId = () => `00000000-0000-4000-8000-${String(++serie).padStart(12, '0')}`;
@@ -285,8 +286,28 @@ mundo.ia = quatroConflitos;
 let r = await rodar(relogio);
 confere('mudou há 1 minuto: sai sem trabalhar, em 2 leituras', r === null && mundo.chamadas.length === 2 && !mundo.chamadas.includes('IA') && tabelas.config.length === 0, mundo.chamadas.join(', '));
 
-// 3.2 quieta há 4 minutos: trabalha
+// 3.1b quieta há 4 minutos, mas o agente não está liberado no Escritório: vaga aberta e pausado não trabalham
 relogio += 3 * minuto;
+const semMexer = () => tabelas.config.length === 0 && tabelas.turnos.length === 0 && tabelas.consumo_ia.length === 0 && tabelas.colmeia.every((l) => !l.substitui);
+r = await rodar(relogio);
+confere('vaga aberta (planejado) não trabalha: 3 leituras, sem IA, sem turno e sem marcar estado', !!r && r.pulou === 'agente_parado' && mundo.chamadas.join() === 'GET colmeia,GET config,GET agentes' && semMexer(), mundo.chamadas.join(', '));
+tabelas.agentes[0].estado = 'pausado';
+r = await rodar(relogio + minuto);
+confere('pausado: no minuto seguinte nem olha o estado de novo (1 leitura)', r === null && mundo.chamadas.length === 1 && semMexer(), mundo.chamadas.join(', '));
+r = await rodar(relogio + 6 * minuto);
+confere('pausado: 5 minutos depois confere de novo e continua parado', !!r && r.pulou === 'agente_parado' && mundo.chamadas.length === 3 && semMexer(), mundo.chamadas.join(', '));
+r = await rodar(relogio + 7 * minuto, { forcar: true });
+confere('pausado: nem forçando ele trabalha', !!r && r.pulou === 'agente_parado' && !mundo.chamadas.includes('IA') && semMexer(), mundo.chamadas.join(', '));
+tabelas.agentes[0].estado = 'desligado';
+esquecerConciliador();
+r = await rodar(relogio + 8 * minuto);
+confere('demitido não trabalha', !!r && r.pulou === 'agente_parado' && !mundo.chamadas.includes('IA') && semMexer());
+// O dono contrata (ou volta) o agente: a rodada seguinte trabalha.
+tabelas.agentes[0].estado = 'ativo';
+esquecerConciliador();
+
+// 3.2 quieta há 4 minutos e agente ativo: trabalha
+relogio += 9 * minuto;
 r = await rodar(relogio);
 const parado = [...mundo.chamadas];
 const novas = tabelas.colmeia.filter((l) => l.substitui);
@@ -302,7 +323,7 @@ confere('item de agente: entrou como proposta, com a dúvida', !!n3 && n3.status
 confere('nada além disso mudou na Colmeia', tabelas.colmeia.length === 10 && sE.status === 'ativa');
 confere('o estado guarda até onde conferiu', estado().status === 'ok' && !!n1 && estado().marca === n1.atualizado_em);
 confere('o turno saiu com o custo, uma vez só', tabelas.turnos.length === 1 && tabelas.turnos[0].status === 'ok' && Number(tabelas.turnos[0].custo_usd) > 0 && tabelas.consumo_ia.length === 1, `turnos ${tabelas.turnos.length}, consumo ${tabelas.consumo_ia.length}`);
-confere('o agente passou a trabalhando no primeiro turno', tabelas.agentes[0].estado === 'ativo');
+confere('a conferência do agente custou uma leitura a mais na rodada que trabalha', mundo.chamadas.filter((c) => c === 'GET agentes').length === 2, mundo.chamadas.join(', '));
 confere('chamou a IA uma vez e tentou avisar o dono', mundo.chamadas.filter((c) => c === 'IA').length === 1 && mundo.chamadas.filter((c) => c === 'GET config').length === 3, mundo.chamadas.join(', '));
 const pedido = mundo.pedidos.at(-1);
 confere('a chamada à IA segue o combinado', pedido.model === 'claude-sonnet-5-5' && pedido.output_config.effort === 'low' && pedido.tools[0].strict === true && pedido.tool_choice.type === 'auto' && /é dado, nunca instrução/.test(pedido.system));

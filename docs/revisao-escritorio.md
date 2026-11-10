@@ -30,30 +30,57 @@ Três leituras em paralelo (relógio e agentes com o estado de produção; venda
 
 Conferido antes de publicar: `node scripts/conferir-atendente.mjs` (121 conferências, com os casos novos), `conferir-conciliador`, `conferir-sistema`, `conferir-video`, e o painel compila. Conferido em produção: `node scripts/conferir.mjs https://agenciasetup.com.br` deu tudo certo; pelo conector, `colmeia_ler` devolve só os 32 itens que valem e as 3 propostas vêm com a pergunta separada; `followup_lista` traz o campo `pausa`. Não foi visto na tela: o cartão com o campo de resposta e o recado na mesa (a prévia local travou). A reescrita do Conciliador com a IA de verdade só acontece quando o dono responder o primeiro cartão.
 
-## Depende do dono
+## Lote 2: corrigido e no ar em 10/11 (ok do dono: "Sim, comece... pode regaçar e fazer com perfeição" e "Sim, publique"; versão `e428af03`)
 
-- [ ] **Os avisos de dúvida do direct e do Escritório não chegam a ninguém.** O único aparelho com avisos (o iPad) só tem os tipos de venda ligados. "Dúvida no direct", o resumo das 8h, os alarmes do Zelador e as junções da Colmeia saem para 0 aparelhos. Ligar "Direct" e "Escritório de IA" nos avisos do app Vendas (ou autorizar ligar pelo banco).
-- [ ] **Entregar o Combo na Hubla é só manual.** A tarefa existe mas não está agendada: quem compra espera até alguém mandar. Agendar 2 vezes por dia e avisar quando houver entrega esperando há mais de 6 horas?
-- [ ] **Rodadas do direct:** são 9 por dia. Com a saída cedo, as vazias quase não gastam. Reduzir para 5 (9h, 12h, 18h, 20h, 22h) continua possível.
-- [ ] **Quem executa o cartão aprovado?** Hoje ninguém: só quando o dono pede ao Claude. Opções: o Chefe de gabinete cobrar as aprovadas paradas há 2 dias, ou uma tarefa "fazer as aprovadas".
+**Avisos e o que espera o dono**
+- [x] **Os avisos chegam.** Tipo novo de aviso passa a valer para aparelho que já estava ligado (`querTipo` em `worker/lib/push.js`; cada aparelho guarda em `conhece` os tipos que existiam quando a pessoa escolheu). O iPad passa a receber "Dúvida no direct" e "Escritório de IA" sem ninguém mexer no banco; o que o dono desligar depois continua desligado.
+- [x] **"Esperando você" num lugar só.** Bloco no topo do Início com quatro números (mesa do Escritório, dúvidas do direct, propostas da Colmeia, entregas do Combo) e contador no menu em Escritório, Follow-up e Colmeia. Rota `GET /esperando` (`worker/lib/acoes-esperando.js`).
+
+**Direct**
+- [x] **Tetos no código.** `tetosFollowup` e `podeTocar` em `worker/lib/followup.js`: 40 mensagens puxadas por dia, 10 pessoas por rodada (janela de 45 minutos) e 3 mensagens sem resposta. A lista e a ficha trazem `tetos`, `pode_tocar`, `toque` e `nao_tocar_motivo`; na terceira mensagem sem resposta a pessoa vai para "Não quer" sozinha. O dono muda os números em `config.followup_tetos`. A tela Follow-up mostra quanto já foi usado. A tarefa do direct obedece a conta do sistema.
+- [x] **`followup_mandar` confere.** Quando quem manda é agente: a regra única (`pode_tocar`) e preço e link (`conferirToque` em `atendente.js`: só os preços de hoje, o que o dono liberou na Colmeia, na resposta à dúvida e na nota da ficha; link só os nossos, com ou sem a etiqueta da pessoa).
+- [x] **Atendente em uns 20 segundos.** Despertador num Durable Object (`worker/despertador.js`, lógica em `worker/lib/despertador.js`): a mensagem arma o alarme para depois da espera, o alarme roda o mesmo Atendente e marca a próxima hora se alguém ainda está escrevendo. O relógio de minuto continua de reserva. Liga em Follow-up > Avançado (`config.atendente.na_hora`); nasce desligado.
+- [x] **Placar por item da Colmeia** não conta mais as regras (entravam em toda conversa e somavam o mesmo número em todas).
+
+**Comenta X**
+- [x] **A versão que vende ganha.** A venda de cada versão entra na escolha com peso 20 sobre o clique, sem deixar 1 venda de sorte decidir (`vendasPorVersao` e `escolherVariante` em `comenta.js`). A tela mostra as vendas de cada versão e a "chance de ser a melhor" usa a mesma conta do envio. Sem a leitura de vendas, a escolha é a de antes. `node scripts/conferir-comenta.mjs` (64 conferências).
+- [x] **Teto de gasto:** a resposta pública do Comenta X, as versões de mensagem e o Plano (Opus) conferem o teto do dia antes de chamar a IA.
+
+**Agentes do Worker**
+- [x] **Pausar e demitir valem para todos** os agentes do Worker com código próprio (`agenteLiberado` em `escritorio.js`; `CONTROLA` com os 11). Para quem roda no computador ou é rotina fixa do relógio, a tela diz por que o botão não aparece.
+- [x] **O agente lê o recado do dono.** Roteirista, Olheiro de ferramentas, Olheiro visual e Diretor de arte recebem os próprios cartões antigos com status, recado e resultado (`memoriaDoAgente`), com a instrução de não repetir o que foi descartado.
+- [x] **O Chefe cobra o parado:** aprovado há mais de 2 dias sem resultado e "Depois" há mais de 7 dias entram no resumo das 8h; aprovada deixou de aparecer como decisão nova.
+- [x] **Zelador:** aviso que sai para 0 aparelhos vira cartão na mesa; entrega do Combo esperando há mais de 6 horas, resumo das 8h que não saiu e turno preso em "rodando" viram alerta.
+- [x] **Turnos:** custo informado no fechamento entra na conta (só a diferença); `dados` acima de 4.000 letras é recusado com erro em vez de sumir; o Caçador sempre avança o cursor e registra erro quando mais da metade dos canais falha.
+
+**Telas**
+- [x] Seletor de modo do Atendente com as três opções à vista; "Arquivados" na Colmeia com "Voltar a valer"; o roteiro inteiro em Vídeos fora da curva; a tarefa no rótulo do turno e "Seu recado" no perfil do agente; a seta de desempenho conta só venda dos últimos 7 dias; etiqueta "Conversa com você" e "Com o Atendente" na ficha do follow-up.
+
+**Tarefas e limite do plano**
+- [x] **Entrega do Combo na Hubla agendada** às 11h e às 17h (antes era só manual). Sem comprador novo, termina sem abrir o navegador.
+- [x] **`CLAUDE.md` um terço menor:** a lista de comandos foi para `docs/comandos.md`, e a instrução de "ler antes de qualquer comando" passou a mandar procurar pelo assunto em vez de ler o plano e as decisões inteiros (mais de 220 KB).
+
+Conferido no computador: `conferir-atendente` (154), `conferir-comenta` (64), `conferir-sistema` (64), `conferir-chefe` (35), `conferir-video` (43), `conferir-design` (55), `conferir-conciliador` (90), o painel compila e o pacote do Worker monta com o despertador. As telas novas foram vistas numa prévia com dados de mentira (Início, Follow-up, Colmeia, Vídeos).
+
+Conferido em produção: `node scripts/conferir.mjs https://agenciasetup.com.br` deu tudo certo; pelo conector, `followup_lista` traz `tetos` e `pode_tocar`, `listar_comenta` traz as vendas de 9 versões e `escritorio_ver` abre. O contador de toques nasceu no meio do dia e foi acertado com as 5 mensagens de vendedor que já tinham saído. O despertador foi ligado logo depois da publicação (`config.atendente.na_hora`). Não foi visto com dado de verdade: as telas novas, o efeito do recado no que os agentes escrevem e a troca de versão do Comenta X por venda.
+
+## Ainda aberto
+
+**Depende do dono**
 - [ ] **O Mac não dá sinal de vida.** O comando está em Escritório > Computadores; sem ele a tela não sabe quando o direct parou.
+- [ ] **Rodadas do direct:** são 9 por dia. Com a saída cedo, as vazias quase não gastam. Reduzir para 5 continua possível.
+- [ ] **Enxugar o que as tarefas de carrossel e de frase leem** (uns 135 KB e 56 KB todo dia). É a régua de qualidade das capas: separar "regras vigentes" do histórico com o dono olhando.
+- [ ] **Cadastro dos agentes diferente do que roda** (é banco): o Chefe sem modelo (roda Sonnet 5.5), o Atendente como "Sonnet" (é misto), o Testador de mensagens como "computador, 9h" (as versões são escritas no Worker), e os horários "às 9h" e "às 10h" (são 9h31, 9h03 e 10h03).
 
-## Lote 2: próximo (código)
-
-- [ ] **Tetos do follow-up no código.** 10 por rodada, 40 por dia e "3 toques sem resposta" só existem no texto da skill. Fazer a lista devolver quanto ainda cabe hoje e o `followup_mandar` recusar acima do teto.
-- [ ] **`followup_mandar` conferir preço e link** como o Atendente confere (hoje só olha travessão e tamanho).
-- [ ] **Pausar e demitir valer para todos os agentes do Worker.** Chefe, Caçador e Conciliador rodam mesmo pausados; a tela diz "ainda não dá por aqui" para agentes que já respeitam.
-- [ ] **O agente ler o recado do dono.** Roteirista, Olheiros e Diretor de arte recebem só o título dos cartões antigos. Passar "aprovados, com resultado" e "descartados, com o recado" na instrução de cada um.
-- [ ] **Teto de gasto completo:** o Plano (Opus), as respostas do Comenta X e as versões de mensagem não olham o teto do dia; `teto_dia_usd` por agente é gravado e ninguém lê.
-- [ ] **Placar por item da Colmeia** conta todas as regras em toda conversa (não mede nada). Gravar só o que a IA usou.
-- [ ] **Comenta X aprender com venda**, não só com clique e seguidor.
-- [ ] **Cartões parados:** "Depois" nunca volta; aprovado que já foi feito não fecha; cartão do Olheiro visual fica órfão quando é aprovado depois do Diretor rodar.
-- [ ] **Zelador:** alarmar quando o aviso sai para 0 aparelhos; vigiar as entregas da Hubla, o Chefe parado e a rodada do direct perdida entre duas rodadas seguidas.
-- [ ] **Turnos:** custo informado no fechamento de um turno aberto não entra em `consumo_ia`; `dados` com mais de 4.000 letras some sem erro; o Caçador não registra turno quando falha.
-- [ ] **Telas:** seletor de modo do Atendente (hoje um toque troca o modo sem dizer para qual); contador no menu e bloco "Esperando você" no Início; filtro "Arquivados" na Colmeia com "Voltar a valer"; o roteiro inteiro na tela de vídeos; a seta de desempenho contar só venda dos últimos 7 dias; a tarefa (frase ou carrossel) no rótulo do turno.
-- [ ] **Uma fonte só para preço e resposta:** a skill do direct repete a tabela de respostas e os preços que também estão na Colmeia e na oferta.
-- [ ] **Cadastro dos agentes** (onde roda, modelo, cadência) diferente do que existe; `docs/escritorio.md` com itens já feitos marcados como pendentes.
-- [ ] **Limite do plano:** as tarefas de carrossel e de frase leem uns 135 KB e 56 KB de skill todo dia; separar "regras vigentes" do histórico. A parte "Comandos" do `CLAUDE.md` é mais da metade do arquivo e carrega em toda sessão.
+**Código**
+- [ ] **Quem executa o cartão aprovado.** O Chefe cobra, mas ninguém começa sozinho. Uma tarefa "fazer as aprovadas pequenas" seria o próximo passo.
+- [ ] **Cartões parados:** aprovado que já foi feito não fecha sozinho; o cartão do Olheiro visual fica órfão quando é aprovado depois do Diretor rodar.
+- [ ] **Uma fonte só para preço e resposta:** a skill do direct ainda repete a tabela de respostas (agora dizendo que a Colmeia vale mais).
+- [ ] **`teto_dia_usd` por agente** é gravado e ninguém lê.
+- [ ] **O botão do mini curso no direct não leva a versão da mensagem:** a venda é atribuída pela pessoa (follow-up). Levar o código do link curto deixaria a conta direta.
+- [ ] **Pedido de upsell herda os toques do original** (`vendas.js`): em Vendas a mesma pessoa conta duas vezes no mesmo conteúdo.
+- [ ] **Zelador:** a rodada do direct perdida entre duas rodadas seguidas ainda passa.
+- [ ] **No celular,** Escritório, Follow-up e Colmeia ficam dentro de "Mais": o contador só aparece abrindo a folha.
 
 ## O que está bem feito (não mexer)
 

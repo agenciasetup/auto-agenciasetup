@@ -100,14 +100,25 @@ const ROTAS: Rota[] = [
 
 type Item = { id: string; para: string; t: string; i: ReactNode; n?: number; secao: string; novo?: boolean };
 
-function itensDoMenu(pode: (a: string) => boolean, p: any): Item[] {
+// Quanto espera a decisão do dono em cada lugar (GET /esperando): { mesa: 3, duvidas: 1 }. Só entra número maior que
+// zero. Resposta estranha, cargo sem acesso ou leitura que falhou dão um objeto vazio: o menu fica sem o contador.
+function esperandoPorLugar(e: any): Record<string, number> {
+  const r: Record<string, number> = {};
+  for (const i of Array.isArray(e?.itens) ? e.itens : []) {
+    if (i && typeof i.id === 'string' && typeof i.n === 'number' && i.n > 0) r[i.id] = i.n;
+  }
+  return r;
+}
+
+function itensDoMenu(pode: (a: string) => boolean, p: any, esperando: any): Item[] {
   const posts = (p?.pecas_rascunho || 0) + (p?.pecas_erro || 0);
+  const espera = esperandoPorLugar(esperando);
   // Organizado pelo que a pessoa faz (pedido do dono em 24/10/2026: "ta muito confuso o painel"): redes (postar,
   // agenda, resultados, automações), site, vendas, alunos e sistema. Sem selo "Novo" em tudo.
   return [
     { id: 'inicio', para: '/', t: 'Início', i: <House />, secao: 'Hoje' },
     ...(pode('plano.ver') ? [{ id: 'plano', para: '/plano', t: 'Plano', i: <Sparkles />, secao: 'Hoje' }] : []),
-    ...(pode('escritorio.ver') ? [{ id: 'escritorio', para: '/escritorio', t: 'Escritório', i: <Building2 />, secao: 'Hoje' }] : []),
+    ...(pode('escritorio.ver') ? [{ id: 'escritorio', para: '/escritorio', t: 'Escritório', i: <Building2 />, secao: 'Hoje', n: espera.mesa }] : []),
     ...(pode('pecas.ver') ? [{ id: 'posts', para: '/posts', t: 'Posts e agenda', i: <CalendarDays />, secao: 'Redes sociais', n: posts || undefined }] : []),
     ...(pode('desempenho.ver') ? [{ id: 'resultados', para: '/resultados', t: 'Resultados', i: <BarChart3 />, secao: 'Redes sociais' }] : []),
     ...(pode('gatilhos.ver') ? [{ id: 'comenta', para: '/comenta', t: 'Automações', i: <MessageCircleHeart />, secao: 'Redes sociais' }] : []),
@@ -118,9 +129,9 @@ function itensDoMenu(pode: (a: string) => boolean, p: any): Item[] {
     ...(pode('cursos.ver') ? [{ id: 'cursos', para: '/cursos', t: 'Cursos e páginas de venda', i: <GraduationCap />, secao: 'Site' }] : []),
     ...(pode('vendas.ver') ? [{ id: 'vendas', para: '/vendas', t: 'Vendas', i: <ShoppingBag />, secao: 'Vendas' }] : []),
     ...(pode('vendas.ver') ? [{ id: 'celular', para: '/celular', t: 'App de vendas e avisos', i: <Smartphone />, secao: 'Vendas' }] : []),
-    ...(pode('followup.ver') ? [{ id: 'followup', para: '/followup', t: 'Follow-up do direct', i: <Send />, secao: 'Vendas' }] : []),
+    ...(pode('followup.ver') ? [{ id: 'followup', para: '/followup', t: 'Follow-up do direct', i: <Send />, secao: 'Vendas', n: espera.duvidas }] : []),
     ...(pode('recuperar.ver') ? [{ id: 'recuperar', para: '/recuperar', t: 'Recuperar vendas', i: <MessageCircle />, secao: 'Vendas' }] : []),
-    ...(pode('colmeia.ver') ? [{ id: 'colmeia', para: '/colmeia', t: 'Colmeia', i: <Hexagon />, secao: 'Vendas' }] : []),
+    ...(pode('colmeia.ver') ? [{ id: 'colmeia', para: '/colmeia', t: 'Colmeia', i: <Hexagon />, secao: 'Vendas', n: espera.colmeia }] : []),
     ...(pode('numeros.ver') ? [{ id: 'numeros', para: '/numeros', t: 'Números do curso', i: <TrendingUp />, secao: 'Vendas' }] : []),
     ...(pode('suporte.ver') ? [{ id: 'suporte', para: '/suporte', t: 'Suporte', i: <Headset />, secao: 'Alunos' }] : []),
     ...(pode('alunos.ver') ? [{ id: 'alunos', para: '/alunos', t: 'Alunos', i: <UsersRound />, secao: 'Alunos' }] : []),
@@ -212,6 +223,7 @@ function Moldura({ eu, aoSair }: { eu: Eu; aoSair: () => void }) {
   const { rota } = useRota();
   const { tema, setTema } = useTema();
   const [p, setP] = useState<any>(null);
+  const [esperando, setEsperando] = useState<any>(null);
   const [mais, setMais] = useState(false);
   const [paleta, setPaleta] = useState(false);
   const [menuPessoa, setMenuPessoa] = useState(false);
@@ -220,7 +232,12 @@ function Moldura({ eu, aoSair }: { eu: Eu; aoSair: () => void }) {
 
   // Contadores do menu: ao abrir, a cada minuto e quando a pessoa volta para a aba.
   useEffect(() => {
-    const carregar = () => get('/pendencias').then(setP).catch(() => {});
+    const carregar = () => {
+      get('/pendencias').then(setP).catch(() => {});
+      // O que espera a decisão do dono (mesa do Escritório, dúvidas do direct, Colmeia). Leitura à parte: se falhar,
+      // o menu continua com os números que já tinha.
+      get('/esperando').then(setEsperando).catch(() => {});
+    };
     carregar();
     const t = setInterval(carregar, 60_000);
     const vis = () => document.visibilityState === 'visible' && carregar();
@@ -242,7 +259,7 @@ function Moldura({ eu, aoSair }: { eu: Eu; aoSair: () => void }) {
   let achada: { r: Rota; params: Record<string, string> } | null = null;
   for (const r of ROTAS) { const pr = casa(r.padrao, rota.caminho); if (pr) { achada = { r, params: pr }; break; } }
   const pode = (a: string) => eu.permissoes.includes(a);
-  const itens = itensDoMenu(pode, p);
+  const itens = itensDoMenu(pode, p, esperando);
   const secoes = [...new Set(itens.map((i) => i.secao))];
   const aba = achada ? achada.r.aba : '';
   const Tela = achada ? achada.r.tela : null;

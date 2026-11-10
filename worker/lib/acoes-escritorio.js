@@ -5,7 +5,7 @@ import { db } from '../nucleo/db.js';
 import { Erro } from '../nucleo/util.js';
 import { salvarConfigAtendente } from './atendente.js';
 import { VENDEDORES } from './followup.js';
-import { baterPonto, sinalDeVida, criarProposta, decidirProposta, lerAgente, registrarTurno, resultadoProposta, salvarAgente, salvarTeto, verEscritorio } from './escritorio.js';
+import { CONTROLA, baterPonto, sinalDeVida, criarProposta, decidirProposta, lerAgente, registrarTurno, resultadoProposta, salvarAgente, salvarTeto, verEscritorio } from './escritorio.js';
 
 const quemE = (u) => ({ quem: u.casa ? null : u.id, quemNome: u.casa ? 'Claude' : String(u.nome || '').trim().split(/\s+/)[0] });
 
@@ -19,8 +19,10 @@ export async function lerAgenteDoEscritorio(x, id) {
   return (await lerAgente(x.env, id)) || { aviso: 'Esse agente não existe no escritório.' };
 }
 
-// Mudar o estado de quem dá para ligar e desligar de verdade: o Atendente (config.atendente) e os vendedores do
+// Mudar o estado de quem tem uma chave própria para ligar e desligar: o Atendente (config.atendente) e os vendedores do
 // follow-up (config.followup_vendedores). Sempre fica pelo menos um vendedor no sorteio.
+// Os outros agentes do Worker não precisam de troca aqui: cada um confere agentes.estado no começo da rodada
+// (agenteLiberado, em escritorio.js). A lista de quem obedece à pausa é CONTROLA.
 const VENDEDOR = { 'vendedor-calango': 'calango', 'vendedor-pergunta': 'pergunta' };
 async function aplicarEstado(env, id, estado) {
   if (id === 'atendente') return salvarConfigAtendente(env, { ligado: estado === 'ativo' });
@@ -44,6 +46,11 @@ export async function salvarAgenteDoEscritorio(x, dados, id) {
   }
   const r = await salvarAgente(x.env, dados || {}, id, quemE(x.u));
   await auditar(x.env, x.u, r.criado ? 'escritorio.agente.criar' : 'escritorio.agente.editar', `agente:${r.id}`, { estado: (dados && dados.estado) || null, nivel: r.nivel || null, motivo: (dados && dados.motivo) ? String(dados.motivo).slice(0, 200) : null, caderno: !!(dados && (dados.caderno !== undefined || dados.caderno_mais)) });
+  // Pausar ou demitir quem não lê o estado só muda a tela: quem pediu (o painel não mostra o botão, mas o conector
+  // aceita) fica sabendo que a tarefa continua rodando.
+  if ((novoEstado === 'pausado' || novoEstado === 'desligado') && !CONTROLA[r.id]) {
+    return { ...r, aviso: r.onde === 'computador' ? 'O estado mudou só na tela: este agente roda no computador, por tarefa agendada do Claude, e ela continua rodando. Para parar de verdade, desligue a tarefa no app do Claude.' : 'O estado mudou só na tela: este agente é uma rotina fixa do relógio do sistema e continua rodando.' };
+  }
   return r;
 }
 

@@ -217,6 +217,15 @@ Fora do painel: `/checkout/<oferta>`, `/checkout/obrigado?pedido=`, `POST /api/c
 - `POST /followup/atendente` `{ ligado, modo: automatico|rascunho }` → a configuração (`followup.atendente`, Editor)
 - `POST /followup/atendente/testar` `{ texto, nome }` → `{ classe, mensagens, interesse, motivo, custo_usd }`, sem mandar nem gravar nada
 - `POST /followup/:id/mandar` `{ texto }` → manda pela API do Instagram (cada linha, uma mensagem; sem texto, a próxima mensagem da ficha). 409 fora das 24 horas
+- `GET /followup` devolve também `tetos: { dia: { usado, teto, sobra }, rodada: { usado, teto, sobra, janela_min }, sem_resposta }` e, em cada pessoa, `pode_tocar`, `toque` (`puxada` ou `resposta`), `nao_tocar_motivo`, `pausa` (`dono`, `atendente` ou null) e `pausa_motivo`. É a regra única do sistema (`podeTocar` em `worker/lib/followup.js`); `GET /followup/:id` traz os mesmos campos
+- `POST /followup/:id/mandar` pelo conector (agente) recusa com 409 quando `pode_tocar` é falso e quando o texto tem preço ou link que não está liberado (`conferirToque` em `worker/lib/atendente.js`). Pelo painel é o dono mandando, então só recusa quem está em "Não quer"
+- `POST /followup/atendente` aceita `na_hora: true|false` (a resposta sai uns 20 segundos depois da última mensagem, pelo despertador; desligado, vale só o relógio de minuto)
+- `POST /colmeia/:id` `{ responder: "texto" }` → a resposta do dono a uma pergunta do Conciliador: o item é reescrito e continua em proposta. Devolve `{ ajustou, aviso, ...item }`. Só pelo painel
+- `GET /colmeia` devolve, em cada item, `porque` (o "por quê" sem a pergunta) e `pergunta` (a pergunta do Conciliador ao dono, só em junção que espera)
+
+## Esperando você (`worker/lib/acoes-esperando.js`)
+
+- `GET /esperando` → `{ itens: [{ id: mesa|duvidas|colmeia|entregas, n, titulo, um, varios, url }], total }`. `n` é null quando a pessoa não pode abrir aquela tela. É o que o bloco do Início e os contadores do menu leem. Os números ficam 30 segundos na memória do Worker
 
 ## Rotas fora da API
 

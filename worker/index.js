@@ -9,6 +9,8 @@ import { servidorMcp } from './lib/mcp.js';
 import { apiPainel } from './lib/api/painel.js';
 import { retornoConexao } from './plataformas/conexao.js';
 import { rodarMinuto, rodarRelogio } from './lib/relogio.js';
+// O despertador do Atendente (Durable Object): a classe precisa sair do módulo principal do Worker.
+export { Despertador } from './despertador.js';
 import { ofertaAtiva, webhookMeta } from './lib/gatilhos.js';
 import { sinalPorCodigo } from './lib/escritorio.js';
 import { webhookResend } from './lib/emails.js';

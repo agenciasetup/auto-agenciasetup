@@ -1,6 +1,6 @@
 # Escritório de IA da Agência Setup
 
-Plano proposto em 09/11/2026, a pedido do dono. Nada daqui está construído ainda, fora o que está marcado como "já existe". Cada fase espera o ok antes de mexer em banco, publicar ou falar com alguém nas redes.
+Plano proposto em 09/11/2026, a pedido do dono. Quando foi escrito, nada daqui estava construído, fora o que está marcado como "já existe"; o que foi feito desde então está marcado nas fases, mais abaixo. Cada fase espera o ok antes de mexer em banco, publicar ou falar com alguém nas redes.
 
 ## A ideia em uma frase
 
@@ -90,17 +90,17 @@ Magnific de graça, toque para quem não respondeu e Hubla. Duas saídas:
 | Conteúdo | Redator | O texto de todo post, de frase e de carrossel: tese, slides, legenda e Comenta X (a pauta pronta) | computador, reserva na nuvem | já existe (skills); desde 10/11 é só o texto |
 | Design | Designer | A arte de todo post: ficha da capa, imagem, montagem nas 5 etapas e capa animada | computador | já existe (skills); veio do Conteúdo em 10/11 |
 | Design | Revisor | A última porta antes do dono: o texto primeiro, depois a arte | computador | já existe (revisor-de-capa); veio do Conteúdo em 10/11 |
-| Vídeo | Caçador de ganchos | As primeiras frases dos Reels e Shorts que explodiram no nicho | Worker | novo |
-| Vídeo | Roteirista | 3 roteiros de gravação de tela por semana | Worker | novo |
-| Design | Olheiro visual | Toda segunda, as capas fora da curva em nota e salvos e o que elas têm em comum | Worker, com visão | código pronto em 10/11 |
-| Design | Diretor de arte | 1 teste de estilo por semana para o Designer, medido por nota e salvos | Worker | código pronto em 10/11 |
-| Sistema | Olheiro de ferramentas | Repositórios, skills e novidades que melhorariam o sistema. No máximo 3 por semana | nuvem | novo |
-| Sistema | Zelador | Confere se cada turno rodou, o gasto e os erros. É quem aciona o plantão | Worker | novo |
+| Vídeo | Caçador de virais (era o Caçador de ganchos) | O Short que saiu da curva do próprio canal, nos canais do nicho. Sem IA | Worker | no ar (10/11) |
+| Vídeo | Roteirista | Até 3 roteiros por rodada, segunda e quinta, a partir dos virais | Worker | no ar (10/11) |
+| Design | Olheiro visual | Toda segunda, as capas fora da curva em nota e salvos e o que elas têm em comum | Worker, com visão | no ar (10/11) |
+| Design | Diretor de arte | 1 teste de estilo por semana para o Designer, medido por nota e salvos | Worker | no ar (10/11) |
+| Sistema | Olheiro de ferramentas | Repositórios, skills e novidades que melhorariam o sistema. No máximo 3 por semana | Worker | no ar (10/11) |
+| Sistema | Zelador | Confere se cada turno rodou, o gasto e os erros, e avisa. O plantão ainda não existe | Worker | no ar (10/11) |
 | Produto | Ouvinte | Lê dúvidas do direct, dos alunos e os comentários, e monta o mapa do que pedem | Worker, semanal | novo |
 | Produto | Criador de oferta | 1 proposta de produto ou order bump por mês, com teste barato de procura antes de construir | Worker | novo |
 | Receita | Gerente de receita | Funil, recuperação, bump, cupom e preço. 1 ação por dia | Worker | existe em parte ("O que fazer agora") |
 | Receita | Tráfego | Lê a conta de anúncios e propõe pausar, aumentar ou criativo novo. Não mexe em verba | Worker | novo, só se houver anúncio rodando |
-| Direção | Chefe de gabinete | Resumo das 8h com as 3 decisões do dia e o fechamento da semana | Worker | novo |
+| Direção | Chefe de gabinete | Resumo das 8h com as 3 decisões do dia (o fechamento da semana ainda não existe) | Worker | no ar (10/11) |
 
 Modelos: Haiku 5.5 para coletar e classificar, Sonnet 5.5 para escrever e analisar, Opus 5.5 só no fechamento da semana.
 
@@ -184,13 +184,14 @@ Pronto quando: uma conversa de teste é respondida do celular com o computador d
 ### Fase 2. A base do escritório e o plantão (M)
 
 - [x] Tabelas `agentes`, `turnos` e `propostas` (migration 34, aplicada em 09/11), lógica em `worker/lib/escritorio.js`, ações em `acoes-escritorio.js`, 4 permissões `escritorio.*` (Administrador e Editor) e 6 ferramentas do conector (`escritorio_ver`, `_turno`, `_propor`, `_decidir`, `_resultado`, `_agente`). 25 agentes cadastrados: 11 que já trabalham e 14 do plano. No ar desde 09/11/2026.
-- [x] Teto de gasto por dia em `config.escritorio` (US$ 2 até o dono mudar, pelo botão "Mudar o teto" da tela), com o custo anotado em cada turno. Falta os agentes do Worker consultarem o teto antes de gastar (`orcamento` em `worker/lib/escritorio.js`), quando existirem.
-- [ ] Zelador e plantão: se a tarefa do computador não rodou até a hora, a nuvem cobre e o celular avisa.
+- [x] Teto de gasto por dia em `config.escritorio` (US$ 2 até o dono mudar, pelo botão "Mudar o teto" da tela), com o custo anotado em cada turno. Os agentes do Worker que gastam IA consultam o teto antes de gastar (`orcamento` em `worker/lib/escritorio.js`): o Atendente e os de `worker/lib/agentes/` (conferido no código em 10/11). O teto por agente (`agentes.teto_dia_usd`) é gravado e ainda ninguém lê.
+- [x] Zelador (`worker/lib/agentes/zelador.js`, no ar em 10/11/2026, no minuto 7 de toda hora, sem IA): tarefa do computador que não rodou, turno com erro, fila do Atendente, aviso da Meta parado e gasto perto do teto. Avisa no celular e, quando o problema se repete, põe cartão na mesa. `node scripts/conferir-sistema.mjs` confere. No lote 2 da revisão (código pronto em 10/11, falta publicar) ele passa a olhar também a entrega do Combo parada há mais de 6 horas, o resumo das 8h que não saiu, o turno preso em "rodando" e o aviso que não chega a nenhum aparelho (vira cartão na mesa).
+- [ ] Plantão: se a tarefa do computador não rodou até a hora, a nuvem cobre. Hoje o Zelador só avisa.
 - [x] Conciliador da Colmeia (10/11/2026, no ar): acha os itens que se contradizem e junta numa regra só. Junção segura entra valendo, com botão de desfazer; o resto vira proposta para o dono.
 - [x] Setor de vídeo, primeira parte (10/11/2026, no ar): Caçador de virais (Shorts fora da curva do próprio canal, de graça) e Roteirista (roteiros que terminam na venda, na mesa). Olheiro de animação, Locutor, Animador e Revisor de vídeo são vagas abertas; os três últimos só rodam no Windows.
 - [ ] Reserva na nuvem para o post de frase.
 - [x] Tela Escritório, versão simples (`/escritorio`, `admin/src/telas/Escritorio.tsx`): salas com parede de cor (a Direção amarela, com a cruz e o versículo), um Calango de pixel por agente (`node scripts/escritorio-calango.mjs`), a mesa com Aprovar, Depois e Descartar, o gasto do dia e o teto. No ar desde 09/11/2026. Ainda não é a versão isométrica que o dono pediu.
-- [x] No ar em 09/11: as três tarefas agendadas (direct, frase e carrossel) registram o turno no fim com `escritorio_turno`. Os agentes do Worker não gravam turno: o trabalho de hoje de cada um sai das tabelas que eles já escrevem (`escritorio_atividade`, migration 35), sem custo de chamada. Exemplo do primeiro dia: 19 materiais entregues, 5 posts publicados, 195 pautas novas, 60 posts com métricas e 4 e-mails de recuperação.
+- [x] No ar em 09/11: as três tarefas agendadas (direct, frase e carrossel) registram o turno no fim com `escritorio_turno`. Os agentes do Worker não gravam turno: o trabalho de hoje de cada um sai das tabelas que eles já escrevem (`escritorio_atividade`, migration 35), sem custo de chamada. Exemplo do primeiro dia: 19 materiais entregues, 5 posts publicados, 195 pautas novas, 60 posts com métricas e 4 e-mails de recuperação. Isso vale para as rotinas fixas do relógio (entregador, publicador, pesquisador, analista e recuperador). Os agentes que vieram depois, com código próprio em `worker/lib/agentes/`, gravam turno com o custo.
 
 Pronto quando: um dia inteiro com o computador desligado termina com os posts do dia como rascunho e o aviso de quem cobriu.
 
@@ -198,8 +199,8 @@ Pronto quando: um dia inteiro com o computador desligado termina com os posts do
 
 - [ ] Olheiro de concorrentes e virais, com a lista de perfis escolhida por você.
 - [ ] Editor-chefe (as 3 pautas do dia) e o caderno de lições da semana.
-- [ ] Chefe de gabinete: resumo das 8h no celular com as 3 decisões do dia.
-- [ ] Caçador de ganchos, roteirista, olheiro visual e diretor de arte.
+- [x] Chefe de gabinete: resumo das 8h no celular com as 3 decisões do dia (`worker/lib/agentes/chefe-de-gabinete.js`, pelo relógio às 8h02; o resumo de 10/11/2026 saiu). `node scripts/conferir-chefe.mjs` confere. No lote 2 da revisão (código pronto em 10/11, falta publicar) o aviso ganha a cobrança do que está parado: cartão aprovado há mais de 2 dias sem resultado e cartão em "Depois" há mais de 7 dias.
+- [x] Caçador de virais (o antigo Caçador de ganchos), Roteirista, Olheiro visual e Diretor de arte: os quatro têm código em `worker/lib/agentes/` e rodam pelo relógio (o vídeo na Fase 2; o Design na linha abaixo).
 - [x] Divisão entre Conteúdo e Design aplicada (10/11/2026, migration 44, com o ok do dono). Olheiro visual e Diretor de arte no ar desde o mesmo dia (`node scripts/conferir-design.mjs`): na primeira rodada, o cartão das capas fora da curva e o primeiro teste de estilo foram para a mesa.
 
 Pronto quando: você passa uma semana decidindo só pelo resumo das 8h, e pelo menos um post nasceu de um cartão do olheiro.
@@ -208,7 +209,7 @@ Pronto quando: você passa uma semana decidindo só pelo resumo das 8h, e pelo m
 
 - [ ] Gerente de receita diário.
 - [ ] Ouvinte e criador de oferta (mensal).
-- [ ] Olheiro de ferramentas (semanal).
+- [x] Olheiro de ferramentas (semanal): `worker/lib/agentes/olheiro-de-ferramentas.js`. Roda no Worker (e não na nuvem, como estava no plano), uma vez por semana, na primeira chance a partir de segunda às 9h21. A primeira rodada foi em 10/11/2026.
 - [ ] Tráfego, se houver anúncio rodando.
 
 Pronto quando: cada time tem pelo menos uma proposta executada com o resultado anotado.
@@ -225,7 +226,7 @@ Pronto quando: cada time tem pelo menos uma proposta executada com o resultado a
   - **Consumo.** Tabela `consumo_ia` (migration 38), uma linha por chamada, escrita por `anotarConsumo` (`worker/lib/consumo.js`). Quem roda no computador usa o plano do Claude e não tem custo de API: a tela diz isso em vez de mostrar zero.
   - **Arrumação de 10/11 (o dono achou a primeira versão bagunçada).** Na geral, as 8 salas têm o mesmo tamanho e ficam em cartões com espaço: no topo o ponto da cor do setor, o nome e o botão de expandir; no rodapé, quantos trabalham, as vagas e o gasto de hoje. Só o botão abre a sala (nada de sala inteira clicável nem cursor de lupa). A troca de visão é animada (a sala pequena cresce até a grande).
   - **Celular.** Duas salas por linha na geral; como o Calango fica pequeno para o dedo, o toque nele abre a sala; na sala aberta, o rótulo mostra só o nome e a equipe vem logo abaixo.
-- [x] A carreira (09/11, no ar): migration 37. Nível de 1 a 4 (Em experiência, Efetivo, Sênior, Líder da sala) e o histórico de cada agente (admitido, promovido, rebaixado, pausado, voltou, demitido, anotação), sempre com o motivo. Quadro de pessoal na tela com os últimos movimentos e os demitidos. Pausar e demitir desligam de verdade o Atendente (`config.atendente`) e os dois vendedores (`config.followup_vendedores`, sempre sobra um); para os outros a tela não mostra esses botões enquanto o relógio e as tarefas não lerem o estado.
+- [x] A carreira (09/11, no ar): migration 37. Nível de 1 a 4 (Em experiência, Efetivo, Sênior, Líder da sala) e o histórico de cada agente (admitido, promovido, rebaixado, pausado, voltou, demitido, anotação), sempre com o motivo. Quadro de pessoal na tela com os últimos movimentos e os demitidos. Pausar e demitir desligam de verdade o Atendente (`config.atendente`) e os dois vendedores (`config.followup_vendedores`, sempre sobra um); para os outros a tela não mostra esses botões enquanto o relógio e as tarefas não lerem o estado. Lote 2 da revisão (código pronto em 10/11, falta publicar): os agentes do Worker com código próprio (Chefe de gabinete, Conciliador, Caçador de virais, Roteirista, Olheiro visual, Diretor de arte, Zelador e Olheiro de ferramentas) conferem o próprio estado no começo de cada rodada (`agenteLiberado` em `worker/lib/escritorio.js`: só trabalha quem está ativo) e ganham os botões. Continuam sem eles as rotinas fixas do relógio e quem roda no computador por tarefa agendada; o perfil diz isso.
 - [x] Um boneco por função (09/11, no ar): o dono escolheu os Calangos. Cada agente tem o seu Calango, com a roupa e o objeto da função (vendedor de polo e celular, atendente de fone e prancheta, entregador de boné e caixa, testador de jaleco e frasco, fiscal de juiz, recuperador de salva-vidas, pesquisador de detetive, analista de óculos e gráfico, editor-chefe de viseira, publicador de megafone, zelador de macacão e chaves, diretor de arte de boina, caçador de ganchos com vara de pescar, e assim por diante). As 7 folhas (4 por folha, fundo lilás) ficam em `_local/escritorio/folha-*.png`; `node scripts/escritorio-bonecos.mjs <folha.png> <id1,id2,id3,id4>` tira o fundo e a sombra, separa cada um e deixa todos na mesma escala com os pés na mesma linha. O boneco é uma imagem só: anda aos pulinhos e vira de lado conforme a direção. Agente novo: gerar no Magnific com a folha de Vendas como referência de personagem, recortar com o id do agente e rodar `node scripts/escritorio-arte.mjs`.
 - [ ] Modo de gravação, para virar Reels.
 - [ ] Primeira proposta do time de Produto sobre vender o escritório.

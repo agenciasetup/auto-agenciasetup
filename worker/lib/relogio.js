@@ -36,7 +36,8 @@ const TAREFAS = {
 export const tarefaDaVez = (quando) => RODIZIO[Math.floor(quando / 600_000) % RODIZIO.length];
 
 // A conta do Instagram de cada perfil, com o token aberto, para o Atendente ler a conversa e responder.
-async function atenderODirect(env) {
+// Exportada para o despertador do Atendente (worker/despertador.js), que roda o mesmo caminho fora do relógio.
+export async function atenderODirect(env) {
   await prepararIntegracoes(env);
   const guardadas = new Map();
   const contaDe = async (perfil) => {
@@ -52,7 +53,7 @@ async function atenderODirect(env) {
 // Chamadas externas que cada etapa do minuto precisa ter garantidas (estimativa por cima). Ficam reservadas desde o
 // começo, para o Atendente e o Comenta X não gastarem tudo antes; a reserva é solta quando a etapa começa.
 // fila: só a conferência de todo minuto (publicar uma peça gasta mais, e a fila ainda não olha o contador).
-const RESERVA = { fila: 2, fechamento: 8, seo: 12, chefe: 18, zelador: 18, 'olheiro-de-ferramentas': 12, 'cacador-de-virais': 12, roteirista: 32, 'olheiro-visual': 32, 'diretor-de-arte': 16 };
+const RESERVA = { fila: 2, fechamento: 8, seo: 12, chefe: 24, zelador: 26, 'olheiro-de-ferramentas': 12, 'cacador-de-virais': 12, roteirista: 32, 'olheiro-visual': 32, 'diretor-de-arte': 16 };
 // O Comenta X lê os comentários (a reserva do aviso da Meta) deixando lugar para um envio da fila: o fixo e um item.
 const RESERVA_ENVIO = 17;
 // Os números dos posts recentes são só para o painel e gastam umas 6 chamadas por conta (4 contas): num minuto cheio

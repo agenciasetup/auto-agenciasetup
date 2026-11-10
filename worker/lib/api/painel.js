@@ -276,6 +276,8 @@ const rotas = roteador([
   ['GET', '/followup/respostas', (x) => A.verRespostasFollowup(x)],
   ['POST', '/followup', async (x) => A.salvarUmFollowup(x, await corpoJson(x.request))],
   ['POST', '/followup/sincronizar', (x) => A.sincronizarFollowupAgora(x)],
+  // O que espera a decisão do dono, num número por tela (bloco do Início e contadores do menu).
+  ['GET', '/esperando', (x) => A.verEsperando(x)],
   ['GET', '/colmeia', (x) => A.verColmeia(x, Object.fromEntries(x.url.searchParams))],
   ['POST', '/colmeia', async (x) => A.salvarNaColmeia(x, await corpoJson(x.request))],
   ['POST', '/colmeia/:id', async (x) => A.salvarNaColmeia(x, await corpoJson(x.request), x.params.id)],

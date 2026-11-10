@@ -51,6 +51,84 @@ export function vendedorDe(usuario, ativos = VENDEDORES_PADRAO) {
   return ativos[h % ativos.length];
 }
 
+// ---------------------------------------------------------------- os tetos (a conta não pode ser banida)
+// Até 10/11/2026 os tetos do follow-up só existiam no texto da tarefa do direct: se ela errasse a conta, nada segurava.
+// Agora a conta é do sistema. "Puxada" é a mensagem nossa para quem não escreveu por último (o toque do vendedor);
+// responder quem escreveu não gasta o teto do dia, mas conta nas pessoas da rodada.
+// - dia: mensagens puxadas por dia (o dia de Brasília);
+// - rodada: pessoas que recebem mensagem nossa dentro da janela (uma rodada da tarefa);
+// - sem_resposta: mensagens nossas seguidas sem resposta dela; na última, a pessoa vai para "Não quer".
+// O dono muda em config.followup_tetos; sem a chave, vale o padrão. A conta do dia fica em config.followup_toques.
+const TETOS_PADRAO = { dia: 40, rodada: 10, janela_min: 45, sem_resposta: 3 };
+const CHAVE_TETOS = 'followup_tetos';
+const CHAVE_TOQUES = 'followup_toques';
+const BRASILIA = 3 * 3600_000;
+const diaDeBrasilia = (ms) => new Date(ms - BRASILIA).toISOString().slice(0, 10);
+const inteiroEntre = (v, min, max, padrao) => { const n = Math.round(Number(v)); return Number.isFinite(n) && n >= min && n <= max ? n : padrao; };
+
+export async function tetosFollowup(env, agora = Date.now()) {
+  const linhas = await db.select(env, 'config', { filtros: { chave: `in.(${CHAVE_TETOS},${CHAVE_TOQUES})` }, select: 'chave,valor' }).catch(() => []);
+  const de = (chave) => ((linhas.find((l) => l.chave === chave) || {}).valor) || {};
+  const c = de(CHAVE_TETOS);
+  const cfg = {
+    dia: inteiroEntre(c.dia, 1, 200, TETOS_PADRAO.dia), rodada: inteiroEntre(c.rodada, 1, 50, TETOS_PADRAO.rodada),
+    janela_min: inteiroEntre(c.janela_min, 10, 240, TETOS_PADRAO.janela_min), sem_resposta: inteiroEntre(c.sem_resposta, 1, 10, TETOS_PADRAO.sem_resposta),
+  };
+  const t = de(CHAVE_TOQUES);
+  const hoje = diaDeBrasilia(agora);
+  const puxadas = t.dia === hoje ? Math.max(0, Number(t.puxadas) || 0) : 0;
+  const horas = (Array.isArray(t.horas) ? t.horas : []).filter((h) => agora - Date.parse(h) < cfg.janela_min * 60_000);
+  return {
+    dia: { usado: puxadas, teto: cfg.dia, sobra: Math.max(0, cfg.dia - puxadas) },
+    rodada: { usado: horas.length, teto: cfg.rodada, sobra: Math.max(0, cfg.rodada - horas.length), janela_min: cfg.janela_min },
+    sem_resposta: cfg.sem_resposta, hoje, horas,
+  };
+}
+// Soma um toque de vendedor na conta do dia e da rodada. Nunca derruba quem chamou: a mensagem já saiu.
+async function contarToque(env, puxada, agora = Date.now(), lidos = null) {
+  try {
+    const t = lidos || await tetosFollowup(env, agora);
+    await db.insert(env, 'config', {
+      chave: CHAVE_TOQUES, atualizado_em: new Date(agora).toISOString(),
+      valor: { dia: t.hoje, puxadas: t.dia.usado + (puxada ? 1 : 0), horas: [...t.horas, new Date(agora).toISOString()].slice(-60) },
+    }, { upsert: true, conflito: 'chave', select: 'chave' });
+  } catch (e) { console.error('followup tetos', e && e.message); }
+}
+
+// Mensagens nossas seguidas, de vendedor, depois da última fala dela (as do Atendente não contam: ele só responde).
+function semRespostaDe(historico) {
+  let n = 0;
+  const h = Array.isArray(historico) ? historico : [];
+  for (let i = h.length - 1; i >= 0; i--) {
+    if (h[i].tipo === 'pessoa') break;
+    if (h[i].tipo === 'nos' && h[i].quem !== 'Atendente') n++;
+  }
+  return n;
+}
+// Ela falou por último? (então a nossa próxima mensagem é resposta, não puxada)
+const elaFalouPorUltimo = (l) => !!l.ultima_em && (!l.nosso_em || Date.parse(l.ultima_em) > Date.parse(l.nosso_em));
+
+// Pode mandar mensagem para esta pessoa agora? É a regra única: a lista, a ficha e o envio pelo sistema usam a mesma.
+// l: a linha da pessoa (com fase, ultima_em, nosso_em, historico). pausa: de pausasDe. Devolve { pode_tocar, toque,
+// nao_tocar_motivo }. toque: "resposta" (ela escreveu por último) ou "puxada".
+export function podeTocar(l, tetos, pausa = null, agora = Date.now()) {
+  const nao = (motivo, toque) => ({ pode_tocar: false, toque, nao_tocar_motivo: motivo });
+  const resposta = elaFalouPorUltimo(l);
+  const toque = resposta ? 'resposta' : 'puxada';
+  if (pausa && pausa.pausa) return nao(pausa.pausa_motivo, toque);
+  if (l.fase === 'nao_quer') return nao('Está em "Não quer": não mande nada.', toque);
+  if (l.fase === 'duvida') return nao('A dúvida dela está com o dono: espere a resposta dele.', toque);
+  if (l.fase === 'nao_sei') return nao('Está em "Não sei o que fazer": o dono decide.', toque);
+  if (l.fase === 'comprou' && !resposta) return nao('Já comprou: só responda se ela escrever.', toque);
+  if (!tetos) return { pode_tocar: true, toque, nao_tocar_motivo: null };
+  if (tetos.rodada.sobra <= 0) return nao(`Teto de ${tetos.rodada.teto} pessoas por rodada: espere a próxima rodada.`, toque);
+  if (resposta) return { pode_tocar: true, toque, nao_tocar_motivo: null };
+  if (semRespostaDe(l.historico) >= tetos.sem_resposta) return nao(`Já foram ${tetos.sem_resposta} mensagens nossas sem resposta: não insista.`, toque);
+  if (l.nosso_em && diaDeBrasilia(Date.parse(l.nosso_em)) === diaDeBrasilia(agora)) return nao('Já recebeu mensagem nossa hoje.', toque);
+  if (tetos.dia.sobra <= 0) return nao(`Teto de ${tetos.dia.teto} mensagens puxadas por dia: acabou por hoje.`, toque);
+  return { pode_tocar: true, toque, nao_tocar_motivo: null };
+}
+
 const texto = (v, max) => { const t = String(v ?? '').trim(); return t ? t.slice(0, max) : null; };
 const quando = (v) => { if (v === null || v === '') return null; const d = new Date(v); if (Number.isNaN(d.getTime())) throw new Erro(400, 'Data inválida.'); return d.toISOString(); };
 export const normalUsuario = (v) => String(v || '').trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[/?#].*$/, '').toLowerCase();
@@ -105,7 +183,7 @@ async function pausasDe(env, linhas, agora, conversaDeGente) {
   if (conversaDeGente) {
     const suspeitos = linhas.filter((l) => !mapa.has(l.id) && l.igsid && l.humano_em && agora - Date.parse(l.humano_em) < 12 * 3600_000).slice(0, 20);
     const gente = await Promise.all(suspeitos.map((l) => conversaDeGente(env, l, agora).catch(() => false)));
-    suspeitos.forEach((l, k) => { if (gente[k]) mapa.set(l.id, { pausa: 'dono', pausa_motivo: 'O dono conversou com essa pessoa pelo aplicativo nas últimas 12 horas. Não mande por cima.' }); });
+    suspeitos.forEach((l, k) => { if (gente[k]) mapa.set(l.id, { pausa: 'dono', pausa_motivo: 'Conversa pelo aplicativo nas últimas 12 horas: essa pessoa está sendo atendida à mão, e a rodada do direct não manda nada por cima.' }); });
   }
   return mapa;
 }
@@ -125,16 +203,19 @@ export async function listaFollowup(env, { fase = 'novo', interesse = '', busca 
   if (b) filtros.or = `(usuario.ilike.*${b}*,nome.ilike.*${b}*,email.ilike.*${b}*)`;
   const lim = Math.min(200, Math.max(1, Number(limite) || 50));
   const ordem = ORDEM[f] || 'proximo_em.asc.nullsfirst,ultima_em.desc.nullslast';
-  const [r, ativos, placar] = await Promise.all([
+  const [r, ativos, placar, tetos] = await Promise.all([
     db.select(env, 'followups', { filtros, select: CAMPOS, ordem, limite: lim, contar: true }),
     vendedoresAtivos(env),
     db.rpc(env, 'followup_placar', { p_perfil: p }).catch(() => []),
+    tetosFollowup(env, agora).catch(() => null),
   ]);
   const linhas = r.linhas || r;
   const pausas = await pausasDe(env, linhas, agora, conversaDeGente);
   const itens = await Promise.all(linhas.map(async (l) => ({
     ...l, quem: undefined, respondida_por: l.quem ? l.quem.nome : null,
     ...(pausas.get(l.id) || { pausa: null, pausa_motivo: null }),
+    // A regra única de "pode mandar mensagem para esta pessoa agora?" (podeTocar): quem manda só obedece.
+    ...podeTocar(l, tetos, pausas.get(l.id), agora),
     historico: (l.historico || []).slice(-8),
     na_hora: !!(l.proximo_em && Date.parse(l.proximo_em) <= agora && ['novo', 'ofertado', 'conversando'].includes(l.fase)),
     // O vendedor de quem já foi tocado é fixo; o de quem ainda não foi é o do sorteio.
@@ -146,8 +227,11 @@ export async function listaFollowup(env, { fase = 'novo', interesse = '', busca 
   return {
     numeros: { ...numeros, na_hora: naHora, por_interesse: porInteresse }, fases: FASES, interesses: INTERESSES, fase: f, itens, total: r.total ?? itens.length,
     vendedores: VENDEDORES, vendedores_ativos: ativos, placar: lerPlacar(placar),
+    // Quanto ainda cabe hoje e nesta rodada (a conta é do sistema, não de quem manda).
+    tetos: resumoDosTetos(tetos),
   };
 }
+const resumoDosTetos = (t) => (t ? { dia: t.dia, rodada: t.rodada, sem_resposta: t.sem_resposta } : null);
 
 // O placar dos vendedores: de cada um, quantas pessoas atendeu, quantas responderam, quantas compraram e a receita.
 // As taxas só aparecem com 30 pessoas ou mais: com menos, o número engana.
@@ -169,13 +253,20 @@ export async function placarFollowup(env, perfil = 'br') {
 }
 
 // Uma pessoa pelo id ou pelo @ (com o histórico inteiro).
-export async function lerFollowup(env, { id, usuario, perfil = 'br' }) {
+export async function lerFollowup(env, { id, usuario, perfil = 'br', conversaDeGente = null, agora = Date.now() }) {
   const filtros = id ? { id: `eq.${id}` } : { perfil: `eq.${PERFIS.includes(perfil) ? perfil : 'br'}`, usuario: `eq.${normalUsuario(usuario)}` };
   if (id && !UUID.test(String(id))) throw new Erro(404, 'Não encontrado.');
   const l = await db.um(env, 'followups', filtros, CAMPOS);
   if (!l) return null;
-  const vendedor = l.vendedor || vendedorDe(l.usuario, await vendedoresAtivos(env));
-  return { ...l, quem: undefined, respondida_por: l.quem ? l.quem.nome : null, vendedor, vendedor_fixo: !!l.vendedor, ...links(l), ...(await comVenda(l, vendedor)) };
+  const [ativos, tetos, pausas] = await Promise.all([vendedoresAtivos(env), tetosFollowup(env, agora).catch(() => null), pausasDe(env, [l], agora, conversaDeGente).catch(() => new Map())]);
+  const vendedor = l.vendedor || vendedorDe(l.usuario, ativos);
+  const pausa = pausas.get(l.id) || { pausa: null, pausa_motivo: null };
+  return {
+    ...l, quem: undefined, respondida_por: l.quem ? l.quem.nome : null, vendedor, vendedor_fixo: !!l.vendedor,
+    pode_api: !!(l.igsid && l.ultima_em && agora - Date.parse(l.ultima_em) < 23.5 * 3600_000),
+    ...pausa, ...podeTocar(l, tetos, pausa, agora), tetos: resumoDosTetos(tetos),
+    ...links(l), ...(await comVenda(l, vendedor)),
+  };
 }
 
 // ---------------------------------------------------------------- salvar
@@ -224,8 +315,22 @@ export async function salvarFollowup(env, d = {}, { id, quem = null, quemNome = 
   } else if (d.ultima_em !== undefined) m.ultima_em = quando(d.ultima_em);
   // mandei: o que saiu agora. A próxima mensagem enviada junto é a do toque seguinte; sem ela, fica vazia. Sem
   // proximo_em, o próximo toque fica para daqui a um dia, e quem estava em "novo" passa para "ofertado".
+  let toqueDeVendedor = null; // { puxada, tetos }: preenchido quando um vendedor (não o Atendente) mandou mensagem
   if (d.mandei) {
     const t = texto(typeof d.mandei === 'string' ? d.mandei : atual.proxima_mensagem, 1000);
+    if (!atendente) {
+      const tetos = await tetosFollowup(env).catch(() => null);
+      // Ela falou por último (contando o que veio neste mesmo pedido)? Então é resposta, não puxada.
+      const puxada = !elaFalouPorUltimo({ ultima_em: m.ultima_em || atual.ultima_em, nosso_em: atual.nosso_em });
+      toqueDeVendedor = { puxada, tetos };
+      // A última mensagem sem resposta: a pessoa sai da fila sozinha, sem depender de quem manda lembrar da regra.
+      const limite = tetos ? tetos.sem_resposta : TETOS_PADRAO.sem_resposta;
+      if (puxada && d.fase === undefined && semRespostaDe([...(atual.historico || []), ...hist]) + 1 >= limite && ['novo', 'ofertado', 'conversando'].includes(atual.fase || 'novo')) {
+        d.fase = 'nao_quer';
+        d.proximo_em = null;
+        hist.push({ em: agora, tipo: 'nota', texto: `${limite} mensagens nossas sem resposta: saiu da fila.` });
+      }
+    }
     m.nosso_em = agora;
     if (!atendente) m.toques = (atual.toques || 0) + 1;
     m.proxima_mensagem = d.proxima_mensagem !== undefined ? texto(d.proxima_mensagem, 1000) : null;
@@ -262,10 +367,19 @@ export async function salvarFollowup(env, d = {}, { id, quem = null, quemNome = 
     const linha = { perfil: atual.perfil, usuario: atual.usuario, fase: 'novo', interesse: 'nao_sei', origem: 'direct', ...m };
     if (!hist.some((h) => h.tipo === 'chegou')) linha.historico = [{ em: agora, tipo: 'chegou', texto: `Entrou na lista (${linha.origem})` }, ...(linha.historico || [])];
     const [nova] = await db.insert(env, 'followups', linha, { select: 'id,usuario,fase' });
-    return { ok: true, criado: true, ...nova };
+    return { ok: true, criado: true, ...nova, ...(await depoisDoToque(env, toqueDeVendedor)) };
   }
   await db.update(env, 'followups', { id: `eq.${atual.id}` }, m, 'id');
-  return { ok: true, id: atual.id, usuario: atual.usuario, ...Object.fromEntries(Object.entries(m).filter(([k]) => k !== 'historico')) };
+  return { ok: true, id: atual.id, usuario: atual.usuario, ...Object.fromEntries(Object.entries(m).filter(([k]) => k !== 'historico')), ...(await depoisDoToque(env, toqueDeVendedor)) };
+}
+// Depois de anotar um toque de vendedor: soma na conta e devolve quanto ainda cabe, com um aviso quando passou.
+async function depoisDoToque(env, toque) {
+  if (!toque) return {};
+  await contarToque(env, toque.puxada, Date.now(), toque.tetos);
+  const t = await tetosFollowup(env).catch(() => null);
+  if (!t) return {};
+  const passou = (toque.puxada && toque.tetos && toque.tetos.dia.sobra <= 0) || (toque.tetos && toque.tetos.rodada.sobra <= 0);
+  return { tetos: resumoDosTetos(t), ...(passou ? { aviso: 'Esta mensagem passou do teto. Pare de mandar: confira "tetos" e só volte a mandar quando houver sobra.' } : {}) };
 }
 
 // O dono responde a dúvida na tela. A pessoa volta para "conversando", com o próximo toque para agora: a próxima rodada

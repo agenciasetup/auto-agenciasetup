@@ -12,8 +12,12 @@ import { situacaoContas } from './desempenho.js';
 import { resumoRecuperacao } from './recuperacao.js';
 import { MODELOS, PADRAO, custo } from './tutor.js';
 import { anotarConsumo } from './consumo.js';
+import { orcamento } from './escritorio.js';
 
 const DIA = 86400_000;
+// Um plano custa uns 20 centavos de dólar. Com menos sobra que isto no teto de gasto de IA do dia (escritorio.js), não gera.
+const RESERVA_PLANO_USD = 0.25;
+const dolar = (v) => `US$ ${(Number(v) || 0).toFixed(2).replace('.', ',')}`;
 const BRASILIA = 3 * 3600_000;
 const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 const PERFIL = { br: 'Brasil', en: 'inglês' };
@@ -198,6 +202,10 @@ function dadosParaOClaude(d) {
 
 export async function gerarPlano(env, agora = Date.now()) {
   if (!env.ANTHROPIC_CHAVE) throw new Erro(409, 'Ligue o Claude em Integrações para o plano escrever as ideias.');
+  // O teto de gasto de IA do dia vale para o plano também: sem sobra, não gera e diz o motivo (o painel mostra a frase).
+  // Se não der para ler o gasto do dia, segue como antes.
+  const o = await orcamento(env).catch((e) => { console.error('plano orcamento', e && e.message); return null; });
+  if (o && o.sobra_usd < RESERVA_PLANO_USD) throw new Erro(409, `O gasto de IA de hoje já chegou a ${dolar(o.gasto_hoje_usd)} do teto de ${dolar(o.teto_dia_usd)}, e um plano novo custa uns ${dolar(0.2)}. O plano não foi gerado e o anterior continua valendo. Tente amanhã ou aumente o teto no Escritório.`, { sem_orcamento: true });
   const d = await juntar(env, agora);
   const ia = { ...PADRAO, ...(env.__ia || {}) };
   // Modelo próprio, e não o do tutor: pensar a estratégia pede o melhor. Com o mais barato, o plano repetia palavra já
@@ -262,10 +270,17 @@ export async function marcarIdeia(env, id, status) {
 }
 
 // Relógio: refaz o plano quando ele tem mais de 3 dias. Desliga em Integrações junto com o relatório (ia.relatorio).
+// Dia sem sobra no teto de gasto de IA: não gera, não é erro, e tenta de novo na próxima vez que chegar a vez dele.
 export async function planoDaSemana(env, agora = Date.now()) {
   if (!env.ANTHROPIC_CHAVE || (env.__ia || {}).relatorio === false) return 'sem IA';
   const atual = await lerPlano(env);
   if (atual && agora - Date.parse(atual.criado_em) < 3 * DIA) return 'recente';
-  const p = await gerarPlano(env, agora);
+  let p;
+  try {
+    p = await gerarPlano(env, agora);
+  } catch (e) {
+    if (e instanceof Erro && e.extra && e.extra.sem_orcamento) return 'sem orçamento';
+    throw e;
+  }
   return { gerado: p.ideias.length, custo_usd: p.custo_usd };
 }

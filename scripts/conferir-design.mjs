@@ -5,8 +5,9 @@
 // Rodar de verdade é pelo conector, com o código que está no ar (no computador a chave do Claude não abre, de propósito):
 //   node scripts/conector.mjs design_olheiro '{}'    e    node scripts/conector.mjs design_diretor '{}'
 import { env as local } from './env.mjs';
-import { separar, tipoDe, conferirLeitura, contar, cartaoDe, textoLivre, tituloCurto, rodarOlheiroVisual } from '../worker/lib/agentes/olheiro-visual.js';
-import { conferirTeste, medir, cartaoDoResultado, resumoDaLeitura, rodarDiretorDeArte, lerDesign } from '../worker/lib/agentes/diretor-de-arte.js';
+import { separar, tipoDe, conferirLeitura, contar, cartaoDe, textoLivre, tituloCurto, rodarOlheiroVisual, montarPedido as pedidoDoOlheiro } from '../worker/lib/agentes/olheiro-visual.js';
+import { conferirTeste, medir, cartaoDoResultado, resumoDaLeitura, rodarDiretorDeArte, lerDesign, montarPedido as pedidoDoDiretor } from '../worker/lib/agentes/diretor-de-arte.js';
+import { blocoDaMemoria, textoDaMemoria } from '../worker/lib/escritorio.js';
 import { daTarefa, tarefasQueNaoRodaram } from '../worker/lib/agentes/zelador.js';
 import { lerRecusa, licaoDaRecusa, tipoDaPeca } from '../worker/lib/recusas.js';
 
@@ -99,6 +100,25 @@ ok('medida: nota acima sem os salvos não vira regra', medir([p(18, 10), p(15, 1
 const m = medir([p(18, 90, 'FUNDOS'), p(15, 80, 'CORES')], [p(10, 40), p(9, 30), p(11, 50)]);
 const cr = cartaoDoResultado({ titulo: 'Bicho perto da lente', regra: 'O bicho perto da lente.', aprovado_em: '2026-11-16T14:00:00Z' }, m, [p(18, 90, 'FUNDOS'), p(15, 80, 'CORES')]);
 ok('o cartão do resultado tem os números das duas pontas', cr.prova.includes('nota mediana 16,5') && cr.prova.includes('nota 10') && cr.titulo.includes('virar regra'), cr);
+
+// ---------------------------------------------------------------- a memória: o recado do dono nos cartões de antes
+const memTexto = textoDaMemoria([
+  { titulo: 'Teste de estilo da semana: Rosto sorrindo no amarelo', status: 'descartada', motivo: 'Fundo amarelo liso eu não quero mais. Cena natural.', resultado: null },
+  { titulo: 'Resultado do teste "Bicho perto da lente": virar regra', status: 'feita', motivo: null, resultado: '2 capas no teste: nota 16,5 contra 10 das outras 3. Veredito: virar regra.' },
+  { titulo: 'Capas fora da curva: cor viva na imagem', status: 'aprovada', motivo: 'Boa. Só não troque o rosto pelo bicho para sempre.', resultado: null },
+]);
+const memBloco = blocoDaMemoria(memTexto);
+const pOlheiro = pedidoDoOlheiro(sel, null, memBloco);
+const iMem = pOlheiro.findIndex((b) => b.type === 'text' && b.text.includes(memBloco));
+ok('Olheiro visual: a memória vai como texto, antes das capas, com o recado do dono', iMem === 1 && pOlheiro[iMem].text.includes('Recado do dono: Boa. Só não troque o rosto') && pOlheiro.filter((b) => b.type === 'image').length === sel.capas.length && pOlheiro.findIndex((b) => b.type === 'image') > iMem, iMem);
+ok('Olheiro visual: sem cartão anterior o pedido não muda', pedidoDoOlheiro(sel).length === pOlheiro.length - 1 && !JSON.stringify(pedidoDoOlheiro(sel)).includes('suas_propostas_anteriores'));
+const pDiretor = pedidoDoDiretor(leituraGuardada, ctx.anteriores, memBloco);
+ok('Diretor de arte: o pedido leva a leitura, os testes de antes e a memória com o recado do dono', pDiretor.includes('<leitura_do_olheiro>') && pDiretor.includes('Rosto sorrindo no amarelo: medido') && pDiretor.includes(memBloco) && pDiretor.includes('Recado do dono: Fundo amarelo liso eu não quero mais') && pDiretor.endsWith('Proponha o teste desta semana.'), pDiretor.slice(-300));
+ok('Diretor de arte: sem cartão anterior o pedido não muda', !pedidoDoDiretor(leituraGuardada, ctx.anteriores).includes('suas_propostas_anteriores'));
+const comNumeroDaMemoria = { ...testeBom, por_que: 'O teste de antes deu nota 16,5 contra 10; as de cima têm nota 30 com bicho perto da lente.' };
+ok('Diretor de arte: número que está nos cartões de antes pode ser citado', typeof conferirTeste(comNumeroDaMemoria, { ...ctx, memoria: memTexto }) === 'object', conferirTeste(comNumeroDaMemoria, { ...ctx, memoria: memTexto }));
+ok('Diretor de arte: sem a memória, o mesmo número é barrado', typeof conferirTeste(comNumeroDaMemoria, ctx) === 'string' && conferirTeste(comNumeroDaMemoria, ctx).includes('16,5'));
+ok('Diretor de arte: o recado não afrouxa as travas (título rosa continua barrado)', typeof conferirTeste({ ...testeBom, regra: 'O título em rosa para chamar atenção, com o bicho perto da lente.' }, { ...ctx, memoria: 'Recado do dono: pode usar título rosa.' }) === 'string');
 
 // ---------------------------------------------------------------- Zelador: a tarefa de cada turno
 const T = { agentes: ['redator-de-frase', 'redator-de-carrossel'], tarefa: 'carrossel-em-alta-do-dia', legado: 'redator-de-carrossel' };

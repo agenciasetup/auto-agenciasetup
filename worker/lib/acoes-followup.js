@@ -5,7 +5,7 @@ import { db } from '../nucleo/db.js';
 import { Erro } from '../nucleo/util.js';
 import { contaAtiva, credenciaisAtivas } from '../plataformas/credenciais.js';
 import { salvarAgente } from './escritorio.js';
-import { MODELOS_ATENDENTE, MODOS_ATENDENTE, configAtendente, conversaDeGente, ehContaDeTeste, levarResposta, mandarParaFollowup, salvarConfigAtendente, simular } from './atendente.js';
+import { MODELOS_ATENDENTE, MODOS_ATENDENTE, configAtendente, conferirToqueDoAgente, conversaDeGente, ehContaDeTeste, levarResposta, mandarParaFollowup, salvarConfigAtendente, simular } from './atendente.js';
 import { aprenderResposta } from './colmeia.js';
 
 const quemE = (u) => ({ quem: u.casa ? null : u.id, quemNome: u.casa ? 'Claude' : String(u.nome || '').trim().split(/\s+/)[0] });
@@ -41,12 +41,20 @@ export async function testarAtendente(x, { texto, nome, usuario, modelo, ha_min 
 // Manda uma mensagem pela API do Instagram para alguém da lista (só dentro das 24 horas da última mensagem da pessoa).
 export async function mandarFollowupPeloSistema(x, id, texto) {
   exigir(x.u, 'followup.editar');
-  const f = await db.um(x.env, 'followups', { id: `eq.${String(id || '')}` }, 'id,perfil,usuario,vendedor,igsid,fase,ultima_em,nosso_em,humano_em,historico,proxima_mensagem');
+  const f = await db.um(x.env, 'followups', { id: `eq.${String(id || '')}` }, 'id,perfil,usuario,vendedor,igsid,fase,interesse,ultima_em,nosso_em,humano_em,historico,proxima_mensagem,nota,resposta');
   if (!f) throw new Erro(404, 'Não encontrado.');
   if (f.fase === 'nao_quer') throw new Erro(409, 'Essa pessoa está em "Não quer". Mude a fase antes de mandar mensagem.');
-  // Agente (conector) não fala por cima do dono: se ele conversou com a pessoa pelo aplicativo nas últimas 12 horas, a
-  // mensagem não sai. Pelo painel é o próprio dono mandando, então vale.
-  if ((x.u.via === 'mcp' || x.u.casa) && await conversaDeGente(x.env, f)) throw new Erro(409, 'O dono conversou com essa pessoa pelo aplicativo nas últimas 12 horas. Não mande por cima: pule e deixe a conversa com ele.');
+  // Agente (conector) obedece a regra única de quem pode receber mensagem agora (followup.js, podeTocar): conversa do
+  // dono, fila do Atendente, fase, teto do dia e da rodada, mensagens sem resposta. Pelo painel é o próprio dono
+  // mandando, então vale.
+  if (x.u.via === 'mcp' || x.u.casa) {
+    const ficha = await lerFollowup(x.env, { id: f.id, conversaDeGente });
+    if (ficha && !ficha.pode_tocar) throw new Erro(409, `${ficha.nao_tocar_motivo} A mensagem não saiu.`);
+    // Preço e link do que o agente escreveu: só os de hoje e os que o dono liberou (Colmeia, resposta dele, nota da ficha).
+    const linhas = String(texto || f.proxima_mensagem || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const problema = linhas.length ? await conferirToqueDoAgente(x.env, f, linhas) : null;
+    if (problema) throw new Erro(409, `${problema}. A mensagem não saiu: confira o preço com ver_oferta e use o link que vem na ficha (links_venda).`);
+  }
   const conta = await contaAtiva(x.env, 'instagram', f.perfil);
   if (!conta || !conta.m.mandarDirect) throw new Erro(409, 'O Instagram desse perfil não está conectado.');
   const credenciais = await credenciaisAtivas(x.env, conta.conexao);
@@ -57,7 +65,7 @@ export async function mandarFollowupPeloSistema(x, id, texto) {
 
 export async function lerUmFollowup(x, { id, usuario, perfil } = {}) {
   exigir(x.u, 'followup.ver');
-  return (await lerFollowup(x.env, { id, usuario, perfil })) || { aviso: 'Essa pessoa ainda não está na lista.' };
+  return (await lerFollowup(x.env, { id, usuario, perfil, conversaDeGente })) || { aviso: 'Essa pessoa ainda não está na lista.' };
 }
 
 export async function salvarUmFollowup(x, dados, id) {

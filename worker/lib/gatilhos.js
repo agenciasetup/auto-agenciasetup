@@ -5,15 +5,16 @@
 //  - seguir: o primeiro direct pede para seguir, com o botão "Já segui"; o link só vai para quem segue, já com o
 //    primeiro nome (a Meta só mostra o perfil depois do toque);
 //  - pergunta: o link vai quando a pessoa toca no botão ou responde.
-// Cada palavra tem versões da mensagem (o Claude escreve ao criar o post); o sistema manda mais a que traz mais cliques
-// e seguidores. Textos, escolha da versão e IA ficam em comenta.js.
+// Cada palavra tem versões da mensagem (o Claude escreve ao criar o post); o sistema manda mais a que vende mais
+// (desde 10/11/2026; clique e seguidor novo também contam, com peso menor). Textos, escolha da versão, a conta da
+// venda por versão e a IA ficam em comenta.js.
 // Na hora: a Meta avisa pelo webhook os toques e mensagens no direct e, com Acesso Avançado, os comentários.
 // Reserva: o relógio lê os comentários dos posts com palavra ligada. Um comentário entra uma vez só na fila, e uma pessoa
 // recebe um direct só por post (o banco garante). Duas etapas no relógio: varrer (barato) e enviar (caro, com limite).
 import { contarChamada, db, folgaDeChamadas } from '../nucleo/db.js';
 import { slugar } from '../nucleo/util.js';
 import { avisarSeTokenMorreu, contaAtiva, contaPorId, contasAtivas, credenciaisAtivas, temRecurso } from '../plataformas/credenciais.js';
-import { escolherVariante, formasComLink, formasPergunta, preencher, primeiroNome, respostaPublicaIA, textosDe, variantesDe } from './comenta.js';
+import { comVendas, escolherVariante, formasComLink, formasPergunta, preencher, primeiroNome, respostaPublicaIA, textosDe, variantesDe, vendasDasVersoes } from './comenta.js';
 import { pago } from './desempenho.js';
 import { prepararIntegracoes } from './integracoes.js';
 import { PERFIS, idiomaDe, perfilValido, siteDoPerfil } from './perfis.js';
@@ -113,12 +114,15 @@ export function esquecerAjustesComenta() { ajustesMem = { em: 0, v: null }; }
 const ehTestador = (cfg, usuario) => !!usuario && (cfg.testadores || []).map(usuarioLimpo).includes(usuarioLimpo(usuario));
 
 // Os números de cada versão (para escolher a que está ganhando). Um minuto na memória do Worker.
+// As vendas de cada versão entram junto (comenta.js: uma leitura para todas as palavras, que fica uns minutos na
+// memória e não se repete a cada direct). Sem a leitura de vendas, a escolha segue com cliques e seguidores, como antes.
 const statsMem = new Map();
 async function statsDe(env, gid) {
   const m = statsMem.get(gid);
   if (m && Date.now() - m.em < 60_000) return m.v;
   const r = await db.rpc(env, 'numeros_variantes', { p_gatilho: gid }).catch(() => null);
-  const v = (r && r[gid]) || {};
+  const vendas = await vendasDasVersoes(env).catch(() => null);
+  const v = comVendas((r && r[gid]) || {}, vendas && vendas[gid]);
   statsMem.set(gid, { em: Date.now(), v });
   return v;
 }

@@ -459,6 +459,30 @@ a.numero:hover { transform: translateY(-2px); box-shadow: var(--brilho-topo), 0 
 .colunas { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
 .colunas > * { min-width: 0; }
 @media (min-width: 1000px) { .colunas { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+/* "Esperando você" (Inicio.tsx): o que espera a decisão do dono. Cartões iguais, lado a lado e sempre no mesmo lugar;
+   o que está zerado fica apagado e sem botão. auto-fill: com menos cartões, cada um fica do mesmo tamanho, sem esticar. */
+.esp-linha { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; font-size: 14px; color: var(--mudo); }
+.esp-linha svg { width: 17px; height: 17px; color: var(--verde); }
+.esp-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.esp-cartao { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 14px 16px 16px; border-radius: var(--raio-s); background: var(--fundo); box-shadow: 0 0 0 1px var(--borda); }
+.esp-cartao h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--mudo); }
+.esp-cartao > b { font-size: 36px; line-height: 1; font-weight: 650; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; color: var(--marca-texto); }
+.esp-cartao > span { font-size: 14px; line-height: 1.4; }
+.esp-cartao.esp-zero { opacity: 0.5; }
+.esp-cartao.esp-zero > b { color: var(--mudo); }
+.esp-pe { margin-top: auto; padding-top: 8px; }
+.esp-pe p { margin: 0; font-size: 12.5px; line-height: 1.4; }
+/* No celular cada cartão vira uma linha, um embaixo do outro: o número, o nome com a frase e o botão à direita. A frase
+   de quem resolve (cartão sem botão) vai numa linha própria, embaixo. */
+@media (max-width: 640px) {
+  .esp-lista { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .esp-cartao { display: grid; grid-template-columns: minmax(40px, auto) minmax(0, 1fr) auto; grid-template-areas: "n t pe" "n f pe"; align-items: center; gap: 2px 12px; padding: 12px 14px; }
+  .esp-cartao h3 { grid-area: t; align-self: end; }
+  .esp-cartao > b { grid-area: n; font-size: 30px; text-align: center; }
+  .esp-cartao > span { grid-area: f; align-self: start; font-size: 13.5px; }
+  .esp-pe { grid-area: pe; margin: 0; padding: 0; }
+  .esp-pe.esp-pe-frase { grid-area: auto; grid-column: 1 / -1; padding-top: 8px; }
+}
 
 /* --------------------------------------------------------------- peça: slides */
 .slides { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
@@ -799,7 +823,30 @@ a.numero:hover { transform: translateY(-2px); box-shadow: var(--brilho-topo), 0 
 .fu-vendedor { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; background: var(--fundo); border-radius: var(--raio-s); box-shadow: 0 0 0 1px var(--borda); font-size: 13px; color: var(--mudo); }
 .fu-vendedor b { font-size: 14px; color: var(--texto); }
 .fu-atendente { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
-.fu-atendente .rec-acoes { margin-left: auto; }
+.fu-atendente .rec-acoes { margin-left: auto; margin-top: 0; }
+/* A frase do estado do Atendente, numa linha própria embaixo de "Ligado" e do botão (não empurra o botão de lugar). */
+.fu-situacao { margin: 8px 0 0; font-size: 13.5px; line-height: 1.5; }
+/* Atendente: o modo e o modelo, cada um num seletor com todas as opções à vista (Opcoes em Followup.tsx). A marcada é
+   a que vale agora; lado a lado no computador, uma embaixo da outra no celular. */
+.fu-rotulo { margin: 16px 0 8px; font-size: 13px; font-weight: 600; color: var(--mudo); }
+.fu-opcoes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.fu-opcao { display: flex; flex-direction: column; gap: 5px; min-width: 0; padding: 12px 14px; border: 0; border-radius: var(--raio-s); background: var(--fundo); box-shadow: 0 0 0 1px var(--borda); color: var(--texto); text-align: left; cursor: pointer; transition: background 160ms, box-shadow 160ms; }
+.fu-opcao:hover:not(:disabled):not(.fu-opcao-marcada) { background: var(--fundo-3); box-shadow: 0 0 0 1px var(--borda-forte); }
+.fu-opcao:disabled { cursor: progress; }
+.fu-opcao b { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+.fu-opcao > span { font-size: 13px; line-height: 1.4; color: var(--mudo); }
+.fu-opcao-bola { display: grid; place-items: center; flex: none; width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--fraco); }
+.fu-opcao-bola svg { width: 11px; height: 11px; stroke-width: 3.5; }
+.fu-opcao-marcada { background: var(--marca-suave); box-shadow: inset 0 0 0 1px var(--marca-borda); cursor: default; }
+.fu-opcao-marcada .fu-opcao-bola { background: var(--laranja); box-shadow: none; color: var(--tinta-texto); }
+/* Quanto dos tetos do direct já foi usado hoje e na rodada (a conta é do sistema). */
+.fu-tetos { margin: 2px 2px 12px; font-size: 13px; line-height: 1.5; }
+.fu-avancado { margin-top: 14px; font-size: 13px; }
+.fu-avancado summary { width: fit-content; cursor: pointer; color: var(--mudo); font-weight: 550; }
+.fu-avancado .fu-rotulo { margin-top: 10px; }
+/* Ficha da pessoa: por que a rodada do direct não toca nela agora (a conversa está com o dono ou com o Atendente). */
+.rec-linha.fu-pausa { margin-top: 6px; font-size: 12.5px; }
+@media (max-width: 760px) { .fu-opcoes { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------------------------------------------------------------- Escritório: a planta em pixel (EscritorioPlanta.tsx) */
 .pl-vistas { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; font-size: 13px; }
@@ -863,6 +910,11 @@ a.numero:hover { transform: translateY(-2px); box-shadow: var(--brilho-topo), 0 
 .pl-motivo label { font-size: 13px; font-weight: 600; }
 .pl-motivo textarea { width: 100%; }
 .pl-nota { margin-top: 8px !important; font-size: 12px; }
+/* O rótulo da tarefa agendada ao lado do turno, e os cartões do agente no perfil (com o recado do dono). */
+.pl-tarefa { display: inline-block; padding: 1px 7px; border: 1px solid var(--borda); border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 1.5; color: var(--mudo); white-space: nowrap; vertical-align: baseline; }
+.pl-cartoes { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; font-size: 13px; }
+.pl-cartoes li { padding-left: 12px; border-left: 3px solid var(--borda); }
+.pl-cartoes li p { margin: 3px 0 0; color: var(--mudo); }
 @media (max-width: 1280px) { .pl-planta { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) {
   .pl-planta { grid-template-columns: minmax(0, 1fr); }
@@ -1052,6 +1104,8 @@ button.pl-placa:hover svg { opacity: 1; }
 .col-pergunta textarea { width: 100%; min-height: 62px; resize: vertical; }
 .col-pergunta-pe { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 12px; line-height: 1.4; }
 .col-item-pe { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; margin-top: auto; padding-top: 8px; font-size: 12px; }
+/* A frase do bloco "Arquivados" enquanto ele está fechado. */
+.col-nota { margin: 0; font-size: 13.5px; line-height: 1.5; }
 .col-resposta { display: grid; gap: 8px; margin-top: 12px; padding: 12px 14px; border-radius: var(--raio-s); background: var(--fundo); box-shadow: 0 0 0 1px var(--borda); font-size: 14px; }
 .col-resposta p { margin: 0; font-size: 12.5px; }
 .col-baloes { display: grid; justify-items: start; gap: 5px; }
@@ -1066,3 +1120,10 @@ button.pl-placa:hover svg { opacity: 1; }
 
 /* Vídeos fora da curva (Em alta): quantas vezes a média do canal, no selo do calor */
 .video-vezes { font-size: 12.5px; letter-spacing: -0.02em; }
+/* O roteiro inteiro de um viral (Roteiro em VideosVirais.tsx), fechado até tocar em "Ver o roteiro": uma fala por linha. */
+.video-roteiro { margin-top: 8px; font-size: 13.5px; }
+.video-roteiro summary { width: fit-content; cursor: pointer; color: var(--marca-texto); font-weight: 600; }
+.video-roteiro-corpo { display: grid; gap: 10px; margin-top: 8px; padding: 12px 14px; border-radius: 12px; background: var(--fundo-3); line-height: 1.5; overflow-wrap: anywhere; }
+.video-roteiro-corpo p { margin: 0; }
+.video-roteiro-corpo ol { display: grid; gap: 6px; margin: 0; padding-left: 22px; }
+.video-roteiro-corpo b { font-weight: 600; color: var(--marca-texto); }

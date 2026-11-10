@@ -1,13 +1,52 @@
-// Início: saudação, atalhos, números em bento (o motor de engajamento primeiro), o que está quente agora,
-// os melhores do mês, o que vai sair nas redes, o que deu erro e o que aconteceu.
+// Início: saudação, o que espera a decisão do dono, atalhos, números em bento (o motor de engajamento primeiro), o que
+// está quente agora, os melhores do mês, o que vai sair nas redes, o que deu erro e o que aconteceu.
 import { useEffect } from 'react';
-import { BarChart3, CalendarDays, Flame, ListChecks, MessageCircleHeart, Plug, Plus, Share2 } from 'lucide-react';
+import { BarChart3, CalendarDays, CheckCircle2, ChevronRight, Flame, ListChecks, MessageCircleHeart, Plug, Plus, Share2 } from 'lucide-react';
 import { get } from '../nucleo/api';
 import { Link } from '../nucleo/roteador';
 import { Carregando, Celula, ErroCarga, Etiqueta, Grupo, Vazio, useCarregar, useSessao } from '../nucleo/ui';
 import { FERRAMENTA, REDES, compacto, haQuanto, numero, perfilDe } from '../nucleo/util';
 import { Calor, LinhaEvento, LinhaPeca, LinhaPost } from './comum';
 import { CartaoIdeia, ItemAgora } from './planoComum';
+
+// "Esperando você" (GET /esperando): os lugares onde algo espera a decisão do dono, um cartão igual para cada um, com
+// o número, a frase e um botão só. Os cartões ficam sempre no mesmo lugar: o que está zerado aparece apagado e sem
+// botão; com tudo zerado, o bloco vira uma linha. O número vem null para quem não pode abrir aquela tela (o cartão
+// não aparece). Carrega à parte: se falhar, o resto do Início continua de pé.
+type Espera = { id: string; n: number; titulo: string; um: string; varios: string; url: string | null };
+// Lugar sem tela para abrir: no lugar do botão vai a frase que diz quem resolve.
+const QUEM_RESOLVE: Record<string, string> = { entregas: 'O Claude libera na Hubla nas rodadas das 11h e das 17h.' };
+
+function EsperandoVoce() {
+  const { dados, erro, carregando, recarregar } = useCarregar<any>(() => get('/esperando'), []);
+  if (erro) {
+    return <p className="esp-linha">Não deu para ver o que está esperando você. <button type="button" className="bt bt-mini" onClick={recarregar}>Tentar de novo</button></p>;
+  }
+  if (!dados) return carregando ? <p className="esp-linha" role="status">Vendo o que está esperando você...</p> : null;
+  const lugares: Espera[] = (Array.isArray(dados.itens) ? dados.itens : []).filter((i: any) => i && typeof i.n === 'number');
+  // Ninguém para mostrar (o cargo não abre nenhuma dessas telas): o bloco não aparece.
+  if (!lugares.length) return null;
+  if (!lugares.some((i) => i.n > 0)) return <p className="esp-linha"><CheckCircle2 />Nada esperando você agora.</p>;
+  return (
+    <Grupo titulo="Esperando você">
+      <div className="esp-lista">
+        {lugares.map((i) => {
+          const tem = i.n > 0;
+          const abre = typeof i.url === 'string' && i.url.startsWith('/');
+          return (
+            <article className={`esp-cartao ${tem ? '' : 'esp-zero'}`} key={i.id}>
+              <h3>{i.titulo}</h3>
+              <b>{numero(i.n)}</b>
+              <span>{i.n === 1 ? i.um : i.varios}</span>
+              {tem && abre && <div className="esp-pe"><Link className="bt bt-mini bt-tingido" para={i.url!} aria-label={`Abrir ${i.titulo}`}>Abrir<ChevronRight /></Link></div>}
+              {tem && !abre && QUEM_RESOLVE[i.id] && <div className="esp-pe esp-pe-frase"><p className="mudo">{QUEM_RESOLVE[i.id]}</p></div>}
+            </article>
+          );
+        })}
+      </div>
+    </Grupo>
+  );
+}
 
 export default function Inicio() {
   const { eu, pode } = useSessao();
@@ -47,6 +86,8 @@ export default function Inicio() {
         <h1>Olá, <span className="serifa">{primeiroNome}</span></h1>
         <p>O que está acontecendo no site e nas redes.</p>
       </header>
+
+      <EsperandoVoce />
 
       <div className="atalhos-rapidos">
         {atalhos.map((a) => (

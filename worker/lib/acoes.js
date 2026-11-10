@@ -7,7 +7,7 @@ import { Erro, aleatorio, sha256, slugar, urlSegura } from '../nucleo/util.js';
 import { plataforma } from '../plataformas/index.js';
 import { contaDaPeca, publicarPeca } from '../plataformas/fila.js';
 import { atualizarMetricas, situacaoContas, sincronizarPosts } from './desempenho.js';
-import { MODOS, chanceDeSerAMelhor, conferirVariantes, escreverVariantesIA, variantesDe } from './comenta.js';
+import { MODOS, chanceDeSerAMelhor, comVendas, conferirVariantes, escreverVariantesIA, variantesDe, vendasDasVersoes } from './comenta.js';
 import { esquecerAjustesComenta, linkDoGatilho, ofertaAtiva } from './gatilhos.js';
 import { prepararIntegracoes } from './integracoes.js';
 import { PERFIS, idiomaDe, perfilDe, siteDoPerfil } from './perfis.js';
@@ -31,6 +31,7 @@ export * from './acoes-avisos.js';
 export * from './acoes-seo.js';
 export * from './acoes-escritorio.js';
 export * from './acoes-colmeia.js';
+export * from './acoes-esperando.js';
 export * from './acoes-video.js';
 export * from './acoes-design.js';
 
@@ -654,7 +655,7 @@ export async function ligarGatilho(x, id, ligar) {
 export async function listarGatilhos(x, { perfil } = {}) {
   exigir(x.u, 'gatilhos.ver');
   const so = filtroPerfil(perfil);
-  const [gatilhos, numeros, porVersao, ultimas, sugestoes, contas, ajustes] = await Promise.all([
+  const [gatilhos, numeros, porVersao, ultimas, sugestoes, contas, ajustes, vendas] = await Promise.all([
     db.select(x.env, 'gatilhos', { filtros: so ? { perfil: `eq.${so}` } : {}, select: '*,recurso:recursos(id,slug,titulo,status,perfil)', ordem: 'criado_em.desc', limite: 100 }),
     db.rpc(x.env, 'numeros_gatilhos'),
     db.rpc(x.env, 'numeros_variantes', { p_gatilho: null }),
@@ -663,16 +664,20 @@ export async function listarGatilhos(x, { perfil } = {}) {
     db.select(x.env, 'posts_redes', { filtros: { palavra_chave: 'not.is.null', publicado_em: `gt.${new Date(Date.now() - 365 * 86400_000).toISOString()}`, ...(so ? { perfil: `eq.${so}` } : {}) }, select: 'rede,id_na_rede,palavra_chave,legenda,link,miniatura_url,publicado_em,comentarios,perfil', ordem: 'comentarios.desc.nullslast', limite: 30 }),
     situacaoContas(x.env, { perfil: so }),
     lerAjustesComenta(x),
+    // As vendas de cada versão (comenta.js): a mesma conta que a escolha automática usa. Sem a leitura, segue sem elas.
+    vendasDasVersoes(x.env).catch(() => null),
   ]);
   const usadas = new Set(gatilhos.filter((g) => g.ativo).map((g) => `${g.rede}:${g.perfil || 'br'}:${normalPalavra(g.palavra)}`));
-  const VAZIO = { comentarios: 0, enviados: 0, links: 0, respostas: 0, seguidores: 0, ja_seguiam: 0, erros: 0, cliques: 0 };
+  const VAZIO = { comentarios: 0, enviados: 0, links: 0, respostas: 0, seguidores: 0, ja_seguiam: 0, erros: 0, cliques: 0, vendas: 0, vendas_centavos: 0 };
   const taxa = (n, d) => (d ? Math.round((n / d) * 1000) / 10 : null);
+  // A receita de cada versão só aparece para quem vê faturamento; a quantidade de vendas, para todos.
+  const veReceita = veVendasDe(x.u);
   return {
     contas,
     ajustes,
     gatilhos: gatilhos.map((g) => {
       const variantes = variantesDe(g);
-      const stats = (porVersao && porVersao[g.id]) || {};
+      const stats = comVendas((porVersao && porVersao[g.id]) || {}, vendas && (vendas[g.id] || {}));
       const chance = chanceDeSerAMelhor(variantes, stats);
       return {
         ...g, variantes, link_dm: linkDoGatilho(x.env, g), numeros: numeros[g.id] || { pendentes: 0, falhas: 0, enviadas_7d: 0, cliques: 0 },
@@ -680,6 +685,7 @@ export async function listarGatilhos(x, { perfil } = {}) {
         // antes das versões (sem versão marcada).
         por_versao: variantes.map((v) => {
           const s = { ...VAZIO, ...(stats[v.id] || {}) };
+          if (!veReceita) delete s.vendas_centavos;
           return { id: v.id, nome: v.nome, ativa: v.ativa !== false, ...s, taxa_clique: taxa(s.cliques, s.enviados), taxa_seguidor: taxa(s.seguidores, s.enviados), chance_de_ser_a_melhor: v.ativa !== false ? chance[v.id] ?? null : null };
         }),
         antes_das_versoes: stats['?'] || null,

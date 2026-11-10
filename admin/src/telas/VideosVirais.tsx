@@ -11,10 +11,40 @@ const vezes = (v: any) => `${String(Number(v) >= 10 ? Math.round(Number(v)) : v)
 const FILTROS = [{ s: 'novo', t: 'Novos' }, { s: 'roteiro', t: 'Viraram roteiro' }, { s: 'usado', t: 'Viraram vídeo' }, { s: 'descartado', t: 'Descartados' }];
 const VAZIO: Record<string, string> = {
   novo: 'O Caçador de virais lê 4 canais por hora, em rodízio. Quando um Short passa da régua, ele aparece aqui.',
-  roteiro: 'Quando a Roteirista escreve um roteiro a partir de um viral, ele vem para cá. O roteiro fica na mesa do Escritório.',
+  roteiro: 'Quando a Roteirista escreve um roteiro a partir de um viral, ele vem para cá com o roteiro inteiro. O cartão para aprovar fica na mesa do Escritório.',
   usado: 'Os virais que já viraram vídeo nosso.',
   descartado: 'Os virais que não servem para vender o curso, com o motivo.',
 };
+// Os formatos em que a Roteirista escreve (FORMATOS em worker/lib/agentes/roteirista.js), com o nome que a tela mostra.
+const FORMATO: Record<string, string> = { tela: 'Gravação de tela', filminho: 'Filminho em pixel com o Calango', estudio: 'Palco com a conversa em bolhas', noticia: 'Novidade da semana' };
+
+// O roteiro inteiro que a Roteirista guardou no viral (leitura.roteiro: formato, gancho, falas, tela, palavra e
+// segundos). Uma fala por linha, na ordem do vídeo: o gancho é a primeira e a chamada (a que pede a palavra) é a
+// última. Mostra só o que veio; sem falas e sem a descrição da tela, não há o que abrir.
+function Roteiro({ r }: { r: any }) {
+  const limpa = (v: any) => String(v ?? '').trim();
+  const falas: string[] = (Array.isArray(r.falas) ? r.falas : []).map(limpa).filter(Boolean);
+  const tela = limpa(r.tela);
+  if (!falas.length && !tela) return null;
+  const palavra = limpa(r.palavra);
+  const ultima = falas.length > 1 ? falas[falas.length - 1] : '';
+  const temChamada = !!ultima && !!palavra && ultima.toUpperCase().includes(palavra.toUpperCase());
+  const linhas = [
+    ...(limpa(r.gancho) ? [{ rotulo: 'Gancho', texto: limpa(r.gancho) }] : []),
+    ...falas.map((texto, k) => ({ rotulo: temChamada && k === falas.length - 1 ? 'Chamada final' : '', texto })),
+  ];
+  const resumo = [FORMATO[r.formato] || limpa(r.formato), Number(r.segundos) > 0 ? `${Number(r.segundos)} segundos` : '', palavra ? `Comenta ${palavra}` : ''].filter(Boolean).join(' · ');
+  return (
+    <details className="video-roteiro">
+      <summary>Ver o roteiro</summary>
+      <div className="video-roteiro-corpo">
+        {resumo && <p className="mudo">{resumo}</p>}
+        {linhas.length > 0 && <ol>{linhas.map((l, k) => <li key={k}>{l.rotulo && <b>{l.rotulo}: </b>}{l.texto}</li>)}</ol>}
+        {tela && <p><b>Na tela: </b>{tela}</p>}
+      </div>
+    </details>
+  );
+}
 
 export function VideosVirais() {
   const { pode } = useSessao();
@@ -55,6 +85,7 @@ export function VideosVirais() {
               </div>
               {v.leitura?.padrao && <p className="angulo"><b>O que fez sair da curva:</b> {v.leitura.padrao}</p>}
               {v.leitura?.roteiro && <p className="angulo"><b>Nosso roteiro ({v.leitura.roteiro.formato}, palavra {v.leitura.roteiro.palavra}):</b> {v.leitura.roteiro.gancho}</p>}
+              {v.leitura?.roteiro && <Roteiro r={v.leitura.roteiro} />}
               {v.leitura?.motivo && <p className="angulo"><b>Por que não serve:</b> {v.leitura.motivo}</p>}
               <div className="pauta-acoes">
                 <a className="bt bt-mini bt-tinta" href={v.url} target="_blank" rel="noopener noreferrer"><ExternalLink />Ver o Short</a>

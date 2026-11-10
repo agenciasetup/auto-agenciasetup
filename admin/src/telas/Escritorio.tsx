@@ -8,7 +8,7 @@ import { get, post } from '../nucleo/api';
 import { Carregando, ErroCarga, Etiqueta, Grupo, Titulo, Vazio, avisar, useCarregar, useSessao } from '../nucleo/ui';
 import { dataHora, haQuanto, numero } from '../nucleo/util';
 import folhaDoCalango from '../img/escritorio-calango.webp';
-import { Perfil, Planta, Seta, dolar } from './EscritorioPlanta';
+import { Perfil, Planta, Seta, Tarefa, dolar } from './EscritorioPlanta';
 
 const COR_SALA: Record<string, string> = { direcao: 'ambar', vendas: 'verde', conteudo: 'azul', video: 'vermelho', design: 'laranja', sistema: 'cinza', produto: 'azul', receita: 'ambar' };
 const COR_CARREIRA: Record<string, string> = { admitido: 'verde', promovido: 'azul', voltou: 'verde', pausado: 'ambar', rebaixado: 'laranja', demitido: 'vermelho', nota: 'cinza' };
@@ -128,7 +128,10 @@ export default function Escritorio() {
         <Grupo titulo="Para depois">
           {d.depois.map((p: any) => (
             <div className="esc-linha" key={p.id}>
-              <div><b>{p.titulo}</b><span className="mudo"> · {d.nomes.salas[p.sala]}{p.agente_nome ? ` · ${p.agente_apelido || p.agente_nome}` : ''}</span></div>
+              <div>
+                <b>{p.titulo}</b><span className="mudo"> · {d.nomes.salas[p.sala]}{p.agente_nome ? ` · ${p.agente_apelido || p.agente_nome}` : ''}{p.decidida_em ? ` · guardada ${haQuanto(p.decidida_em)}` : ''}</span>
+                {p.motivo && <p className="mudo linha-pequena">Seu recado: {p.motivo}</p>}
+              </div>
               {podeDecidir && <button className="bt bt-mini bt-texto" onClick={() => decidir(p.id, 'nova', 'Voltou para a mesa.')}>Voltar para a mesa</button>}
             </div>
           ))}
@@ -141,7 +144,7 @@ export default function Escritorio() {
               <div>
                 <b>{p.titulo}</b> <Etiqueta cor={p.status === 'feita' ? 'verde' : 'cinza'}>{d.nomes.status[p.status]}</Etiqueta>
                 {p.resultado && <p className="mudo linha-pequena">{p.resultado}</p>}
-                {p.status === 'descartada' && p.motivo && <p className="mudo linha-pequena">Seu motivo: {p.motivo}</p>}
+                {p.motivo && <p className="mudo linha-pequena">Seu recado: {p.motivo}</p>}
               </div>
               {podeDecidir && p.status === 'descartada' && <button className="bt bt-mini bt-texto" onClick={() => decidir(p.id, 'nova', 'Voltou para a mesa.')}>Voltar para a mesa</button>}
             </div>
@@ -199,7 +202,7 @@ function Agente({ a, nomes, perfil, foto }: { a: any; nomes: any; perfil: (a: an
         {a.estado !== 'planejado' && (
           <p className="esc-turno">
             <Clock />
-            {u ? <>Último turno {haQuanto(u.inicio)}: {NOME_TURNO[u.status] || u.status}{u.resumo ? `. ${u.resumo}` : ''}</>
+            {u ? <>Último turno {haQuanto(u.inicio)}: {NOME_TURNO[u.status] || u.status}{u.resumo ? `. ${u.resumo}` : ''} <Tarefa t={u.tarefa} /></>
               : a.trabalho ? <>{a.trabalho.frase}{a.trabalho.ultimo ? `. ${a.trabalho.hoje === undefined ? 'Saiu' : 'Mais recente:'} ${haQuanto(a.trabalho.ultimo)}` : ''}{a.trabalho.custo_usd ? ` · ${dolar(a.trabalho.custo_usd)}` : ''}</>
                 : 'Ainda sem turno anotado'}
           </p>
@@ -227,7 +230,7 @@ function Agente({ a, nomes, perfil, foto }: { a: any; nomes: any; perfil: (a: an
             {det.turnos?.length > 0 && (
               <>
                 <b>Últimos turnos</b>
-                <ol>{det.turnos.map((t: any) => <li key={t.id}><span className="mudo">{dataHora(t.inicio)} · {NOME_TURNO[t.status] || t.status}{Number(t.custo_usd) > 0 ? ` · ${dolar(t.custo_usd)}` : ''}</span>{t.resumo ? ` ${t.resumo}` : ''}</li>)}</ol>
+                <ol>{det.turnos.map((t: any) => <li key={t.id}><span className="mudo">{dataHora(t.inicio)} · {NOME_TURNO[t.status] || t.status}{Number(t.custo_usd) > 0 ? ` · ${dolar(t.custo_usd)}` : ''}</span> <Tarefa t={t.tarefa} />{t.resumo ? ` ${t.resumo}` : ''}</li>)}</ol>
               </>
             )}
           </div>
@@ -255,12 +258,12 @@ function Cartao({ p, nomes, podeDecidir, decidir }: { p: any; nomes: any; podeDe
         <>
           <div className="campo esc-recado">
             <label htmlFor={`esc-recado-${p.id}`}>Recado para o agente (opcional)</label>
-            <input id={`esc-recado-${p.id}`} type="text" maxLength={500} value={recado} onChange={(e) => setRecado(e.target.value)} placeholder="O que mudar, ou por que não. Ele lê antes de propor de novo." />
+            <input id={`esc-recado-${p.id}`} type="text" maxLength={500} value={recado} onChange={(e) => setRecado(e.target.value)} placeholder={p.le_recado ? 'O que mudar, ou por que não. Ele lê antes de propor de novo.' : 'O que mudar, ou por que não. Fica guardado no cartão.'} />
           </div>
           <div className="rec-acoes">
             <button className="bt bt-mini bt-tinta" onClick={() => decidir(p.id, 'aprovada', 'Aprovada. Foi para "Aprovadas, falta fazer". Ninguém começa sozinho: peça ao Claude para fazer.', recado)}><Check />Aprovar</button>
             <button className="bt bt-mini bt-tingido" onClick={() => decidir(p.id, 'depois', 'Guardada em "Para depois".', recado)}><Clock />Depois</button>
-            <button className="bt bt-mini bt-texto" onClick={() => decidir(p.id, 'descartada', recado.trim() ? 'Descartada. O agente vai ler o motivo.' : 'Descartada.', recado)}><X />Descartar</button>
+            <button className="bt bt-mini bt-texto" onClick={() => decidir(p.id, 'descartada', recado.trim() && p.le_recado ? 'Descartada. O agente vai ler o motivo.' : 'Descartada.', recado)}><X />Descartar</button>
           </div>
         </>
       )}
@@ -276,6 +279,7 @@ function Aprovada({ p, podeDecidir, fechar, voltar }: { p: any; podeDecidir: boo
       <div>
         <b>{p.titulo}</b>
         <p className="mudo linha-pequena">{p.acao}</p>
+        {p.motivo && <p className="mudo linha-pequena">Seu recado: {p.motivo}</p>}
         {aberto && (
           <>
             <textarea rows={3} maxLength={1500} placeholder="O que foi feito e o que mudou nos números." value={texto} onChange={(e) => setTexto(e.target.value)} aria-label="Resultado da proposta" />

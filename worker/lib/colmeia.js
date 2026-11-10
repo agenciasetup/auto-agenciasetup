@@ -249,5 +249,7 @@ export async function conhecimentoPara(env, texto, { interesse = '', max = 7 } =
   const fatos = todos.filter((i) => i.tipo === 'produto' && !pontuados.includes(i) && (pontuados.length < 2 || pontuados.some((q) => q.produto === i.produto)));
   const itens = [...pontuados, ...fatos].slice(0, max + 2);
   const licoes = pontuar(todos.filter(ehLicao), 3);
-  return { regras, itens, licoes, ids: [...regras, ...itens, ...licoes].map((i) => i.id) };
+  // ids: o que entrou nesta conversa por ter a ver com ela, para o placar de cada item. As regras ficam de fora da
+  // conta: entram em toda conversa, então somavam o mesmo número de usos e de vendas e o placar delas não media nada.
+  return { regras, itens, licoes, ids: [...itens, ...licoes].map((i) => i.id) };
 }

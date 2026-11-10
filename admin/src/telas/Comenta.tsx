@@ -209,7 +209,8 @@ function Versoes({ g }: { g: any }) {
             <span><b>{numero(v.enviados)}</b> directs</span>
             <span><b>{numero(v.cliques)}</b> cliques{v.taxa_clique != null && <> ({v.taxa_clique}%)</>}</span>
             {g.modo === 'seguir' && <span><b>{numero(v.seguidores)}</b> seguidores novos</span>}
-            {testando && v.ativa && v.chance_de_ser_a_melhor != null && <span title="Chance de ser a melhor, pelos envios, cliques e seguidores"><b>{v.chance_de_ser_a_melhor}%</b> de ser a melhor</span>}
+            {v.vendas > 0 && <span><b>{numero(v.vendas)}</b> {v.vendas === 1 ? 'venda' : 'vendas'}{v.vendas_centavos > 0 && <> ({(v.vendas_centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</>}</span>}
+            {testando && v.ativa && v.chance_de_ser_a_melhor != null && <span><b>{v.chance_de_ser_a_melhor}%</b> de ser a melhor</span>}
           </span>
         </div>
       ))}
@@ -286,6 +287,6 @@ export function EditorVersoes({ e, mudar, escreverIA, ocupado }: { e: any; mudar
       </div>
     ))}
     <button className="bt bt-mini" onClick={novaVersao}><Plus />Nova versão</button>
-    {e.variantes.length > 1 && <Escolha rotulo="Como escolher a versão" valor={e.estrategia} mudar={(v) => mudar('estrategia', v)} opcoes={[{ v: 'melhor', t: 'Mandar mais a que funciona' }, { v: 'igual', t: 'Sortear igual' }]} dica="Mandar mais a que funciona: cada versão recebe 25 envios e depois a que traz mais cliques e seguidores sai mais, sem parar de testar as outras." />}
+    {e.variantes.length > 1 && <Escolha rotulo="Como escolher a versão" valor={e.estrategia} mudar={(v) => mudar('estrategia', v)} opcoes={[{ v: 'melhor', t: 'Mandar mais a que funciona' }, { v: 'igual', t: 'Sortear igual' }]} dica="Mandar mais a que funciona: cada versão recebe 25 envios e depois sai mais a que vende mais (clique e seguidor novo também contam, com peso menor), sem parar de testar as outras." />}
   </>;
 }

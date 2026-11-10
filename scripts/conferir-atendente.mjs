@@ -3,9 +3,11 @@
 // endereço que não seja um dos falsos dá erro. Não lê o .env.local, não toca no banco de verdade e não manda nada.
 // O código testado é o de verdade (worker/lib/atendente.js, gatilhos.js, relogio.js, nucleo/db.js, o módulo do Instagram).
 // Uso: node scripts/conferir-atendente.mjs
-import { atender, conferir, configAtendente, registrarEnvios, responderPendentes, salvarConfigAtendente } from '../worker/lib/atendente.js';
+import { atender, conferir, conferirToque, configAtendente, registrarEnvios, responderPendentes, salvarConfigAtendente } from '../worker/lib/atendente.js';
 import { aoDirect, enviarRespostas, esquecerAjustesComenta } from '../worker/lib/gatilhos.js';
 import { rodarMinuto } from '../worker/lib/relogio.js';
+import { lerFollowup, podeTocar, salvarFollowup, tetosFollowup } from '../worker/lib/followup.js';
+import { aoDespertar, armarDespertador, armarNoEstado, proximaEspera } from '../worker/lib/despertador.js';
 import { rodarZelador } from '../worker/lib/agentes/zelador.js';
 import { salvarNaColmeia } from '../worker/lib/acoes-colmeia.js';
 import { chamadasFeitas, comContador, folgaDeChamadas } from '../worker/nucleo/db.js';
@@ -502,6 +504,114 @@ try {
   zerarRede();
   r9b = await rodar();
   ok(/dúvida com o dono/.test(r9b.feitos[0]) && rede.push === 0, 'o lembrete sai uma vez por dia por conversa', `avisos ${rede.push}`);
+
+  // ---------------------------------------------------------------- item 10: os tetos do follow-up no código
+  secao('10. Tetos do follow-up: a conta é do sistema');
+  await novoCenario();
+  tab('config').push({ chave: 'followup_tetos', valor: { dia: 2, rodada: 4, janela_min: 45, sem_resposta: 3 } });
+  const puxar = (usuario, extra = {}) => salvarFollowup(ENV, { usuario, mandei: 'Opaaa, conseguiu ver o material?', ...extra }, { quemNome: 'Claude' });
+  let t10 = await tetosFollowup(ENV);
+  ok(t10.dia.sobra === 2 && t10.rodada.sobra === 4 && t10.sem_resposta === 3, 'os tetos vêm da configuração do dono', JSON.stringify({ dia: t10.dia, rodada: t10.rodada }));
+  let r10 = await puxar('teto.um');
+  ok(r10.tetos && r10.tetos.dia.usado === 1 && r10.tetos.rodada.usado === 1 && !r10.aviso, 'a primeira puxada conta 1 no dia e 1 na rodada', JSON.stringify(r10.tetos));
+  await salvarFollowup(ENV, { usuario: 'teto.dois', ultima_mensagem: 'quanto custa?' }, { quemNome: 'Claude' });
+  r10 = await salvarFollowup(ENV, { usuario: 'teto.dois', mandei: 'Tá R$ 39,90' }, { quemNome: 'Claude' });
+  ok(r10.tetos.dia.usado === 1 && r10.tetos.rodada.usado === 2, 'responder quem escreveu não gasta o teto do dia, mas conta na rodada', JSON.stringify(r10.tetos));
+  r10 = await puxar('teto.tres');
+  ok(r10.tetos.dia.sobra === 0 && !r10.aviso, 'a segunda puxada fecha o teto do dia', JSON.stringify(r10.tetos));
+  let f10 = await lerFollowup(ENV, { usuario: 'teto.quatro.novo' });
+  await salvarFollowup(ENV, { usuario: 'teto.quatro' }, { quemNome: 'Claude' });
+  f10 = await lerFollowup(ENV, { usuario: 'teto.quatro' });
+  ok(f10.pode_tocar === false && /Teto de 2 mensagens puxadas por dia/.test(f10.nao_tocar_motivo) && f10.toque === 'puxada', 'com o teto do dia fechado, a ficha diz que não pode puxar', f10.nao_tocar_motivo);
+  r10 = await puxar('teto.quatro');
+  ok(/passou do teto/.test(r10.aviso || ''), 'puxada acima do teto fica anotada (a mensagem já saiu) e volta com o aviso para parar', r10.aviso || 'sem aviso');
+  await salvarFollowup(ENV, { usuario: 'teto.cinco', ultima_mensagem: 'me manda o link' }, { quemNome: 'Claude' });
+  f10 = await lerFollowup(ENV, { usuario: 'teto.cinco' });
+  ok(f10.pode_tocar === false && /pessoas por rodada/.test(f10.nao_tocar_motivo), 'com a rodada cheia, nem resposta sai até a próxima rodada', f10.nao_tocar_motivo);
+
+  // Três mensagens nossas sem resposta: a pessoa sai da fila sozinha.
+  await novoCenario();
+  await puxar('insistiu.teste');
+  await puxar('insistiu.teste');
+  ok(ficha('insistiu.teste').fase === 'ofertado', 'duas mensagens sem resposta: continua na fila', ficha('insistiu.teste').fase);
+  await puxar('insistiu.teste');
+  ok(ficha('insistiu.teste').fase === 'nao_quer' && ficha('insistiu.teste').proximo_em === null && ficha('insistiu.teste').historico.some((h) => /3 mensagens nossas sem resposta/.test(h.texto)), 'a terceira sem resposta manda para "Não quer", com o motivo no histórico', ficha('insistiu.teste').fase);
+  await puxar('voltou.teste');
+  await puxar('voltou.teste');
+  await salvarFollowup(ENV, { usuario: 'voltou.teste', ultima_mensagem: 'opa, vi agora' }, { quemNome: 'Claude' });
+  await salvarFollowup(ENV, { usuario: 'voltou.teste', mandei: 'Boa! Conseguiu abrir?' }, { quemNome: 'Claude' });
+  ok(ficha('voltou.teste').fase !== 'nao_quer', 'quando ela responde, a contagem recomeça', ficha('voltou.teste').fase);
+
+  // A regra única, caso a caso (sem banco).
+  const base10 = { fase: 'ofertado', historico: [], nosso_em: iso(Date.now() - 30 * HORA), ultima_em: iso(Date.now() - 40 * HORA) };
+  const livre = { dia: { usado: 0, teto: 40, sobra: 40 }, rodada: { usado: 0, teto: 10, sobra: 10, janela_min: 45 }, sem_resposta: 3 };
+  ok(podeTocar(base10, livre).pode_tocar === true && podeTocar(base10, livre).toque === 'puxada', 'ofertada ontem, sem resposta: pode puxar');
+  ok(podeTocar({ ...base10, nosso_em: iso(Date.now() - 2 * MINUTO) }, livre).pode_tocar === (new Date(Date.now() - 3 * HORA).toISOString().slice(0, 10) !== new Date(Date.now() - 2 * MINUTO - 3 * HORA).toISOString().slice(0, 10)), 'quem já recebeu mensagem nossa hoje não recebe outra puxada');
+  ok(podeTocar({ ...base10, fase: 'duvida' }, livre).pode_tocar === false && podeTocar({ ...base10, fase: 'nao_quer' }, livre).pode_tocar === false && podeTocar({ ...base10, fase: 'nao_sei' }, livre).pode_tocar === false, 'dúvida com o dono, "não quer" e "não sei" nunca recebem');
+  ok(podeTocar({ ...base10, fase: 'comprou' }, livre).pode_tocar === false && podeTocar({ ...base10, fase: 'comprou', ultima_em: iso() }, livre).pode_tocar === true, 'quem comprou só recebe resposta, nunca puxada');
+  ok(podeTocar(base10, livre, { pausa: 'dono', pausa_motivo: 'O dono conversou com essa pessoa.' }).nao_tocar_motivo === 'O dono conversou com essa pessoa.', 'pausa do dono vale antes de tudo');
+
+  // O toque que um agente manda pelo sistema: preço e link conferidos.
+  const pr = { posts: '39,90', combo: '97' };
+  const LINK_POSTS = 'https://agenciasetup.com.br/cursos/posts-automaticos';
+  ok(conferirToque(['Opaaa! Conseguiu ver o material que te mandei? Em 3 dias dá pra montar o primeiro lote, são 18 aulas.', `${LINK_POSTS}?de=c-abc123def4`], pr) === null, 'toque comum com o link da pessoa passa, mesmo comprido');
+  ok(/Valor que não é um preço liberado/.test(conferirToque(['Hoje sai por R$ 29,90 pra vc'], pr) || ''), 'preço que não é o de hoje é barrado');
+  ok(conferirToque(['Tá R$ 39,90', 'O combo ta 97 reais'], pr) === null, 'os preços de hoje passam');
+  ok(conferirToque(['Fechei 79,90 pra vc'], pr, ['79,90']) === null, 'condição que o dono liberou para a pessoa passa');
+  ok(/Link que não é um dos liberados/.test(conferirToque(['Entra aqui https://bit.ly/abc'], pr) || ''), 'link de fora é barrado');
+
+  // ---------------------------------------------------------------- item 11: o despertador do Atendente
+  secao('11. Despertador: a resposta sai uns 20 segundos depois, sem esperar o relógio');
+  // O alarme de mentira: guarda a hora, como o do Durable Object.
+  const alarme = () => { const s = { hora: null, marcou: 0 }; return { s, getAlarm: async () => s.hora, setAlarm: async (h) => { s.hora = h; s.marcou++; } }; };
+  let despAl = alarme();
+  const t0 = Date.now();
+  let r11 = await armarNoEstado(despAl, t0 + 21_500, t0);
+  ok(r11.mudou && despAl.s.hora === t0 + 21_500, 'a primeira mensagem marca o alarme para depois da espera');
+  r11 = await armarNoEstado(despAl, t0 + 40_000, t0);
+  ok(!r11.mudou && despAl.s.hora === t0 + 21_500, 'outra mensagem mais tarde não empurra o alarme: ele fica na hora mais próxima');
+  r11 = await armarNoEstado(despAl, t0 + 5_000, t0);
+  ok(r11.mudou && despAl.s.hora === t0 + 5_000, 'hora mais próxima troca o alarme');
+  r11 = await armarNoEstado(despAl, t0 - 60_000, t0);
+  ok(despAl.s.hora === t0 + 500, 'hora que já passou vira "daqui a meio segundo", nunca no passado');
+
+  // O Worker só arma quando o dono ligou (config.atendente.na_hora) e o despertador existe.
+  await novoCenario();
+  const pedidos = [];
+  const ENV_COM_DESPERTADOR = { ...ENV, DESPERTADOR: { idFromName: (n) => n, get: () => ({ armar: async (h) => { pedidos.push(h); } }) } };
+  const escreveCom = async (env, usuario, igsid, texto) => atender(env, { conta: { conexao, m: ig }, igsid, mid: `mid.desp.${usuario}.${Date.now()}`, texto, perfilDaPessoa: { usuario, nome: usuario } });
+  await escreveCom(ENV_COM_DESPERTADOR, 'desp.um', '500000001', 'quanto custa o curso de posts?');
+  ok(pedidos.length === 0, 'com o despertador desligado na configuração, nada é armado (vale só o relógio)');
+  tab('config').find((c) => c.chave === 'atendente').valor.na_hora = true;
+  const antes11 = Date.now();
+  await escreveCom(ENV_COM_DESPERTADOR, 'desp.dois', '500000002', 'quanto custa o curso de posts?');
+  ok(pedidos.length === 1 && pedidos[0] >= antes11 + 21_000 && pedidos[0] <= Date.now() + 22_000, 'ligado: a mensagem arma o alarme para uns 21 segundos depois', String(pedidos[0] - antes11));
+  ok((await armarDespertador(ENV, 20_000)) === false, 'sem o despertador no ambiente (computador, ensaio), segue sem erro');
+  ok((await armarDespertador({ ...ENV, DESPERTADOR: { idFromName: () => 'x', get: () => ({ armar: async () => { throw new Error('caiu'); } }) } }, 20_000).catch(() => 'subiu')) === false, 'falha ao armar não derruba quem chamou');
+
+  // O alarme toca: responde quem já parou de escrever e marca de novo para quem ainda está escrevendo.
+  await novoCenario();
+  await escreve('desp.pronta', '500000003', 'quanto custa o curso de posts?', { haSegundos: 30 });
+  await escreve('desp.escrevendo', '500000004', 'oi, queria saber', { haSegundos: 5 });
+  despAl = alarme();
+  const responder = (env) => responderPendentes(env, { limite: 6, contaDe });
+  let d11 = await aoDespertar(despAl, ENV, { responder, esperaMs: 20_000 });
+  ok(ultimaDe('desp.pronta').classe === 'respondeu' && ultimaDe('desp.escrevendo').classe === 'esperando', 'responde quem parou há 30 segundos e deixa quem escreveu há 5');
+  const faltam = despAl.s.hora - Date.now();
+  ok(despAl.s.marcou === 1 && faltam > 14_000 && faltam < 18_000, 'e marca de novo para quando a outra conversa vencer (uns 16 segundos)', String(faltam));
+  linhasDe('desp.escrevendo').at(-1).criado_em = iso(Date.now() - 25_000);
+  despAl = alarme();
+  d11 = await aoDespertar(despAl, ENV, { responder, esperaMs: 20_000 });
+  ok(ultimaDe('desp.escrevendo').classe === 'respondeu' && despAl.s.marcou === 0, 'no toque seguinte responde a segunda e não marca mais nada');
+  // Quem continua esperando depois de vencer (modo ensaio) não faz o alarme rodar em laço.
+  await novoCenario({ modo: 'ensaio' });
+  await escreve('fora.do.ensaio', '500000005', 'quanto custa?', { haSegundos: 40 });
+  despAl = alarme();
+  d11 = await aoDespertar(despAl, ENV, { responder, esperaMs: 20_000 });
+  ok(ultimaDe('fora.do.ensaio').classe === 'esperando' && despAl.s.marcou === 0 && (await proximaEspera(ENV, 20_000)) === null, 'conversa vencida que continua esperando fica com o relógio: o alarme não se marca de novo');
+  despAl = alarme();
+  d11 = await aoDespertar(despAl, ENV, { responder: async () => { throw new Error('quebrou'); }, esperaMs: 20_000 }).catch(() => 'subiu');
+  ok(d11 !== 'subiu', 'erro ao responder não sobe (a Cloudflare repetiria o alarme)');
 
   // ---------------------------------------------------------------- item 3: erro no meio não deixa órfã
   secao('3. Erro no meio de responder');
