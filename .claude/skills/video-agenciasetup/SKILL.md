@@ -37,11 +37,12 @@ Pasta do vídeo: `videos\pt-reel-<n>` (o próximo número livre). Comece de um m
    Grafia para a voz: "Clawd" no lugar de Claude, número por extenso ("cinco"), preço falado ("trinta e nove e noventa"). A legenda na tela mostra o texto normal.
 4. Se mudar o ritmo da voz no `video.js` (velocidade, pausas), rode o passo 2 de novo.
 5. `.\videos\_reels-en\juntar-voz.ps1 pt <n>` (junta e marca o tempo de cada palavra).
-6. A música, do Pixabay sem Content ID (`musicas\pixabay`, veja o `LICENCA.md`; nunca o `piano.mjs`): `ffmpeg -v error -y -ss <início> -t <duração> -i musicas/pixabay/<faixa>.mp3 -ar 48000 -ac 2 -c:a pcm_s16le videos/pt-reel-<n>/audio/musica.wav`. `musica.volume` em torno de 0,7 deixa a música uns 12 a 14 dB abaixo da voz nas pausas.
+6. A música, do Pixabay sem Content ID (`musicas\pixabay`, veja o `LICENCA.md`; nunca o `piano.mjs`): `ffmpeg -v error -y -ss <início> -t <duração> -i musicas/pixabay/<faixa>.mp3 -ar 48000 -ac 2 -c:a pcm_s16le videos/pt-reel-<n>/audio/musica.wav`. `musica.volume` de 0,55 deixa a música uns 12,5 dB abaixo da voz (0,62 dá uns 11,5 dB e 0,7, uns 10,4 dB, medidos nos Reels 41 a 43). Os efeitos das trocas de cena caem nas pausas: meça o mix final também. Trocar só a música não pede render novo: `node ferramentas/mix.mjs` e um ffmpeg que copia o vídeo (`-c:v copy`) e troca o áudio.
+   Músicas já usadas: Upbeat Funk (Reels 33 e 41), Lofi Upbeat (32), Energetic Upbeat (42), Good Morning (43). Faixa nova só com o ok do dono e sem "Content ID Registered" na página (anote no `LICENCA.md`).
 7. Prévia com as conferências: `node ferramentas/fazer.mjs videos/pt-reel-<n> previa --zona-segura`. As quatro conferências precisam dar zero.
 8. Quadros de perto: `node ferramentas/render.mjs videos/pt-reel-<n> quadros 5.0 6.2 ...`.
 9. Final: `.\videos\_reels-en\final.ps1 pt <n>` (umas 1,5 min). Sai em `Curso-Videos\videos-pt\reel-<n>.mp4`, até 50 MB. O de `estudio\prontos\` passa do limite: não use.
-10. Capa: um quadro com o gancho legível, sem a legenda da fala, em 1080x1920 (`capa.mjs` do molde 41), conferindo o corte 3:4 da grade do perfil.
+10. Capa: um quadro com o gancho legível, sem a legenda da fala, em 1080x1920 (`capa.mjs` do molde 41), conferindo o corte 3:4 da grade do perfil. Rode sempre depois do `final.ps1`, que grava a capa a partir do quadro zero.
 
 ## 3. A revisão (antes de qualquer pessoa ver)
 
@@ -60,6 +61,14 @@ Erros conhecidos:
 - O `tomadas.py` dá nota baixa para preço porque o Whisper escreve em algarismos ("R$ 39,90"). Confira o trecho sozinho antes de regravar.
 - `transcrever.py --placa` falha calado: rode sem `--placa`.
 - O último quadro sai com `ffmpeg -sseof -0.3 -update 1`.
+- O `tomadas.py` refaz as tomadas da fala do preço toda vez que roda, porque ela nunca passa da nota. Regravar outra fala gasta placa de vídeo com o preço de novo.
+- "Comenta PALAVRA, que..." pode sair "Comenta a PALAVRA". Na voz, "Comenta: palavra!" resolve.
+- No `estilo.css` de cada vídeo, use nomes com prefixo (`r42-...`). Nome genérico colide com o motor: `.msg` deixa o texto quase branco, `.ico` encolhe o ícone e `.anexo` já tem estilo lá.
+- O elemento `carimbo` ocupa a largura toda e vira uma faixa: para carimbo, use `html` com `inline-block`.
+- `sai` depois de `voa` faz o elemento voltar ao lugar de origem. Para sumir com algo que voou, use `esconde`.
+- Fundo próprio (classe do vídeo) o motor trata como escuro: em cenário claro, defina as cores do texto no CSS.
+- Elemento largo com `entra: 'esquerda'` dispara o aviso de texto cortado. Use `sobe`.
+- No PowerShell 5.1, `Set-Content -Encoding utf8` põe BOM no arquivo: use `[IO.File]::WriteAllText`.
 
 ## 4. A entrega (rascunho)
 
