@@ -5,7 +5,7 @@
 // Rodar de verdade é pelo conector, com o código que está no ar (no computador a chave do Claude não abre, de propósito):
 //   node scripts/conector.mjs design_olheiro '{}'    e    node scripts/conector.mjs design_diretor '{}'
 import { env as local } from './env.mjs';
-import { separar, tipoDe, conferirLeitura, contar, cartaoDe, textoLivre, rodarOlheiroVisual } from '../worker/lib/agentes/olheiro-visual.js';
+import { separar, tipoDe, conferirLeitura, contar, cartaoDe, textoLivre, tituloCurto, rodarOlheiroVisual } from '../worker/lib/agentes/olheiro-visual.js';
 import { conferirTeste, medir, cartaoDoResultado, resumoDaLeitura, rodarDiretorDeArte, lerDesign } from '../worker/lib/agentes/diretor-de-arte.js';
 import { daTarefa, tarefasQueNaoRodaram } from '../worker/lib/agentes/zelador.js';
 
@@ -62,6 +62,11 @@ const k = contar(sel.capas, l.capas);
 ok('a contagem é do código', k.carrossel.topo.assunto.bicho === 4 && k.carrossel.baixo.assunto.so_texto === 3 && k.carrossel.topo.perto === 4, k.carrossel);
 const cartao = cartaoDe(sel, l, k);
 ok('o cartão tem prova com os números, regra e links', cartao.prova.includes('10,5') && cartao.prova.includes('P0 30') && cartao.acao.includes(l.regra) && cartao.links.length >= 3 && cartao.titulo.length <= 158 && cartao.prova.length <= 1500, cartao);
+
+const longo = 'As de cima têm cor viva forte na imagem: céu azul, amarelo cheio, o bico do tucano, a alpaca no campo aberto e o resto todo junto numa frase só que não acaba nunca mais.';
+const tc = tituloCurto('Capas fora da curva: ', longo);
+ok('título longo corta numa palavra inteira, com reticências', tc.length <= 158 && tc.endsWith('...') && !/s...$/.test(tc) && longo.includes(tc.slice(21, -3)), tc);
+ok('título fica só com a primeira frase', tituloCurto('X: ', 'Bicho perto da lente. O resto vem depois.') === 'X: Bicho perto da lente.');
 
 // ---------------------------------------------------------------- Diretor de arte
 const leituraGuardada = {

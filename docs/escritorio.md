@@ -200,7 +200,7 @@ Pronto quando: um dia inteiro com o computador desligado termina com os posts do
 - [ ] Editor-chefe (as 3 pautas do dia) e o caderno de lições da semana.
 - [ ] Chefe de gabinete: resumo das 8h no celular com as 3 decisões do dia.
 - [ ] Caçador de ganchos, roteirista, olheiro visual e diretor de arte.
-- [x] Divisão entre Conteúdo e Design aplicada (10/11/2026, migration 44, com o ok do dono). Olheiro visual e Diretor de arte com código pronto e conferido (`node scripts/conferir-design.mjs`); rodam no ar depois do deploy.
+- [x] Divisão entre Conteúdo e Design aplicada (10/11/2026, migration 44, com o ok do dono). Olheiro visual e Diretor de arte no ar desde o mesmo dia (`node scripts/conferir-design.mjs`): na primeira rodada, o cartão das capas fora da curva e o primeiro teste de estilo foram para a mesa.
 
 Pronto quando: você passa uma semana decidindo só pelo resumo das 8h, e pelo menos um post nasceu de um cartão do olheiro.
 

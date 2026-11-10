@@ -33,7 +33,7 @@ const MAX_FRASE = 2; // de cada lado
 const MAX_NA_MESA = 2;
 const MAX_TENTATIVAS = 3;
 const RESERVA_USD = 0.3;
-const FOLGA = 12;
+const FOLGA = 30; // as capas baixadas contam como chamadas externas (até 2 por capa)
 const TRAVESSAO = /[—–]/;
 const LINK = /https?:|www[.]|[.]com\b|[.]br\b/i;
 // Regra do dono (09/11/2026): o título (headline, palavra grande, floreio) é só preto, amarelo ou branco.
@@ -111,11 +111,29 @@ export function tipoDe(p) {
   return peca && peca.origem_tipo !== 'recurso' && cards > 0 && cards <= 4 ? 'frase' : 'carrossel';
 }
 
-// A imagem da capa: a miniatura do Instagram (vale umas semanas) ou, se não tiver, o primeiro card da peça.
-function imagemDe(p) {
+// Os endereços da capa, na ordem de tentar: a miniatura do Instagram (vale umas semanas) e o primeiro card da peça.
+export function imagensDe(p) {
   const peca = p.peca || null;
   const daPeca = peca && Array.isArray(peca.slides) && peca.slides[0] && peca.slides[0].imagem_url;
-  return [p.miniatura_url, daPeca].find((u) => typeof u === 'string' && IMAGEM_OK.test(u)) || null;
+  return [...new Set([p.miniatura_url, daPeca].filter((u) => typeof u === 'string' && IMAGEM_OK.test(u)))];
+}
+const imagemDe = (p) => imagensDe(p)[0] || null;
+
+// A API do Claude não busca imagem do Instagram pelo endereço ("This URL..."): o Worker baixa e manda a imagem junto.
+const TIPOS_DE_IMAGEM = /^image\/(jpeg|png|webp|gif)$/;
+const MAX_IMAGEM = 4_000_000;
+export async function baixarImagem(url) {
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AgenciaSetup/1.0)' } });
+    if (!r.ok) return null;
+    const tipo = String(r.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    if (!TIPOS_DE_IMAGEM.test(tipo)) return null;
+    const bytes = new Uint8Array(await r.arrayBuffer());
+    if (!bytes.length || bytes.length > MAX_IMAGEM) return null;
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return { type: 'base64', media_type: tipo, data: btoa(bin) };
+  } catch { return null; }
 }
 
 // Separa as capas que saíram da curva, para cima e para baixo, dentro de cada tipo. Devolve null no tipo com pouco post.
@@ -128,7 +146,7 @@ export function separar(posts, agora) {
   }).map((p) => ({
     post_id: p.id, tipo: tipoDe(p), palavra: limpar(p.palavra_chave, 30).toUpperCase() || null, nota: Number(p.nota), salvos: Number(p.salvos) || 0,
     comentarios: Number(p.comentarios) || 0, alcance: Number(p.alcance) || 0, data: p.publicado_em, link: typeof p.link === 'string' && /^https:\/\//.test(p.link) ? p.link : null,
-    imagem: imagemDe(p), titulo: limpar(p.peca && p.peca.titulo, 80) || null,
+    imagem: imagemDe(p), imagens: imagensDe(p), titulo: limpar(p.peca && p.peca.titulo, 80) || null,
   }));
   const grupo = (tipo, minimo, maxTopo, maxBaixo) => {
     const l = validos.filter((p) => p.tipo === tipo);
@@ -151,13 +169,14 @@ export function separar(posts, agora) {
   return { de: new Date(de).toISOString(), ate: new Date(ate).toISOString(), carrossel, frase, capas, total: validos.length };
 }
 
-// O pedido: as capas como imagem, cada uma com a referência, o tipo e de que lado da curva está.
-export function montarPedido(sel, { trocarImagem = null } = {}) {
+// O pedido: as capas como imagem (já baixadas, em fontes: ref -> imagem), cada uma com a referência, o tipo e de que
+// lado da curva está. Sem fontes (na conferência), vai o endereço.
+export function montarPedido(sel, fontes = null) {
   const conteudo = [{ type: 'text', text: `Capas de ${dataBR(sel.de)} a ${dataBR(sel.ate)}. Cada uma vem com a referência, o tipo de post e se ficou acima ou abaixo da curva do próprio tipo. Leia todas.` }];
   for (const c of sel.capas) {
     const lado = c.grupo === 'topo' ? 'acima da curva' : 'abaixo da curva';
     conteudo.push({ type: 'text', text: `Capa ${c.ref}: ${c.tipo === 'frase' ? 'post de frase' : 'carrossel'}, ${lado}${c.palavra ? `, palavra do Comenta X ${c.palavra}` : ''}.` });
-    conteudo.push({ type: 'image', source: { type: 'url', url: trocarImagem ? trocarImagem(c) : c.imagem } });
+    conteudo.push({ type: 'image', source: fontes ? fontes.get(c.ref) : { type: 'url', url: c.imagem } });
   }
   conteudo.push({ type: 'text', text: `Leia as ${sel.capas.length} capas e chame ${FERRAMENTA.name}.` });
   return conteudo;
@@ -219,6 +238,15 @@ export function contar(capas, lidas) {
 const listaDe = (obj, nomes) => Object.entries(obj).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${nomes[k] || k} ${n}`).join(', ');
 const capaCurta = (c) => `${c.palavra || c.titulo || 'sem palavra'} ${virgula(c.nota)}${c.salvos ? ` (${c.salvos} salvos)` : ''}`;
 
+// O título do cartão: a primeira frase do texto; se não couber, corta numa palavra inteira e põe reticências.
+export function tituloCurto(inicio, texto, max = 158) {
+  const frase = String(texto || '').split(/(?<=[.!?])\s/)[0].trim();
+  const t = `${inicio}${frase}`;
+  if (t.length <= max) return t;
+  const corte = t.slice(0, max - 3);
+  return `${corte.slice(0, Math.max(inicio.length, corte.lastIndexOf(' '))).replace(/[,;:]$/, '')}...`;
+}
+
 export function cartaoDe(sel, leitura, contagem) {
   const partes = [];
   for (const [tipo, g] of [['carrossel', sel.carrossel], ['frase', sel.frase]]) {
@@ -241,7 +269,7 @@ export function cartaoDe(sel, leitura, contagem) {
     .filter((c) => c.link).map((c) => ({ t: `${c.grupo === 'topo' ? 'Acima' : 'Abaixo'}: ${c.palavra || 'post'} ${virgula(c.nota)}`, url: c.link }));
   return {
     agente: AGENTE, sala: 'design', esforco: 'p',
-    titulo: `Capas fora da curva: ${leitura.padrao_topo}`.slice(0, 158),
+    titulo: tituloCurto('Capas fora da curva: ', leitura.padrao_topo),
     prova, acao,
     ganho: 'Capas com mais nota e salvos. O Diretor de arte transforma a regra no teste da semana e mede.',
     links,
@@ -278,20 +306,21 @@ async function lerTudo(env, quando) {
   return { estado: lerEstado(linhaEstado), agente, posts, naMesa: propostas.length };
 }
 
-// Uma chamada ao Claude. Se a miniatura do Instagram não abrir para ele, tenta uma vez com o primeiro card da peça.
-async function lerCapas(cliente, sel) {
-  const pedir = (conteudo) => cliente.messages.create({ model: MODELO, max_tokens: 4000, output_config: { effort: 'medium' }, system: SISTEMA, tools: [FERRAMENTA], messages: [{ role: 'user', content: conteudo }] });
-  try {
-    return await pedir(montarPedido(sel));
-  } catch (e) {
-    const imagem = e && e.status === 400 && /image|url|download|fetch/i.test(String(e.message));
-    if (!imagem) throw e;
-    // A segunda tentativa só com imagens nossas: a da peça, quando existe; a capa sem imagem nossa sai da lista.
-    const nossas = sel.capas.map((c) => ({ c, url: [c.imagem].find((u) => /supabase\.co\//.test(u)) })).filter((x) => x.url);
-    if (nossas.length < Math.ceil(sel.capas.length * 0.7)) throw e;
-    sel.capas = nossas.map((x) => x.c);
-    return pedir(montarPedido(sel));
-  }
+// Baixa a capa de cada post (o Instagram primeiro, a peça se ele não abrir). A capa que não baixa sai da lista.
+async function baixarCapas(sel) {
+  const fontes = new Map();
+  await Promise.all(sel.capas.map(async (c) => {
+    for (const url of c.imagens || [c.imagem]) {
+      const img = await baixarImagem(url);
+      if (img) { fontes.set(c.ref, img); return; }
+    }
+  }));
+  return fontes;
+}
+
+// Uma chamada ao Claude, com as capas que o Worker conseguiu baixar.
+function lerCapas(cliente, sel, fontes) {
+  return cliente.messages.create({ model: MODELO, max_tokens: 4000, output_config: { effort: 'medium' }, system: SISTEMA, tools: [FERRAMENTA], messages: [{ role: 'user', content: montarPedido(sel, fontes) }] });
 }
 
 export async function rodarOlheiroVisual(env, quando = Date.now(), { forcar = false, simular = false } = {}) {
@@ -319,18 +348,27 @@ export async function rodarOlheiroVisual(env, quando = Date.now(), { forcar = fa
   const tentativas = (estado.tentativa_dia === dia ? estado.tentativas : 0) + 1;
   await gravar(env, CHAVE, { ...estado, tentativa_dia: dia, tentativas });
 
+  // As capas: o Worker baixa cada uma. A que não abriu sai da lista; com menos de 70% abertas, não gasta a chamada.
+  const total = sel.capas.length;
+  const fontes = await baixarCapas(sel);
+  sel.capas = sel.capas.filter((c) => fontes.has(c.ref));
+  const poucas = sel.capas.length < Math.max(3, Math.ceil(total * 0.7));
+
   let r = null;
   let erro = null;
-  try {
-    const cliente = new Anthropic({ apiKey: env.ANTHROPIC_CHAVE, maxRetries: 0, timeout: 150_000 });
-    r = await lerCapas(cliente, sel);
-  } catch (e) { erro = e; }
+  if (!poucas) {
+    try {
+      const cliente = new Anthropic({ apiKey: env.ANTHROPIC_CHAVE, maxRetries: 0, timeout: 150_000 });
+      r = await lerCapas(cliente, sel, fontes);
+    } catch (e) { erro = e; }
+  }
   const uso = (r && r.usage) || {};
   const gasto = { custo_usd: Number(custo(MODELO, uso).toFixed(5)), tokens_entrada: (uso.input_tokens || 0) + (uso.cache_read_input_tokens || 0) + (uso.cache_creation_input_tokens || 0), tokens_saida: uso.output_tokens || 0 };
   const fechar = (status, resumo, extra = {}) => registrarTurno(env, { agente: AGENTE, onde: 'worker', status, resumo, ...gasto, modelo: MODELO, inicio: agora, dados: { modelo: MODELO, capas: sel.capas.length, ...extra } })
     .catch(async (e) => { console.error('olheiro visual turno', e && e.message); if (r) await anotarConsumo(env, AGENTE, MODELO, uso, 'olheiro-visual'); });
   const falhou = async (texto) => { await fechar('erro', `${texto} Tentativa ${tentativas} de ${MAX_TENTATIVAS} hoje.`); return { erro: texto, ...gasto }; };
-  if (erro) { console.error('olheiro visual ia', erro && erro.status, erro && erro.message); return falhou(`O Claude não respondeu (${String((erro && erro.message) || erro).slice(0, 80)}).`); }
+  if (poucas) return falhou(`Só ${sel.capas.length} de ${total} capas abriram para baixar; não chamei o Claude.`);
+  if (erro) { console.error('olheiro visual ia', erro && erro.status, erro && erro.message); return falhou(`O Claude não respondeu (${String((erro && erro.message) || erro).slice(0, 160)}).`); }
   if (r.stop_reason === 'refusal') return falhou('O Claude não quis ler as capas.');
   if (r.stop_reason === 'max_tokens') return falhou('A resposta do Claude veio cortada.');
   const bloco = r.content.find((b) => b.type === 'tool_use' && b.name === FERRAMENTA.name && b.input && typeof b.input === 'object');

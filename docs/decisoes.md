@@ -735,6 +735,16 @@ Pedido do dono: "ao invés do MCP atual, construa o MCP estilo code mode do Clou
 - **Vagas abertas ficam como vagas.** Locutor, Animador e Revisor de vídeo só serão ligados depois do primeiro vídeo produzido pelo caminho novo; o Escritório não mostra como ativo quem ainda não trabalha.
 - **Contas de teste do dono** (modo ensaio do Atendente): as cinco que ele indicou, guardadas em `config.atendente.contas_teste`.
 
+## Tomadas em 10/11/2026 (Conteúdo e Design)
+
+- **Conteúdo cuida das palavras e dos números; Design cuida da imagem.** O dono achava as duas salas iguais ("acho confuso o time conteúdo / design"). Eram: os redatores faziam o post inteiro. Ele aprovou a divisão por função ("Pode aplicar"): o Redator escreve os dois formatos, o Designer faz a arte dos dois, o Revisor é a última porta e fica no Design. Detalhes em `docs/escritorio.md` ("Conteúdo e Design").
+- **Um Designer só no computador, sem um agente por passo.** Fotógrafo, montador e animador seriam nomes diferentes para a mesma sessão: trabalho de mentira. Quem pensa a semana (Olheiro visual e Diretor de arte) fica no Worker, sem depender do computador.
+- **Os ids ficam.** `redator-de-frase` é o Redator e `redator-de-carrossel` é o Designer: trocar o id quebraria turnos, carreira, consumo e Calangos, e o Zelador no ar antes do deploy. O nome que o dono vê é o novo.
+- **O número da prova é do código, não da IA.** O Olheiro visual (Sonnet, com visão) só descreve as capas e escreve o padrão e a regra, sem número; o código separa as capas fora da curva (por tipo: carrossel e frase têm notas muito diferentes), conta os assuntos e as cores e faz a prova. O Diretor de arte mede o teste só com código (virar regra quando a nota mediana fica 20% acima das outras capas e os salvos não caem; descartar quando fica 10% abaixo).
+- **Um teste de estilo por vez, aprovado pelo dono.** O teste só começa com o cartão aprovado e vale só para capas de carrossel. As decisões do Filipe na skill valem mais que a leitura e que o teste; título fora de preto, amarelo ou branco é barrado no código.
+- **No computador a chave do Claude não abre** (`prepararIntegracoes` pula as integrações no ambiente local). Os agentes de Design não rodam de verdade pelo computador; rodam no ar, pelo relógio ou pelo conector (`design_olheiro`, `design_diretor`).
+- **A capa vai como imagem, não como endereço.** A API do Claude recusou buscar a miniatura do Instagram pelo endereço. O Worker baixa cada capa (o Instagram primeiro, a cópia da peça se ele não abrir) e manda junto; com menos de 70% das capas abertas, a chamada nem é feita.
+
 ## Em aberto
 
 - **Follow-up do direct:** no ar desde 08/11/2026 (versão `8267d516`) com a tarefa `direct-followup`. Falta a primeira rodada com o dono olhando e conferir na primeira semana se o "achado pelo nome" erra. Sete rodadas por dia lendo o direct gastam bastante do limite semanal do Claude: se apertar, ficar com 9h, 14h e 20h.
@@ -752,15 +762,6 @@ Pedido do dono: "ao invés do MCP atual, construa o MCP estilo code mode do Clou
   - as 2 frases em inglês (POSTS, 3/11 e 5/11 às 22h) levam à página do curso: só deixar sair com a venda em dólar ligada (senão, adiar);
   - ~~fotos novas para a arte em 5 etapas e o texto com cara de IA em inglês~~: feitas em 30/10/2026; os dois estão em rascunho (`node _local/en-posts/agendar.mjs arte-bonita-com-ia texto-cara-de-ia` agenda);
   - primeira compra de verdade em dólar, com reembolso.
-## Tomadas em 10/11/2026 (Conteúdo e Design)
-
-- **Conteúdo cuida das palavras e dos números; Design cuida da imagem.** O dono achava as duas salas iguais ("acho confuso o time conteúdo / design"). Eram: os redatores faziam o post inteiro. Ele aprovou a divisão por função ("Pode aplicar"): o Redator escreve os dois formatos, o Designer faz a arte dos dois, o Revisor é a última porta e fica no Design. Detalhes em `docs/escritorio.md` ("Conteúdo e Design").
-- **Um Designer só no computador, sem um agente por passo.** Fotógrafo, montador e animador seriam nomes diferentes para a mesma sessão: trabalho de mentira. Quem pensa a semana (Olheiro visual e Diretor de arte) fica no Worker, sem depender do computador.
-- **Os ids ficam.** `redator-de-frase` é o Redator e `redator-de-carrossel` é o Designer: trocar o id quebraria turnos, carreira, consumo e Calangos, e o Zelador no ar antes do deploy. O nome que o dono vê é o novo.
-- **O número da prova é do código, não da IA.** O Olheiro visual (Sonnet, com visão) só descreve as capas e escreve o padrão e a regra, sem número; o código separa as capas fora da curva (por tipo: carrossel e frase têm notas muito diferentes), conta os assuntos e as cores e faz a prova. O Diretor de arte mede o teste só com código (virar regra quando a nota mediana fica 20% acima das outras capas e os salvos não caem; descartar quando fica 10% abaixo).
-- **Um teste de estilo por vez, aprovado pelo dono.** O teste só começa com o cartão aprovado e vale só para capas de carrossel. As decisões do Filipe na skill valem mais que a leitura e que o teste; título fora de preto, amarelo ou branco é barrado no código.
-- **No computador a chave do Claude não abre** (`prepararIntegracoes` pula as integrações no ambiente local). Os agentes de Design não rodam de verdade pelo computador; rodam no ar, pelo relógio ou pelo conector (`design_olheiro`, `design_diretor`).
-
 - **Versão em inglês, depois:** o certificado e a tela pública do perfil ainda em português; ranking da Setup ainda conta aluno do curso em inglês; o link curto `/l/` não existe no domínio em inglês (sem contagem de clique por versão no Comenta X em inglês); o mapa do site em inglês (`/free` fora do sitemap).
 
 - **Dúvidas da Fé:**
