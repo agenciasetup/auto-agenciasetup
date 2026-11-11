@@ -97,7 +97,7 @@ window.CARROSSEL = {
       titulo: {
         pre: '', script: '', condensada: 'NUNCA', linha2: 'CONTRATE', tam: 200, y: 190, bloco: 700, vao: -25, cor2: '#1d1305',
         foco: { esq: 0, dir: 3, centro: [0.1, 0.9] },
-        pos: 'um designer', posFonte: 'Calango Signature', posTam: 112, posCor: '#ffffff', posLado: 'esquerda', posEspaco: -78, posFrente: true,
+        pos: 'um designer', posFonte: 'Calango Signature', posTam: 112, posCor: '#ffffff', posLado: 'esquerda', posEspaco: -52, posFrente: true,
       },
     },
     { tipo: 'miolo', tema: 'amarelo', lado: 'esquerda', semTrilho: true, vars: { acento: '#5c1d00' }, titulo: 'Não vou te <span class="serifa">iludir</span> falando...' },
