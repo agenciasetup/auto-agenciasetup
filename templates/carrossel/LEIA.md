@@ -109,3 +109,17 @@ Regras de texto: as de `docs/estilo-instagram.md` (frase curta, sem travessão, 
 ## Capa animada em loop (`movimento`, desde 08/11/2026)
 
 Regra do Filipe para todo post: a capa ganha um movimento sutil que vai e volta, sem emenda, sem cortar nada e sem esconder texto. No slide: `movimento: { fundo: { escala: -0.03 }, assunto: { escala: 0.035, origem: [x, y] }, titulo: { escala: 0.02 }, selo: { de: [dx, dy] } }` (detalhes em `mover()` do `modelo.js`). Com fundo e assunto em escalas diferentes, a cena precisa ser a placa (o fundo sem o assunto). Vídeo: `node templates/carrossel/ferramentas/animar.mjs <conteudo> 1 8 30 loop`; entrega: `entregar-videos.mjs <conteudo> 1`. Processo e verificação: Fase 5e da skill `carrossel-agenciasetup`.
+
+## Carrossel infinito (`panorama` e `travessia`, desde 11/11/2026)
+
+Pedido do Filipe: "ao invés de 1080x1350 + 1080x1350 + 1080x1350, faz um 3240x1350... cria margens que dividem a cada 1080 (tipo fatias) e aí você consegue colocar essas imagens entre cards. Pode manter as molduras pretas, mas pode ter elementos que ficam por cima delas de um card pro outro." O gabarito é o carrossel do Van Gogh de 2024, com o girassol entre dois cards e as abelhas voando (`references/o-que-eu-fazia.md` da skill).
+
+Os dois ficam no carrossel (fora de `slides`), em coordenadas da **tela larga**: x vai de 0 a 1080 vezes o número de cards; a divisa entre o card 1 e o 2 é x = 1080, entre o 2 e o 3, x = 2160. Cada card mostra a sua fatia da mesma tela, com a mesma conta, e a emenda casa no pixel.
+
+- `panorama: { arq, x, y, w, blur, luz, op }` (ou uma lista): a cena larga por dentro das janelas. A moldura preta continua; entre os cards a cena passa por trás dela, como uma paisagem vista por janelas lado a lado. Fica por cima do fundo do tema. `w` padrão: a tela inteira. Slide que não quer: `semPanorama: true`.
+- `travessia: [{ arq, x, y, w, rot, espelho, blur, luz, op, sombra, acima }]`: o que atravessa de um card para o outro **por cima da moldura** (o bicho na divisa, a folha, as pétalas, as abelhas). Sombra realista por padrão (a de contato e a projetada); `sombra: false` tira; `sombra: { x, y, blur, op }` muda a projetada. Com `blur` (o que está perto da lente), sem sombra. Por padrão fica abaixo do acabamento (cabeçalho, progresso, selo) e por cima do resto; `acima: true` passa por cima do acabamento também. Slide que não quer: `semTravessia: true`.
+- Na etapa 1 a travessia entra sem sombra e sem desfoque (é composição); na 3, com eles. A textura (ruído, meio-tom, poeira) fica por cima de tudo, para o recorte não parecer colado.
+- A capa animada não mexe no panorama nem na travessia: a emenda continua casando no vídeo.
+- O exportador salva também `larga.jpg` (a tela inteira, em tamanho real) quando o carrossel tem um dos dois: olhe a emenda ali.
+- Recorte para travessia: PNG sem fundo e justo (sem a foto inteira em volta). Exemplo completo: `conteudos/infinito-cores.js` (a selva contínua, o tucano na divisa do 1 para o 2, a monstera e as folhas da frente do 2 para o 3).
+- Cuidados: o que tem peso precisa estar apoiado ou cortado pela borda de baixo (bicho flutuando reprova); o que atravessa não cobre texto; um elemento grande por divisa, e os pequenos (pétalas, abelhas) poucos e em tamanhos e focos diferentes.

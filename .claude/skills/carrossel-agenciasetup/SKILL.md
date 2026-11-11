@@ -98,6 +98,7 @@ Leia `references/profundidade.md` (o padrão atual; vale mais que os outros) e `
 - [ ] O assunto no centro; fora do centro só com o elemento da tese equilibrando o outro lado.
 - [ ] Os gabaritos (`gabarito-alpaca`, `gabarito-pinguim` e as 5 `aprovada-*`, em `templates/carrossel/referencias/capas/`) olhados antes de decidir.
 - [ ] Os gabaritos antigos de `references/o-que-eu-fazia.md` olhados também (o jeito dele de 2022 a 2025: cena contínua, elemento que atravessa a divisa, sombra realista, profundidade nos slides de dentro). O que o modelo ainda não faz, a ficha diz.
+- [ ] O carrossel é infinito? Desde 11/11/2026 o modelo faz a tela larga (3 cards = 3240 × 1350, cortada a cada 1080): a cena contínua por dentro das janelas (`panorama`) e o que atravessa de um card para o outro por cima da moldura preta (`travessia`), como o girassol do Van Gogh entre dois cards. A ficha diz qual elemento cruza qual divisa e por quê (ele conta a tese), e a cena da imagem é gerada já larga (ou com o elemento recortado à parte). Detalhes no `LEIA.md` do modelo; confira a emenda na `larga.jpg`.
 
 ### Fase 4. A imagem
 

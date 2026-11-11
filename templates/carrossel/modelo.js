@@ -161,18 +161,74 @@
     return `${sombra}${foto}`;
   }
 
-  // Monta o slide: dentro da janela (0, 1, título de trás, 2) e por cima (3, 4).
+  // ---------------------------------------------------------------- carrossel infinito (11/11/2026)
+  // Pedido do dono: "ao invés de 1080x1350 + 1080x1350 + 1080x1350, faz um 3240x1350... cria margens que dividem a cada
+  // 1080 (tipo fatias) e aí você consegue colocar essas imagens entre cards. Pode manter as molduras pretas, mas pode
+  // ter elementos que ficam por cima delas de um card pro outro."
+  // `panorama` e `travessia` ficam no carrossel (não no slide), em coordenadas da TELA LARGA: x vai de 0 a 1080 vezes o
+  // número de cards, e a divisa entre o card 1 e o 2 é x = 1080 (entre o 2 e o 3, x = 2160). Cada card mostra a sua
+  // fatia da mesma tela, com a mesma conta, e por isso a emenda casa no pixel.
+  //   panorama: { arq, x, y, w, blur, luz, op } ou uma lista: a cena larga por dentro das janelas. A moldura preta
+  //     continua; entre os cards a cena passa por trás dela, como uma paisagem vista por janelas lado a lado. Fica por
+  //     cima do fundo do tema. Slide que não quer: `semPanorama: true`.
+  //   travessia: [{ arq, x, y, w, rot, espelho, blur, luz, op, sombra, acima }]: o que atravessa de um card para o outro
+  //     por cima da moldura (o girassol entre dois cards, as abelhas, a folha). Sombra realista por padrão (a de contato
+  //     e a projetada); `sombra: false` tira, `sombra: { x, y, blur, op }` muda a projetada. Com `blur` (o que está perto
+  //     da lente), sem sombra. `acima: true` passa também por cima do acabamento (cabeçalho, progresso, selo). Na etapa 1
+  //     (o mínimo), entra sem sombra e sem desfoque. A textura (ruído, meio-tom) continua por cima de tudo.
+  const CARD = 1080;
+  const listaDe = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+  function filtroDaTravessia(t) {
+    if (ETAPA < 3) return t.luz && t.luz !== 1 ? `brightness(${t.luz})` : 'none';
+    const f = [];
+    if (t.blur) f.push(`blur(${t.blur}px)`);
+    if (t.sombra !== false && !t.blur) {
+      const p = { x: 22, y: 34, blur: 38, op: 0.42, ...(typeof t.sombra === 'object' ? t.sombra : {}) };
+      f.push(`drop-shadow(0 4px 5px rgba(0,0,0,${Math.min(0.6, p.op + 0.1)}))`, `drop-shadow(${p.x}px ${p.y}px ${p.blur}px rgba(0,0,0,${p.op}))`);
+    }
+    if (t.luz && t.luz !== 1) f.push(`brightness(${t.luz})`);
+    return f.join(' ') || 'none';
+  }
+  function telaLarga(partes) {
+    const C = window.CARROSSEL || {};
+    const s = (C.slides || [])[n - 1] || {};
+    const j = String(partes.classe || '').split(' ').includes('sangra') ? 0 : JANELA;
+    const dx = (n - 1) * CARD;
+    const largura = CARD * ((C.slides || []).length || 1);
+    const panorama = s.semPanorama ? '' : listaDe(C.panorama).map((p) => img(p.arq, {
+      left: (p.x || 0) - dx - j, top: (p.y || 0) - j, width: p.w || largura,
+      filter: [p.blur && ETAPA >= 3 ? `blur(${p.blur}px)` : '', p.luz && p.luz !== 1 ? `brightness(${p.luz})` : ''].filter(Boolean).join(' ') || 'none',
+      opacity: p.op ?? 1,
+    }, 'panorama')).join('');
+    const pecas = s.semTravessia ? [] : listaDe(C.travessia);
+    const travessa = (t) => img(t.arq, {
+      left: t.x - dx, top: t.y, width: t.w,
+      transform: `rotate(${t.rot || 0}deg)${t.espelho ? ' scaleX(-1)' : ''}`,
+      filter: filtroDaTravessia(t), opacity: t.op ?? 1,
+    }, 'travessa');
+    return {
+      panorama,
+      travessia: pecas.filter((t) => !t.acima).map(travessa).join(''),
+      acima: pecas.filter((t) => t.acima).map(travessa).join(''),
+    };
+  }
+
+  // Monta o slide: dentro da janela (0, 1, título de trás, 2) e por cima (3, 4). O carrossel infinito põe o panorama na
+  // camada 0 e a travessia por cima da moldura (entre a 3 e a 4; com `acima`, depois da 4).
   function montar(tema, partes) {
     // partes.classe: classe a mais no slide (ex.: 'sangra', a capa até a borda, sem a moldura preta; 05/11/2026).
+    const larga = telaLarga(partes);
     return `<div class="slide tema-${tema} etapa-${ETAPA}${partes.classe ? ` ${partes.classe}` : ''}${SO ? ` so so-${SO}` : ''}${ATE ? ` ate ate-${ATE}` : ''}">
       <div class="janela">
-        <div class="camada c0">${partes.c0 || ''}</div>
+        <div class="camada c0">${partes.c0 || ''}${larga.panorama}</div>
         <div class="camada c1">${partes.c1 || ''}</div>
         <div class="camada c-titulo">${partes.atras || ''}</div>
         <div class="camada c2">${partes.c2 || ''}</div>
       </div>
       <div class="camada c3">${partes.c3 || ''}</div>
+      ${larga.travessia ? `<div class="camada c-trav">${larga.travessia}</div>` : ''}
       <div class="camada c4">${partes.c4 || ''}</div>
+      ${larga.acima ? `<div class="camada c-trav acima">${larga.acima}</div>` : ''}
       <div class="camada c5">${partes.c5 || ''}</div>
       ${poeira()}<div class="meio-tom"></div><div class="grao"></div>
     </div>`;

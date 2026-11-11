@@ -19,7 +19,7 @@ Os números caíram junto com a mudança de jeito. Não dá para culpar só o de
 - **Como:** uma cena só, numa tela larga, cortada em slides. O fundo, a nuvem, a névoa, o chão e as folhas continuam na emenda; uma pincelada ou uma faixa atravessa os slides.
 - **Onde:** o melhor é `b-meio-2024-04-26` (10 slides: girassol gigante, nuvens e abelhas em cinco slides, a pincelada rosa no preto; 3.372 curtidas, https://www.instagram.com/p/C6PSakZJOx1/). Também `a-auge-2023-04-07` (o fundo do mar laranja e preto), `a-auge-2023-04-08`, `05-30`, `04-19`, `06-22`, `c-mao-2025-10-28`, `2025-05-26`, `2025-11-04` e `2025-02-05`.
 - **Época:** foi o padrão por três anos (2022 a novembro de 2025).
-- **Hoje:** não tem. Cada slide é uma janela fechada, com margem preta, desenhada separado (`templates/carrossel/modelo.js`; só a capa pode sangrar). O modelo ainda não sabe fazer cena larga cortada em slides.
+- **Hoje:** os automáticos até 11/11 não tinham. Desde 11/11/2026 o modelo faz: `panorama` (a cena larga por dentro das janelas) e `travessia` (o que passa por cima da moldura de um card para o outro), em coordenadas da tela larga. Veja o `LEIA.md` do modelo e o exemplo `conteudos/infinito-cores.js`.
 - **Cuidado:** panorama sozinho não garante resultado (`a-auge-2023-07-29` e `b-meio-2024-09-24` têm e renderam pouco). Ele funciona junto com o assunto forte e o material.
 
 ### 2. Elemento que atravessa a divisa
@@ -74,6 +74,7 @@ Os automáticos trouxeram coisas boas: a prova com a interface real do Claude, o
 
 As folhas (os slides lado a lado, sem espaço) estão em `_local/design-arquivo/folhas/<nome>.jpg`, e cada slide em tamanho cheio em `_local/design-arquivo/<nome>/`.
 
-## O que está em aberto (decisão do Filipe)
-- **A moldura contra o panorama.** Em 05/11/2026 ele pediu a moldura ("senti falta deles estarem emoldurados, com fundo preto, em cima de um bloco curvado"), e a cena contínua pede que o fundo passe de um slide para o outro. Dá para fazer dos dois jeitos: a cena contínua por dentro das janelas, com o elemento que atravessa saindo por cima da margem preta, ou o slide sangrando inteiro, como antes. Pergunte qual ele quer antes de construir.
-- **O modelo precisa aprender a cena larga:** desenhar uma tela de N × 1080 px e cortar em slides, com as camadas (fundo, objeto que cruza, frente desfocada) por cima da emenda.
+## A decisão do Filipe (11/11/2026)
+"Ao invés de você codificar um arquivo 1080x1350 + 1080x1350 + 1080x1350... faz um 3240x1350. Dessa forma você só cria margens que dividem a cada 1080 (tipo fatias) e aí você consegue colocar essas imagens entre cards. Pode manter as molduras pretas, mas pode ter elementos que ficam por cima delas de um card pro outro. Podemos manter um estilo novo top. Esse com a imagem do Van Gogh, com as abelhas, o girassol no meio de dois cards... é lindo!"
+- As molduras pretas ficam. A cena contínua passa por dentro das janelas, e o que atravessa sai por cima da moldura.
+- O gabarito do jeito novo é `b-meio-2024-04-26` (o Van Gogh, o girassol entre dois cards, as abelhas).

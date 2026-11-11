@@ -72,6 +72,10 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 .camada { position: absolute; inset: 0; pointer-events: none; }
 .c0 { z-index: 0; } .c1 { z-index: 1; } .c-titulo { z-index: 2; } .c2 { z-index: 3; }
 .c3 { z-index: 10; } .c4 { z-index: 20; } .c5 { z-index: 30; }
+/* Carrossel infinito (11/11/2026): o panorama mora na camada 0 (dentro da janela) e a travessia por cima da moldura,
+   entre a 3 e o acabamento (com `acima`, por cima dele). A textura (poeira 28, meio-tom 29, grão 30) fica por cima. */
+.c-trav { z-index: 15; } .c-trav.acima { z-index: 27; }
+.panorama, .travessa { position: absolute; display: block; max-width: none; transform-origin: center; }
 
 /* ---------------------------------------------------------------- camada 0: fundo */
 .fundo {
@@ -355,6 +359,8 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 /* Capa por etapas (?ate=<camada>): só as camadas de baixo até esta, somando. Sem textura (ela entra só na peça final). */
 :is(.ate-fundo, .ate-titulo, .ate-assunto, .ate-frente) :is(.meio-tom, .grao, .poeira) { display: none; }
 .ate-fundo :is(.c-titulo, .c2, .c3, .c4), .ate-titulo :is(.c2, .c3, .c4), .ate-assunto :is(.c3, .c4), .ate-frente .c4 { display: none; }
+.so-frente .c-trav { display: block; }
+.ate-fundo .c-trav, .ate-titulo .c-trav, .ate-assunto .c-trav { display: none; }
 
 /* ---------------------------------------------------------------- provas novas (24/10/2026) */
 /* Imagem num cartão (print, arte, capa), com a legenda numa pílula embaixo. */

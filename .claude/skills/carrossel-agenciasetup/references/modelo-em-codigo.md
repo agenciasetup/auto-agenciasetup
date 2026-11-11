@@ -124,6 +124,13 @@ Bloco `escrito` `{ x, y, w, rot, tam, cor, html, classe }`: texto solto em cima 
 
 Com `centro: true`, o "comenta" e a nota centralizam, a palavra encolhe sozinha para caber em `larg` (padrão 860) e o selo fica no canto dela. `tam` por tamanho da palavra: até 3 letras, 420; até 5, 340; 6, 300; mais, 400 (ela encolhe). Palavra pequena foi "pequeno e feio".
 
+### Carrossel infinito (`panorama` e `travessia`, desde 11/11/2026)
+
+No carrossel (fora de `slides`), em coordenadas da tela larga: x de 0 a 1080 vezes o número de cards; a divisa entre o card 1 e o 2 é x = 1080. Cada card mostra a sua fatia, e a emenda casa no pixel. As molduras pretas ficam (decisão do Filipe em 11/11: "pode manter as molduras pretas, mas pode ter elementos que ficam por cima delas de um card pro outro").
+- `panorama: { arq, x, y, w, blur, luz, op }`: a cena larga por dentro das janelas, passando por trás da moldura entre os cards. `semPanorama: true` no slide que não quer.
+- `travessia: [{ arq, x, y, w, rot, espelho, blur, luz, op, sombra, acima }]`: o que atravessa por cima da moldura. Sombra realista por padrão (contato e projetada), sem sombra quando tem `blur`; `acima: true` passa também por cima do cabeçalho e do progresso. `semTravessia: true` no slide que não quer.
+- Sai também `larga.jpg` (a tela inteira em tamanho real): confira a emenda ali. Exemplo: `conteudos/infinito-cores.js`. Detalhes e cuidados no `LEIA.md` do modelo.
+
 ## O que o modelo já faz sozinho (não refaça na mão)
 
 - Alinha as linhas de apoio e o selo depois que as fontes carregam (`alinhar()` em `modelo.js`).

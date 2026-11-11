@@ -51,6 +51,7 @@ Leia a peça inteira em voz alta, como quem nunca viu.
 18. O assunto passa um pouquinho por cima do título, sem tampar a leitura (no máximo uma letra e meia, nunca o começo)? Dá um charme.
 19. A luz vem de um lugar só e parece uma cena, não um recorte colado?
 20. Quantos planos existem? (`profundidade.md`) Nas capas com foto em perspectiva forte, a própria foto basta.
+20b. Carrossel infinito (`panorama` ou `travessia`): abra a `larga.jpg` (os cards colados em tamanho real). A emenda casa na divisa (nada pula, nada some, nenhum degrau)? O que atravessa por cima da moldura está apoiado ou cortado pela borda de baixo (bicho flutuando reprova)? Cobre algum texto, o cabeçalho de que precisa ou o selo? Um elemento grande por divisa, e os pequenos (pétalas, abelhas) poucos, em tamanhos e focos diferentes? Cada card ainda faz sentido sozinho, para quem para no meio do arrastar?
 
 ### 4. Poluição
 

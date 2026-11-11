@@ -79,5 +79,17 @@ if (!so) {
   await pagina.goto(pathToFileURL(arq).href, { waitUntil: 'load' });
   await pagina.screenshot({ path: join(saida, 'previa.jpg'), type: 'jpeg', quality: 88, fullPage: true });
   console.log('  previa.jpg');
+  // Carrossel infinito (`panorama` ou `travessia` no conteúdo): a tela larga inteira, os cards colados em tamanho real,
+  // para conferir a emenda (o que atravessa de um card para o outro tem de casar no pixel).
+  await pagina.goto(`${modelo}?c=${nome}&s=1`, { waitUntil: 'networkidle0' });
+  const larga = await pagina.evaluate(() => !!(window.CARROSSEL && (window.CARROSSEL.panorama || (window.CARROSSEL.travessia || []).length)));
+  if (larga) {
+    const arqL = join(saida, 'larga.html');
+    writeFileSync(arqL, `<html><body style="margin:0;display:flex">${feitos.map((f) => `<img src="${b64(f)}" style="width:1080px;height:1350px;display:block">`).join('')}</body></html>`);
+    await pagina.setViewport({ width: feitos.length * 1080, height: 1350, deviceScaleFactor: 1 });
+    await pagina.goto(pathToFileURL(arqL).href, { waitUntil: 'load' });
+    await pagina.screenshot({ path: join(saida, 'larga.jpg'), type: 'jpeg', quality: 90, clip: { x: 0, y: 0, width: feitos.length * 1080, height: 1350 } });
+    console.log(`  larga.jpg (a tela de ${feitos.length * 1080} x 1350)`);
+  }
 }
 await navegador.close();
