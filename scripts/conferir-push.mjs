@@ -76,5 +76,25 @@ async function decifrar(corpo, uaPrivada, uaPublica, auth) {
 confere('aceita Apple, Google, Mozilla e Microsoft', ['https://web.push.apple.com/abc', 'https://fcm.googleapis.com/fcm/send/abc', 'https://updates.push.services.mozilla.com/wpush/v2/abc', 'https://wns2-bl2p.notify.windows.com/w/?token=abc'].every(endpointAceito));
 confere('recusa outros endereços', !['http://web.push.apple.com/abc', 'https://exemplo.com/push', 'https://web.push.apple.com.exemplo.com/x', 'https://127.0.0.1/x'].some(endpointAceito));
 
+// 5. O formato do aviso (pedido do dono em 10/11/2026): a bolinha da cor da sala, o texto curto e a tela do app que abre
+{
+  const { BOLINHA, corpoCurto, formarAviso, telaDoApp } = await import('../worker/lib/push.js');
+  const longo = 'Você conversou com essa pessoa pelo aplicativo nas últimas 12 horas, então ele só anotou: "Pronto pode deixar que vou fazer isso, e obrigado só pelo suporte a agência setup já é diferenciada"';
+  const d = formarAviso('direct', { titulo: '@fulano escreveu e o Atendente está calado', corpo: longo, url: '/admin/followup?fase=duvida' });
+  confere('aviso do direct sai com a bolinha verde da sala de Vendas', d.titulo.startsWith(`${BOLINHA.vendas} @fulano`) && d.sala === 'vendas');
+  confere('texto comprido cabe em duas linhas e termina em reticências', d.corpo.length <= 80 && d.corpo.endsWith('…') && !d.corpo.includes('\n'), `(${d.corpo.length} letras)`);
+  confere('o toque abre a tela do direct no app do celular e o painel no computador', d.app === '/admin/celular?tela=direct' && d.url === '/admin/followup?fase=duvida');
+  confere('aviso do Escritório sem sala sai com a cor da Direção', formarAviso('escritorio', { titulo: 'Resumo das 8h', corpo: 'x' }).titulo === `${BOLINHA.direcao} Resumo das 8h`);
+  confere('aviso com sala sai com a cor dela', formarAviso('escritorio', { titulo: 'Zelador: 2 alertas', corpo: 'x', sala: 'sistema' }).titulo.startsWith(BOLINHA.sistema) && formarAviso('escritorio', { titulo: 'Vídeo novo', corpo: 'x', sala: 'video' }).titulo.startsWith(BOLINHA.video));
+  confere('sala que não existe cai na cor do tipo', formarAviso('escritorio', { titulo: 'A', corpo: 'x', sala: 'cozinha' }).titulo.startsWith(BOLINHA.direcao));
+  const duas = formarAviso('direct', formarAviso('direct', { titulo: 'Dúvida no direct de @x', corpo: 'oi' }));
+  confere('passar duas vezes não põe duas bolinhas', duas.titulo === `${BOLINHA.vendas} Dúvida no direct de @x`);
+  const venda = formarAviso('venda', { titulo: 'Caiu mais uma!', corpo: 'R$ 39,90 no Pix\nMaria · Posts automáticos\nHoje: R$ 399,00 em 10 vendas', url: '/admin/celular?pedido=abc' });
+  confere('a venda vai inteira, com as três linhas, e abre o pedido', venda.corpo.split('\n').length === 3 && venda.app === '/admin/celular?pedido=abc' && venda.titulo.startsWith(BOLINHA.vendas));
+  confere('duas linhas curtas ficam; a terceira sai', corpoCurto('Maria · Posts automáticos\nAguardando o pagamento.\nMais uma linha') === 'Maria · Posts automáticos\nAguardando o pagamento.');
+  confere('linha de mais de uma linha conta como duas', corpoCurto(`${'a'.repeat(50)}\nsegunda`) === 'a'.repeat(50));
+  confere('tela do app só para o que o app tem', telaDoApp('/admin/colmeia') === '/admin/celular?tela=colmeia' && telaDoApp('/admin/escritorio') === '/admin/celular?tela=escritorio' && telaDoApp('/admin/suporte') === '/admin/celular?tela=vendas&aba=chamados' && telaDoApp('/admin/redes') === null && telaDoApp('/admin/escritoriox') === null);
+}
+
 console.log(falhas ? `\n${falhas} conferência(s) falharam.` : '\nTudo certo.');
 process.exit(falhas ? 1 : 0);

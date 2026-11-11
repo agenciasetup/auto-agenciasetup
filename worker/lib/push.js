@@ -64,11 +64,51 @@ export async function gravarAparelhos(env, lista) {
 
 const contato = (env) => env.SITE_URL || 'https://agenciasetup.com.br';
 
+// ---------------------------------------------------------------- o formato do aviso
+// Pedido do dono em 10/11/2026: o aviso estava grande demais e ele queria a cor da sala em cada tipo. O iPhone não deixa
+// pintar o aviso nem trocar o ícone (é sempre o do app) e escreve sozinho a linha "from <nome do app>". O que é nosso: a
+// bolinha da cor da sala no começo do título e o texto em até duas linhas. A venda e o resumo do dia vão inteiros.
+// As cores são as das salas do Escritório (COR_SALA em admin/src/telas/Escritorio.tsx).
+export const BOLINHA = { direcao: '🟡', vendas: '🟢', conteudo: '🔵', video: '🔴', design: '🟠', sistema: '⚪', produto: '🔵', receita: '🟡' };
+const SALA_DO_TIPO = { venda: 'vendas', pedido: 'vendas', reembolso: 'vendas', recusado: 'vendas', fechamento: 'vendas', teste: 'vendas', direct: 'vendas', escritorio: 'direcao' };
+const VAI_INTEIRO = ['venda', 'fechamento'];
+const POR_LINHA = 40; // quantas letras cabem, mais ou menos, numa linha do aviso no iPhone
+export function corpoCurto(texto, linhasMax = 2) {
+  const linhas = String(texto || '').split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const fora = [];
+  let sobra = linhasMax;
+  for (const l of linhas) {
+    if (sobra <= 0) break;
+    const cabe = sobra * POR_LINHA;
+    if (l.length <= cabe) { fora.push(l); sobra -= Math.ceil(l.length / POR_LINHA); continue; }
+    fora.push(`${l.slice(0, cabe - 1).trimEnd()}…`);
+    sobra = 0;
+  }
+  return fora.join('\n');
+}
+// A tela do app do celular que o toque abre. No computador o aviso continua abrindo o painel (quem escolhe é o sw.js).
+const TELAS_DO_APP = [['/admin/escritorio', 'tela=escritorio'], ['/admin/colmeia', 'tela=colmeia'], ['/admin/followup', 'tela=direct'], ['/admin/suporte', 'tela=vendas&aba=chamados']];
+export function telaDoApp(url) {
+  const u = String(url || '');
+  if (u.startsWith('/admin/celular')) return u;
+  const achou = TELAS_DO_APP.find(([comeco]) => u === comeco || u.startsWith(`${comeco}?`) || u.startsWith(`${comeco}/`));
+  return achou ? `/admin/celular?${achou[1]}` : null;
+}
+// msg.sala (opcional) diz de que sala é o aviso; sem ela, vale a sala do tipo. Passar duas vezes não põe duas bolinhas.
+export function formarAviso(tipo, msg = {}) {
+  const sala = BOLINHA[msg.sala] ? msg.sala : SALA_DO_TIPO[tipo] || 'direcao';
+  const titulo = String(msg.titulo || 'Agência Setup').replace(/\s+/g, ' ').trim();
+  const jaTem = Object.values(BOLINHA).some((b) => titulo.startsWith(b));
+  const app = telaDoApp(msg.url);
+  return { ...msg, sala, titulo: jaTem ? titulo : `${BOLINHA[sala]} ${titulo}`, corpo: VAI_INTEIRO.includes(tipo) ? String(msg.corpo || '') : corpoCurto(msg.corpo), ...(app ? { app } : {}) };
+}
+
 // Manda para uma lista de aparelhos e guarda o que mudou: tira quem saiu (404/410) e anota o último erro de cada um.
 export async function mandarPara(env, lista, alvo, dados) {
   if (!alvo.length) return [];
   const chaves = await chavesPush(env);
-  const res = await Promise.all(alvo.map((i) => enviarPush(i, dados, chaves, contato(env)).catch((e) => ({ ok: false, status: 0, erro: String(e.message || e).slice(0, 160) })).then((r) => ({ i, r }))));
+  const pronto = formarAviso(dados && dados.tipo, dados || {});
+  const res = await Promise.all(alvo.map((i) => enviarPush(i, pronto, chaves, contato(env)).catch((e) => ({ ok: false, status: 0, erro: String(e.message || e).slice(0, 160) })).then((r) => ({ i, r }))));
   let mudou = false;
   const saiu = new Set();
   for (const { i, r } of res) {

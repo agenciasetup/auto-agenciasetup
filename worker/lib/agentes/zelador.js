@@ -714,7 +714,7 @@ export async function rodarZelador(env, quando = Date.now(), { simular = false }
 
   // Marca antes de mandar: se algo falhar depois, a próxima hora não manda o mesmo aviso de novo.
   if (avisar.length || proposta || emOrdem || estreia) await gravar(env, estado);
-  const aparelhos = avisar.length ? await avisarEquipe(env, 'escritorio', mensagem(avisar)) : 0;
+  const aparelhos = avisar.length ? await avisarEquipe(env, 'escritorio', { ...mensagem(avisar), sala: 'sistema' }) : 0;
   // O aviso saiu e nenhum aparelho recebeu: o que não chegou vira cartão na mesa. Um por dia no máximo, e nunca com o
   // cartão anterior ainda esperando na mesa. Continua sendo um cartão por rodada: este passa na frente, e o cartão do
   // problema que se repete fica para a hora seguinte.

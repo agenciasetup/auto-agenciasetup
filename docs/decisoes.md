@@ -838,6 +838,20 @@ Pedido do dono: "quando você aprovar um roteiro na mesa, eu produzo sozinho?" R
 - **Aviso no celular pelo conector** (`escritorio_avisar`, tipo "Escritório de IA"): "Vídeo novo para assistir", que abre o rascunho, e "Roteiro de vídeo travou". Um aviso por acontecimento.
 - **O Zelador cobra a tarefa todo dia** (a tarefa grava turno mesmo sem roteiro, com `dados.tarefa = 'video-do-roteiro'`). O Executor deixa os roteiros de fora, com o motivo na tela.
 
+## Tomadas em 10/11/2026 (app do celular)
+
+Pedido do dono, com o print dos avisos na tela bloqueada: "atualize pra mim o mobile da melhor forma que puder", com o Escritório, o follow-up e a Colmeia no app, aviso menor, cor da sala em cada aviso e widgets. Depois da visão: "Pode fazer agora, com exceção dos widgets".
+
+- **Um app só.** O app "Vendas" virou o app do celular, com cinco abas embaixo. As vendas continuam inteiras numa delas. O nome no manifesto passou a "Setup".
+- **Nenhuma rota nova.** Cada aba lê a mesma API da tela grande e usa as mesmas ações, com as mesmas permissões. O que muda é só a tela.
+- **Arrastar é atalho, não esconderijo.** Na mesa, arrastar para a direita aprova e para a esquerda descarta, mas os três botões continuam no cartão (regra do dono: botão claro, nada escondido). Como o dedo erra, toda decisão da mesa mostra "Desfazer" (volta para a mesa com a decisão `nova`). Na Colmeia não tem arrastar: aprovar ali vale na hora para os vendedores e não tem volta limpa.
+- **Responder dúvida não manda mensagem.** A aba Direct grava a resposta; quem leva é o Atendente ou a rodada, dentro dos tetos. Não há botão de mandar mensagem no app.
+- **Dado guardado no aparelho.** Cada aba guarda o último retrato no aparelho para abrir na hora, e apaga tudo quando a pessoa sai do painel. Sem rede, a tela avisa e continua com o último dado.
+- **O que o iPhone não deixa.** A linha "from <nome do app>" é do iPhone e não sai; o ícone e a cor do aviso também não mudam. Por isso a cor da sala vai numa bolinha no começo do título, e o tamanho se resolve do nosso lado: até duas linhas de texto. A venda e o resumo do dia vão inteiros, porque o dono gosta deles assim.
+- **Toque no aviso.** O aviso leva dois endereços: o do painel e o da aba do app. O service worker abre a aba do app no celular e o painel no computador.
+- **Número no ícone.** Ao abrir, o app põe no ícone quanto espera o dono; os avisos que chegam depois somam um.
+- **Ficou de fora.** Widgets (o dono mandou deixar; o caminho sem app nativo é o Scriptable), escolher aviso por sala e horário de silêncio (o iPhone já tem o Não Perturbe).
+
 ## Em aberto
 
 - **Follow-up do direct:** no ar desde 08/11/2026 (versão `8267d516`) com a tarefa `direct-followup`. Falta a primeira rodada com o dono olhando e conferir na primeira semana se o "achado pelo nome" erra. Sete rodadas por dia lendo o direct gastam bastante do limite semanal do Claude: se apertar, ficar com 9h, 14h e 20h.

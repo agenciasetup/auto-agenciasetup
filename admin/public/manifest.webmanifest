@@ -1,8 +1,8 @@
 {
   "id": "/admin/celular",
-  "name": "Vendas Setup",
-  "short_name": "Vendas",
-  "description": "As vendas, os pedidos e os reembolsos da Agência Setup no celular, com aviso na hora.",
+  "name": "Setup",
+  "short_name": "Setup",
+  "description": "O Escritório, o direct, a Colmeia e as vendas da Agência Setup no celular, com aviso na hora.",
   "lang": "pt-BR",
   "start_url": "/admin/celular",
   "scope": "/admin/",

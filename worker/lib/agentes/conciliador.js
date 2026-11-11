@@ -464,7 +464,7 @@ export async function rodarConciliador(env, quando = Date.now(), { forcar = fals
       });
     }
     let avisados = 0;
-    if (status === 'ok' && feitas.length) avisados = await avisarEquipe(env, 'escritorio', { ...textoDoAviso(feitas), url: '/admin/colmeia', tag: `conciliador-${ms(marca)}` });
+    if (status === 'ok' && feitas.length) avisados = await avisarEquipe(env, 'escritorio', { ...textoDoAviso(feitas), sala: 'vendas', url: '/admin/colmeia', tag: `conciliador-${ms(marca)}` });
     if (conferido && !continuar) lembrado = marcaNova;
     return { status: adiado ? 'sem_orcamento' : status, resumo, feitas, fora, custo_usd: custoUsd, avisados, continuar };
   };

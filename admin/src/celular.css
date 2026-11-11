@@ -84,6 +84,188 @@ button.cel-cartao:active { transform: scale(0.98); }
 .cel-aparelho summary svg { width: 18px; height: 18px; color: var(--fraco); transition: transform 200ms var(--suave); }
 .cel-aparelho[open] summary svg { transform: rotate(90deg); }
 
+/* ------------------------------------------------------------------------------------------------------------------
+   O app inteiro (10/11/2026): Hoje, Escritório, Direct, Colmeia e Vendas. Cada sala tem a sua cor, que chega pela
+   variável --cor (CelularBase.tsx). Campo de texto com letra de 16px: menor que isso o iPhone dá zoom ao focar. */
+html:has(.app-cel) { overscroll-behavior-y: none; }
+/* overflow-x: clip segura o cartão que sai de lado ao arrastar, sem tirar o topo grudado (hidden tiraria). */
+.app-cel { -webkit-tap-highlight-color: transparent; overflow-x: clip; }
+/* O recado de "feito" e de erro: largura inteira, logo acima da barra de baixo. */
+.app-cel ~ .toasts { left: 14px; right: 14px; bottom: calc(90px + env(safe-area-inset-bottom)); width: auto; max-width: none; transform: none; align-items: stretch; }
+.app-cel ~ .toasts .toast { width: 100%; max-width: none; }
+.app-cel-topo .bt-icone.ativo { color: var(--marca-texto); background: var(--marca-suave); box-shadow: inset 0 0 0 1px var(--marca-borda); }
+.cel-gira { animation: girar 800ms linear; }
+
+/* A barra de baixo: o ícone ativo ganha um fundo e cada aba mostra quanto espera o dono. */
+.app-cel-abas .cel-aba-icone { position: relative; display: grid; place-items: center; max-width: none; overflow: visible; padding: 3px 16px; border-radius: 999px; transition: background 220ms var(--suave); }
+.app-cel-abas .ativo .cel-aba-icone { background: var(--marca-suave); }
+.cel-pingo {
+  position: absolute; top: -4px; left: calc(50% + 5px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: var(--vermelho); color: #fff; font: 700 11px/18px var(--sans); text-align: center; box-shadow: 0 0 0 2px var(--fundo);
+}
+
+/* Puxar para atualizar: a bolinha desce do topo. */
+.cel-puxar {
+  position: fixed; top: calc(env(safe-area-inset-top) + 58px); left: 50%; z-index: 45; width: 38px; height: 38px; display: grid; place-items: center;
+  border-radius: 999px; background: var(--fundo-3); color: var(--marca-texto); pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 0 0 1px var(--borda-forte);
+}
+.cel-puxar svg { width: 18px; height: 18px; }
+.cel-puxar.girando { transition: transform 220ms var(--suave); }
+.cel-puxar.girando svg { animation: girar 700ms linear infinite; }
+
+/* As partes de uma aba (Vendas, Colmeia, fases do direct): rola de lado quando não cabe. */
+.cel-sub { display: flex; gap: 6px; margin: 0 -14px 14px; padding: 0 14px 2px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.cel-sub::-webkit-scrollbar { display: none; }
+.cel-sub button {
+  flex: none; display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 15px; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--fundo-2); color: var(--mudo); font: 600 14px/1 var(--sans); box-shadow: inset 0 0 0 1px var(--borda);
+}
+.cel-sub button.ativo { background: var(--texto); color: var(--fundo); box-shadow: none; }
+.cel-sub b { font: 700 12px/1 var(--sans); opacity: 0.65; }
+
+.cel-ola { margin: 2px 2px 14px; }
+.cel-ola h2 { margin: 0; font-size: 27px; line-height: 1.1; font-weight: 700; letter-spacing: -0.035em; }
+.cel-ola p { margin: 4px 0 0; font-size: 14px; color: var(--mudo); }
+.cel-hero-toque { width: 100%; border: 0; text-align: left; color: var(--texto); font: inherit; cursor: pointer; padding-right: 44px; }
+.cel-hero-toque:active { transform: scale(0.985); }
+.cel-hero-seta { position: absolute; right: 14px; top: 50%; width: 20px; height: 20px; margin-top: -10px; color: var(--fraco); }
+
+.cel-secao { margin-top: 20px; }
+.cel-secao > header { display: flex; align-items: center; gap: 8px; margin: 0 2px 10px; min-height: 26px; }
+.cel-secao > header h2 { flex: 1; margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+.cel-conta { min-width: 24px; height: 24px; padding: 0 8px; border-radius: 999px; background: var(--vermelho); color: #fff; font: 700 13px/24px var(--sans); text-align: center; }
+.cel-conta.suave { background: var(--fundo-3); color: var(--mudo); box-shadow: inset 0 0 0 1px var(--borda); }
+.cel-quieto { margin: 0; padding: 16px; border-radius: var(--raio); background: var(--fundo-2); box-shadow: inset 0 0 0 1px var(--borda); color: var(--mudo); font-size: 14px; line-height: 1.4; }
+.cel-dica { margin: 0 2px 10px; color: var(--fraco); font-size: 13px; line-height: 1.4; }
+.cel-sem-rede { display: block; width: 100%; margin: 0 0 12px; padding: 10px 12px; border: 0; border-radius: 12px; background: rgba(255, 176, 0, 0.12); color: var(--ambar); font: 13px/1.35 var(--sans); text-align: left; cursor: pointer; }
+.cel-uma-linha { font-size: 13.5px; color: var(--mudo); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* O que espera o dono: uma linha por assunto, com a cor da sala. */
+.cel-espera {
+  position: relative; display: flex; align-items: center; gap: 14px; width: 100%; margin-bottom: 8px; padding: 14px 14px 14px 20px; border: 0; overflow: hidden;
+  border-radius: var(--raio); background: var(--fundo-2); color: var(--texto); font: inherit; text-align: left; box-shadow: var(--brilho-topo), inset 0 0 0 1px var(--borda);
+}
+.cel-espera::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--cor); }
+.cel-espera > b { min-width: 32px; font-size: 28px; line-height: 1; font-weight: 700; letter-spacing: -0.03em; color: var(--cor); text-align: center; }
+.cel-espera > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cel-espera strong { font-size: 15px; font-weight: 650; }
+.cel-espera small { font-size: 13px; line-height: 1.3; color: var(--mudo); }
+.cel-espera .cel-espera-nota { color: var(--fraco); }
+.cel-espera > svg { flex: none; width: 18px; height: 18px; color: var(--fraco); }
+button.cel-espera { cursor: pointer; }
+button.cel-espera:active { transform: scale(0.985); }
+
+/* Quem acabou de trabalhar: os Calangos em fila, de lado. */
+.cel-falas { display: flex; gap: 8px; margin: 0 -14px 10px; padding: 0 14px 4px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.cel-falas::-webkit-scrollbar { display: none; }
+.cel-fala { flex: none; width: 136px; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 12px; border-radius: var(--raio); background: var(--fundo-2); box-shadow: inset 0 0 0 1px var(--borda); scroll-snap-align: start; }
+.cel-fala strong { font-size: 13.5px; font-weight: 650; }
+.cel-fala small { font-size: 12.5px; line-height: 1.3; color: var(--mudo); }
+.cel-fala.atencao { box-shadow: inset 0 0 0 1px var(--ambar); }
+.cel-fala.atencao small { color: var(--ambar); }
+.cel-avatar {
+  flex: none; width: 46px; height: 46px; border-radius: 14px; box-shadow: inset 0 0 0 1px var(--borda); image-rendering: pixelated;
+  background: color-mix(in srgb, var(--cor, var(--fraco)) 20%, var(--fundo-3)) center bottom / contain no-repeat;
+}
+.cel-avatar.grande { width: 58px; height: 58px; border-radius: 16px; }
+
+.cel-gasto { gap: 9px; margin-bottom: 4px; }
+.cel-gasto > span { font-size: 13px; line-height: 1.4; }
+.cel-gasto strong { font-size: 15px; font-weight: 650; color: var(--texto); }
+.cel-barra { height: 8px; border-radius: 999px; background: var(--fundo-4); overflow: hidden; }
+.cel-barra i { display: block; height: 100%; border-radius: 999px; transition: width 500ms var(--suave); }
+.cel-grade-3 { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.cel-grade-3 .cel-cartao { padding: 12px 10px; }
+
+/* O cartão de decidir (proposta da mesa, dúvida do direct, item da Colmeia). */
+.cel-arrastar { position: relative; margin-bottom: 12px; touch-action: pan-y; will-change: transform; }
+.cel-arrastar .cel-prop { margin-bottom: 0; }
+.cel-selo { position: absolute; top: 16px; z-index: 2; padding: 7px 12px; border-radius: 10px; font: 800 14px/1 var(--sans); pointer-events: none; }
+.cel-selo.sim { left: 14px; color: var(--verde); background: rgba(48, 209, 88, 0.16); box-shadow: inset 0 0 0 2px var(--verde); transform: rotate(-8deg); }
+.cel-selo.nao { right: 14px; color: var(--vermelho); background: rgba(255, 69, 58, 0.16); box-shadow: inset 0 0 0 2px var(--vermelho); transform: rotate(8deg); }
+.cel-prop {
+  position: relative; display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; padding: 18px 16px 14px; overflow: hidden;
+  border-radius: var(--raio-l); background: var(--fundo-2); box-shadow: var(--brilho-topo), inset 0 0 0 1px var(--borda);
+}
+.cel-prop::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--cor); }
+.cel-prop h3 { margin: 0 0 2px; font-size: 18px; line-height: 1.25; font-weight: 700; letter-spacing: -0.02em; }
+.cel-rotulo { margin: 8px 0 0; font-size: 12.5px; font-weight: 650; color: var(--fraco); }
+.cel-trecho p { margin: 0; font-size: 14.5px; line-height: 1.45; white-space: pre-line; overflow-wrap: anywhere; }
+.cel-trecho p.fechado { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+.cel-trecho-mais { margin-top: 2px; padding: 4px 0; border: 0; background: none; color: var(--marca-texto); font: 600 13px/1.2 var(--sans); cursor: pointer; }
+.cel-prop-rodape { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 8px 0 0; font-size: 12.5px; color: var(--fraco); }
+.cel-prop-rodape a { color: var(--azul); text-decoration: none; }
+.cel-recado { display: block; width: 100%; margin-top: 8px; padding: 11px 12px; border: 0; border-radius: 12px; resize: vertical; background: var(--fundo-3); color: var(--texto); font: 16px/1.35 var(--sans); box-shadow: inset 0 0 0 1px var(--borda); }
+.cel-recado:focus { outline: none; box-shadow: inset 0 0 0 1.5px var(--marca-borda); }
+.cel-decidir { display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 8px; margin-top: 12px; }
+.cel-decidir.dois { grid-template-columns: 1fr 1.35fr; }
+.cel-decidir .bt, .cel-acoes .bt, .cel-pergunta .bt { justify-content: center; min-height: 48px; padding: 0 8px; font-size: 15px; text-decoration: none; }
+.cel-desfazer { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 9px 10px 9px 14px; border-radius: var(--raio); background: var(--fundo-3); box-shadow: inset 0 0 0 1px var(--borda-forte); font-size: 13.5px; animation: entrar-tela 260ms var(--suave); }
+.cel-desfazer > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Listas simples. */
+.cel-lista { display: grid; gap: 8px; }
+.cel-linha {
+  position: relative; display: flex; flex-direction: column; gap: 4px; width: 100%; min-width: 0; padding: 12px 14px 12px 17px; border: 0; overflow: hidden;
+  border-radius: var(--raio); background: var(--fundo-2); color: var(--texto); font: inherit; text-align: left; box-shadow: inset 0 0 0 1px var(--borda);
+}
+.cel-linha::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--cor, transparent); }
+.cel-linha strong { font-size: 15px; font-weight: 650; line-height: 1.3; }
+.cel-linha strong small { font-weight: 500; font-size: 13px; }
+.cel-linha-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 12.5px; line-height: 1.35; color: var(--mudo); }
+.cel-linha-meta strong { font-size: 14px; color: var(--texto); }
+button.cel-linha { cursor: pointer; }
+button.cel-linha:active { transform: scale(0.99); }
+
+/* As salas do Escritório, com a arte em pixel de cada uma. */
+.cel-salas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cel-sala {
+  position: relative; height: 132px; padding: 0; border: 0; overflow: hidden; cursor: pointer; border-radius: var(--raio); font: inherit; text-align: left; color: #fff;
+  background: color-mix(in srgb, var(--cor) 18%, var(--fundo-2)); box-shadow: inset 0 0 0 1px var(--borda);
+}
+.cel-sala::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--cor); }
+.cel-sala-arte { position: absolute; inset: 0; background: center / cover no-repeat; image-rendering: pixelated; }
+.cel-sala-texto { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 1px; padding: 30px 12px 10px 14px; background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.86)); }
+.cel-sala-texto strong { font-size: 15.5px; font-weight: 700; }
+.cel-sala-texto small { font-size: 12px; color: rgba(255, 255, 255, 0.8); }
+.cel-sala:active { transform: scale(0.98); }
+.cel-agente { display: flex; gap: 12px; padding: 14px 0; border-top: 1px solid var(--borda); }
+.cel-agente:first-child { border-top: 0; padding-top: 2px; }
+.cel-agente > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.cel-agente strong { font-size: 15px; font-weight: 650; }
+.cel-agente small { font-size: 12.5px; }
+.cel-sinal { color: var(--mudo); }
+.cel-sinal.bem { color: var(--verde); }
+.cel-sinal.mal { color: var(--vermelho); }
+
+/* Direct e Colmeia. */
+.cel-frases { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 2px; }
+.cel-frases span { max-width: 94%; padding: 9px 13px; border-radius: 17px 17px 17px 5px; background: var(--fundo-3); box-shadow: inset 0 0 0 1px var(--borda); font-size: 14.5px; line-height: 1.38; overflow-wrap: anywhere; }
+.cel-troca { margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--marca-suave); color: var(--marca-texto); font-size: 13px; line-height: 1.4; }
+.cel-pergunta { display: grid; gap: 4px; margin-top: 10px; padding: 12px; border-radius: 14px; background: var(--fundo-3); box-shadow: inset 0 0 0 1px var(--borda); }
+.cel-pergunta strong { font-size: 14.5px; line-height: 1.35; }
+.cel-pergunta .cel-recado { background: var(--fundo-2); }
+.cel-pergunta .bt { margin-top: 8px; }
+.cel-historico { display: grid; gap: 10px; margin: 6px 0 0; padding: 0; list-style: none; }
+.cel-historico li { font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.cel-historico small { display: block; font-size: 12px; color: var(--fraco); }
+.cel-acoes { display: grid; gap: 8px; margin-top: 16px; }
+.cel-item { border-radius: var(--raio); background: var(--fundo-2); box-shadow: inset 0 0 0 1px var(--borda); }
+.cel-item summary { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; cursor: pointer; list-style: none; }
+.cel-item summary::-webkit-details-marker { display: none; }
+.cel-item summary strong { font-size: 14.5px; font-weight: 650; line-height: 1.3; }
+.cel-item summary small { font-size: 12.5px; color: var(--mudo); }
+.cel-item[open] summary strong { color: var(--marca-texto); }
+.cel-item > div { padding: 0 14px 14px; }
+.cel-form { display: grid; gap: 16px; padding: 16px; border-radius: var(--raio-l); background: var(--fundo-2); box-shadow: var(--brilho-topo), inset 0 0 0 1px var(--borda); }
+.cel-form input, .cel-form textarea { font-size: 16px; }
+.cel-form .cel-dica { margin: 0; }
+.cel-escolher { display: grid; gap: 8px; }
+.cel-escolher > span { font-size: 13px; font-weight: 600; color: var(--mudo); }
+/* Os botões quebram em mais de uma linha: sem o canto redondo e o corte da faixa de filtros, que comiam a ponta deles. */
+.cel-escolher .chips { display: flex; flex-wrap: wrap; gap: 6px; border-radius: 0; overflow: visible; }
+
 /* No celular, o detalhe do pedido sobe de baixo, como as folhas do iPhone. */
 @media (max-width: 767px) {
   .app-cel ~ .modal-fundo, .app-cel .modal-fundo { place-items: end stretch; padding: 0; }

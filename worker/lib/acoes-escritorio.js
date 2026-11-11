@@ -113,7 +113,9 @@ export async function avisarDoEscritorio(x, dados = {}) {
   if (!titulo || !corpo) throw new Erro(400, 'O aviso precisa de título e corpo.');
   const url = /^\/admin\/[a-z0-9/_-]*$/i.test(String(dados.url || '')) ? dados.url : '/admin/escritorio';
   const tag = /^[a-z0-9-]{1,60}$/.test(String(dados.tag || '')) ? dados.tag : undefined;
-  const aparelhos = await avisarEquipe(x.env, 'escritorio', { titulo, corpo, url, ...(tag ? { tag } : {}) });
+  // A sala dá a cor da bolinha do aviso (push.js); sem sala, ou com sala que não existe, vale a da Direção.
+  const sala = /^[a-z]{3,12}$/.test(String(dados.sala || '')) ? dados.sala : undefined;
+  const aparelhos = await avisarEquipe(x.env, 'escritorio', { titulo, corpo, url, ...(tag ? { tag } : {}), ...(sala ? { sala } : {}) });
   await auditar(x.env, x.u, 'escritorio.aviso', 'push:escritorio', { titulo, url, aparelhos });
   return { aparelhos };
 }

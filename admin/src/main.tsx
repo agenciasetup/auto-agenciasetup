@@ -15,6 +15,7 @@ import { Roteador, casa, useRota, Link } from './nucleo/roteador';
 import { get, quandoSair } from './nucleo/api';
 import { sair, supabase } from './nucleo/auth';
 import { Avisos, Carregando, Faixa, Logo, SemPermissao, SessaoCtx, useTema, type Eu } from './nucleo/ui';
+import { limparGuardado } from './telas/CelularBase';
 import { iniciais } from './nucleo/util';
 import Entrar from './nucleo/Entrar';
 
@@ -128,7 +129,7 @@ function itensDoMenu(pode: (a: string) => boolean, p: any, esperando: any): Item
     ...(pode('conteudo.ver') ? [{ id: 'seo', para: '/seo', t: 'SEO e Google', i: <Search />, secao: 'Site' }] : []),
     ...(pode('cursos.ver') ? [{ id: 'cursos', para: '/cursos', t: 'Cursos e páginas de venda', i: <GraduationCap />, secao: 'Site' }] : []),
     ...(pode('vendas.ver') ? [{ id: 'vendas', para: '/vendas', t: 'Vendas', i: <ShoppingBag />, secao: 'Vendas' }] : []),
-    ...(pode('vendas.ver') ? [{ id: 'celular', para: '/celular', t: 'App de vendas e avisos', i: <Smartphone />, secao: 'Vendas' }] : []),
+    ...(pode('vendas.ver') ? [{ id: 'celular', para: '/celular', t: 'App do celular e avisos', i: <Smartphone />, secao: 'Vendas' }] : []),
     ...(pode('followup.ver') ? [{ id: 'followup', para: '/followup', t: 'Follow-up do direct', i: <Send />, secao: 'Vendas', n: espera.duvidas }] : []),
     ...(pode('recuperar.ver') ? [{ id: 'recuperar', para: '/recuperar', t: 'Recuperar vendas', i: <MessageCircle />, secao: 'Vendas' }] : []),
     ...(pode('colmeia.ver') ? [{ id: 'colmeia', para: '/colmeia', t: 'Colmeia', i: <Hexagon />, secao: 'Vendas', n: espera.colmeia }] : []),
@@ -398,7 +399,7 @@ function App() {
   useEffect(() => {
     carregarEu();
     quandoSair(() => setEu(null));
-    const { data } = supabase.auth.onAuthStateChange((evento) => { if (evento === 'SIGNED_OUT') setEu(null); });
+    const { data } = supabase.auth.onAuthStateChange((evento) => { if (evento === 'SIGNED_OUT') { limparGuardado(); setEu(null); } });
     return () => data.subscription.unsubscribe();
   }, [carregarEu]);
 
@@ -417,6 +418,7 @@ function App() {
 
   const aoSair = async () => {
     await sair().catch(() => {});
+    limparGuardado(); // o que o app do celular guardou neste aparelho some junto com o login
     setEu(null);
     ir('/entrar', { trocar: true });
   };
@@ -440,9 +442,9 @@ function App() {
   if (rota.caminho === '/conectar') {
     return <SessaoCtx.Provider value={ctx}><Suspense fallback={<div className="tela-cheia"><Carregando texto="Abrindo…" /></div>}><Conectar /></Suspense></SessaoCtx.Provider>;
   }
-  // O app "Vendas" do celular: tela cheia, fora da moldura do painel.
+  // O app do celular (Hoje, Escritório, Direct, Colmeia e Vendas): tela cheia, fora da moldura do painel.
   if (rota.caminho === '/celular') {
-    return <SessaoCtx.Provider value={ctx}><Suspense fallback={<div className="tela-cheia"><Carregando texto="Abrindo as vendas…" /></div>}><Celular /></Suspense></SessaoCtx.Provider>;
+    return <SessaoCtx.Provider value={ctx}><Suspense fallback={<div className="tela-cheia"><Carregando texto="Abrindo o app…" /></div>}><Celular /></Suspense></SessaoCtx.Provider>;
   }
   return <SessaoCtx.Provider value={ctx}><Moldura eu={eu} aoSair={aoSair} /></SessaoCtx.Provider>;
 }
