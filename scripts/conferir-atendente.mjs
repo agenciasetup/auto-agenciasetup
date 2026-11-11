@@ -3,7 +3,8 @@
 // endereço que não seja um dos falsos dá erro. Não lê o .env.local, não toca no banco de verdade e não manda nada.
 // O código testado é o de verdade (worker/lib/atendente.js, gatilhos.js, relogio.js, nucleo/db.js, o módulo do Instagram).
 // Uso: node scripts/conferir-atendente.mjs
-import { atender, conferir, conferirToque, configAtendente, registrarEnvios, responderPendentes, salvarConfigAtendente } from '../worker/lib/atendente.js';
+import { atender, conferir, conferirToque, configAtendente, ehOrdemDeIgnorar, registrarEnvios, responderPendentes, salvarConfigAtendente } from '../worker/lib/atendente.js';
+import { responderDuvidaFollowup } from '../worker/lib/acoes-followup.js';
 import { aoDirect, enviarRespostas, esquecerAjustesComenta } from '../worker/lib/gatilhos.js';
 import { rodarMinuto } from '../worker/lib/relogio.js';
 import { lerFollowup, podeTocar, salvarFollowup, tetosFollowup } from '../worker/lib/followup.js';
@@ -907,6 +908,33 @@ try {
   ok(al.length === 1 && /parou de chegar/.test(al[0].titulo), 'comentários entrando só pela leitura do relógio: alerta a qualquer hora', al.map((a) => a.titulo).join(' | '));
   al = await cenarioZelador(as(14), { comentariosPeloRelogio: 3, comentarioNaHoraHa: HORA });
   ok(al.length === 0, 'com um comentário chegando na hora no meio: sem alerta');
+
+  // ---------------------------------------------------------------- item 12: a resposta do dono que é uma ordem
+  secao('12. A resposta do dono que é uma ordem (11/11)');
+  const ordens = ['Ignorar propostas de parcerias assim.', 'Só ignorar coisas assim.', 'pode ignorar', 'Não responde', 'deixa pra lá'];
+  const naoOrdens = ['Volta com R$ 79,90.', 'Ignora o preço e manda o link', 'Chama no whatsapp, 11 99999-0000', 'Existe sim. Chama no whatsapp.', 'Ignorar não, fala que parcela em 12 vezes'];
+  ok(ordens.every(ehOrdemDeIgnorar), 'as ordens de não responder são reconhecidas', ordens.filter((o) => !ehOrdemDeIgnorar(o)).join(' | '));
+  ok(!naoOrdens.some(ehOrdemDeIgnorar), 'resposta com mais coisa não é tomada por "ignorar"', naoOrdens.filter(ehOrdemDeIgnorar).join(' | '));
+  await novoCenario();
+  const xDono = { env: ENV, u: { id: DONO, nome: 'Filipe Lourenço', papel: 'administrador', via: 'painel' } };
+  const DUVIDA = { decisao: { classe: 'duvida', mensagens: [], interesse: 'nao_sei', espera: false, motivo: 'Proposta de parceria: o Filipe decide.' } };
+  await escreve('parceria.teste', '500000001', 'Queremos fazer uma parceria com o seu curso');
+  claude.fila.push(DUVIDA, DUVIDA);
+  await rodar();
+  ok(ficha('parceria.teste').fase === 'duvida', 'a proposta de parceria vira dúvida com o dono', ficha('parceria.teste').fase);
+  const saiuAntes = enviadasPara('500000001').length;
+  const iaAntes = claude.chamadas.length;
+  const rp = await responderDuvidaFollowup(xDono, ficha('parceria.teste').id, 'Ignorar propostas de parcerias assim.');
+  const r12 = await rodar();
+  ok(rp.atendente_leva && enviadasPara('500000001').length === saiuAntes && claude.chamadas.length === iaAntes, 'o dono manda ignorar: nada sai para a pessoa e a IA nem é chamada', `${JSON.stringify(r12.feitos)}, enviadas ${enviadasPara('500000001').map((m) => m.texto).join(' / ')}`);
+  ok(ficha('parceria.teste').fase === 'nao_quer', 'e a pessoa sai da fila do follow-up', ficha('parceria.teste').fase);
+  await escreve('parcela.teste', '500000002', 'o curso de posts parcela?');
+  claude.fila.push(DUVIDA, DUVIDA);
+  await rodar();
+  const saiuAntes2 = enviadasPara('500000002').length;
+  await responderDuvidaFollowup(xDono, ficha('parcela.teste').id, 'Parcela sim, em até 12 vezes no cartão.');
+  await rodar();
+  ok(enviadasPara('500000002').length > saiuAntes2, 'a resposta que é mensagem continua saindo pela IA', `enviadas ${enviadasPara('500000002').length - saiuAntes2}`);
 } catch (e) {
   falhas++;
   console.error('\nO ensaio parou com erro:', e && (e.stack || e.message));

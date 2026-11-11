@@ -22,7 +22,7 @@ const CHAVE = 'video_cacador';
 export const CHAVE_CANAIS = 'video_canais';
 const DIA = 86_400_000;
 const POR_RODADA = 4;
-const FOLGA = 12; // chamadas que uma rodada gasta no pior caso (estado, canais, agente, 4 feeds, guardar, estado e as 2 do turno: 11)
+const FOLGA = 16; // chamadas que uma rodada gasta no pior caso (estado, canais, agente, 4 feeds com a segunda tentativa, guardar, estado e as 2 do turno: 15)
 const ERRO_DE_NOVO = 6 * 3_600_000; // rodada ruim atrás de rodada ruim: um turno com erro a cada 6 horas, não um por hora
 // A régua do que é "fora da curva". O dono muda em config.video_canais.regua. Os canais em português são menores:
 // para eles o mínimo de visualizações é views_pt.
@@ -80,11 +80,22 @@ export function lerCanais(linha) {
 }
 
 // ---------------------------------------------------------------- a rodada
+// O feed do YouTube falha de vez em quando para o servidor: 404 num canal que abre normal no navegador (em 11/11/2026,
+// de 12 a 16 dos 36 canais numa volta, e no computador os 36 abriam). Por isso cada canal tem uma segunda tentativa,
+// um segundo depois; só o canal que falha as duas vezes conta como erro.
+const TENTATIVAS = 2;
 async function buscarFeed(env, canal) {
-  contarChamada(env);
-  const r = await fetch(feedDe(canal.id), { headers: { 'user-agent': 'Mozilla/5.0 (compatible; radar/1.0)', accept: 'application/atom+xml,application/xml' }, signal: AbortSignal.timeout(8000) });
-  if (!r.ok) throw new Error(`o YouTube respondeu ${r.status}`);
-  return lerFeed(await r.text());
+  let falha;
+  for (let i = 0; i < TENTATIVAS; i++) {
+    if (i) await new Promise((r) => setTimeout(r, 1000));
+    contarChamada(env);
+    try {
+      const r = await fetch(feedDe(canal.id), { headers: { 'user-agent': 'Mozilla/5.0 (compatible; radar/1.0)', accept: 'application/atom+xml,application/xml' }, signal: AbortSignal.timeout(8000) });
+      if (r.ok) return lerFeed(await r.text());
+      falha = new Error(`o YouTube respondeu ${r.status}`);
+    } catch (e) { falha = e; }
+  }
+  throw falha;
 }
 
 const milhar = (n) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace('.', ',')} mi` : n >= 1000 ? `${Math.round(n / 1000)} mil` : String(n));

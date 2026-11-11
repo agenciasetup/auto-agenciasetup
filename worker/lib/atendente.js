@@ -81,6 +81,14 @@ const LINKS = {
 // O que não precisa de resposta: risada, "ok", só emoji ou pontuação.
 const SEM_RESPOSTA = /^(?:k{2,}|(?:ha){2,}h?|(?:he){2,}|rs+|ok+|okay|blz|beleza|show|top|\p{Extended_Pictographic}|\p{Emoji_Modifier}|️|‍|[\s.!?,…])+$/iu;
 // Só um cumprimento, sem pedido.
+// A resposta do dono a uma dúvida que é a ordem de não responder: curta, começando por "ignorar" (ou "só ignorar",
+// "pode ignorar"), "deixa pra lá", "deixa quieto" ou "não responde". Ordem com mais coisa ("ignora o preço e manda o
+// link") vai para a IA, que cumpre a ordem.
+const ORDEM_DE_IGNORAR = /^\s*(?:s[oó]\s+|pode\s+)?(?:ignor[a-z]*|deixa\s+(?:pra\s+l[aá]|quieto)|n[aã]o\s+(?:precisa\s+)?respond[a-z]*)(?![a-zà-ú])/i;
+export const ehOrdemDeIgnorar = (t) => {
+  const s = String(t || '').trim();
+  return s.length > 0 && s.length <= 90 && ORDEM_DE_IGNORAR.test(s) && !/\b(?:mas|por[eé]m|responde|manda|mande|fala|diga|diz|link|whats\w*|https?)\b/i.test(s.replace(ORDEM_DE_IGNORAR, ''));
+};
 const CUMPRIMENTO = /^(?:o+i+e*|ol[aá]+|o+pa+|e\s*a[ií]+|salve+|fala+|hey+|hello+|bom dia|boa tarde|boa noite)[\s!.,]*(?:(?:tudo|td)\s*(?:bem|bom|certo|joia|tranquilo|beleza)|beleza|blz|como vai)?[\s!.,?]*$/i;
 // O cumprimento no começo de uma resposta nossa, para tirar quando a conversa já está andando.
 const ABRE_COM_CUMPRIMENTO = /^(?:o+pa+|ol[aá]+|o+i+e*|salve(?:\s+calango)?|e\s*a[ií]+|fala+)\b[\s!,.]*(?:(?:tudo|td)\s*(?:bem|bom|certo)\??[\s!,.]*)?/i;
@@ -348,7 +356,7 @@ Use a ferramenta decidir_resposta. Não escreva nada fora dela.`;
   const contexto = [
     `Pessoa: ${pessoa.nome ? String(pessoa.nome).slice(0, 80) : 'sem nome'} (fase: ${pessoa.fase || 'nova'}; interesse anotado: ${pessoa.interesse || 'nao_sei'}${pessoa.origem === 'story' ? '; chegou respondendo a um story' : ''}).`,
     `Tempo: ${t.frase}`,
-    recado ? `O Filipe acabou de responder a dúvida que ela tinha feito. Leve esta resposta para ela agora, no jeito dele, sem acrescentar nada: "${String(recado).replace(/\s+/g, ' ').slice(0, 600)}"` : '',
+    recado ? `O Filipe acabou de responder a dúvida que ela tinha feito. A resposta dele pode ser o que dizer para ela, ou uma ordem para você (o que fazer com esta conversa, como "fala pra ela...", "volta com...", "manda pro WhatsApp", "não responde"). Se é o que dizer, leve agora, no jeito dele, sem acrescentar nada. Se é uma ordem, cumpra: escreva para ela a mensagem que a ordem pede, ou use a classe "ignorar" quando a ordem é não responder. Nunca mande a ordem como está para ela. A resposta do Filipe: "${String(recado).replace(/\s+/g, ' ').slice(0, 600)}"` : '',
     t.antes.length ? `<conversa>\n${t.antes.map((m) => `[${haQuanto(Date.now() - Date.parse(m.em))}] ${m.de === 'nos' ? 'Nós' : 'Pessoa'}: ${String(m.texto).replace(/\s+/g, ' ').slice(0, 220)}`).join('\n')}\n</conversa>` : '',
     `<mensagens>\n${linhas.join('\n')}\n</mensagens>`,
   ].filter(Boolean).join('\n\n');
@@ -690,6 +698,14 @@ async function tratar(env, t, cfg, contaDe, orcamentoDaVez) {
   const interesseDe = (d) => (d.interesse && d.interesse !== 'nao_sei' && f.interesse === 'nao_sei' ? { interesse: d.interesse } : {});
   const base = { usuario: f.usuario, perfil: f.perfil };
 
+  // O dono mandou ignorar ("Ignorar propostas de parcerias assim", "Só ignorar coisas assim"): é uma ordem para o
+  // atendimento, não uma mensagem para a pessoa. Nada sai, a IA nem é chamada e a pessoa sai da fila. (Em 10/11/2026
+  // a IA mandou "Ignorar propostas de parcerias assim." para quem propôs a parceria.)
+  if (recado && ehOrdemDeIgnorar(recado)) {
+    await salvarFollowup(env, { ...base, ...(comprador ? {} : { fase: 'nao_quer' }), evento: `O Filipe mandou ignorar ("${recado.replace(/\s+/g, ' ').slice(0, 80)}"): nada saiu para a pessoa.` }, { quemNome: 'Atendente' });
+    await fechar('ignorou', { custo_usd: 0, detalhe: 'O Filipe mandou ignorar: nada saiu.' });
+    return 'ignorou (ordem do dono)';
+  }
   // Só um cumprimento de quem nunca conversou: resposta pronta, sem gastar IA.
   let d;
   if (!recado && tempo.retomada === 'primeira' && agora.length === 1 && CUMPRIMENTO.test(agora[0].trim())) {

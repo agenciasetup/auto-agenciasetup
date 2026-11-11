@@ -862,6 +862,14 @@ O dono viu o app novo e pediu: "senti falta de conseguir ver os calanguinho la s
 - **O palco é sempre escuro,** também no tema claro: é a cena.
 - **O que não mudou.** A mesa de propostas, as aprovadas e o resto da aba continuam abaixo do palco. A lista estática de salas saiu; a equipe da sala abre no toque do nome dela, e de lá dá para abrir o perfil.
 
+## Tomadas em 11/11/2026 (pendentes da mesa)
+
+O dono pediu: "verifique pra mim, todos aprovados, tudo que está pendente. Resolva o que puder resolver." No ar na versão e906165c.
+
+- **A ordem do dono não vai para a pessoa.** Em 10/11 ele respondeu a dúvida da Morphix (proposta de parceria) com "Ignorar propostas de parcerias assim.", e o Atendente mandou a frase para eles, porque o recado dizia "leve esta resposta para ela, sem acrescentar nada". Agora o recado diz que a resposta pode ser uma ordem e que a ordem nunca vai como está; e a ordem curta de não responder (`ehOrdemDeIgnorar` em `worker/lib/atendente.js`) nem chama a IA: nada sai e a pessoa vai para "Não quer". As outras 12 respostas dos dias anteriores foram conferidas: só a da Morphix vazou. `scripts/conferir-atendente.mjs`, seção 12.
+- **O Caçador de virais tenta de novo.** O cartão do Zelador ("2 dias seguidos com erro") não era agente quebrado: o feed de Shorts do YouTube responde 404 ao servidor de vez em quando (de 12 a 16 dos 36 canais numa volta de 11/11), e do computador os 36 abriam. Cada canal ganhou uma segunda tentativa, um segundo depois; a folga de chamadas da rodada passou de 12 para 16.
+- **Dúvidas que não eram do dono saem da lista.** A Morphix saiu pela ordem dele de 10/11 (sem mensagem) e a Paula (@diasolivp), que só escreveu "consegui sim, obrigada!", voltou para a fila normal. A do desconto (@ogabrielmetran) ficou com ele, que estava atendendo pelo aplicativo.
+
 ## Em aberto
 
 - **Follow-up do direct:** no ar desde 08/11/2026 (versão `8267d516`) com a tarefa `direct-followup`. Falta a primeira rodada com o dono olhando e conferir na primeira semana se o "achado pelo nome" erra. Sete rodadas por dia lendo o direct gastam bastante do limite semanal do Claude: se apertar, ficar com 9h, 14h e 20h.
