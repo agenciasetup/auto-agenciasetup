@@ -84,7 +84,8 @@ Para o assunto descer sem emenda, `python templates/carrossel/ferramentas/cena.p
 
 **O título, além do básico:**
 - `script: ''` deixa só a condensada. `fonteScript`, `scriptTam`, `scriptForte` (quanto o floreio pesa).
-- `linha2`, `tam2`, `y2`, `dx2`: segunda linha. `bloco`: largura em px, com as duas linhas ajustadas a ela. `vao`: o espaço entre as duas.
+- `linha2`, `tam2`, `y2`, `dx2`: segunda linha. `bloco`: largura em px, com as duas linhas ajustadas a ela. `vao`: o espaço entre as duas. **Headline em duas linhas sempre em `bloco`** (o dono, 11/11/2026: "a headline deve ter o mesmo tamanho as duas linhas nesse estilo, mesmo que a fonte fique de tamanho diferente"), na largura do elemento principal da capa (o quadro atrás do Van Gogh): isso abre espaço ao lado do assunto para o texto pequeno.
+- `posFrente: true`: o texto pequeno de baixo ("um designer") vai para a frente do assunto, e o assunto pode encostar na headline sem esconder o texto.
 - `fonte1`, `cor1`, `fonte2`, `cor2`, `foco2`: fonte, cor (aceita `linear-gradient`) e desfoque de cada linha.
 - `cor`, `corScript`: cor do título. `dx`: desloca o conjunto (floreio pesa pouco, compense). `foco.min`: desfoque mínimo em toda a palavra.
 - O título não tem sombra ("sombra é feio"). `semSombra: false` existe só para as capas antigas já aprovadas: não use em peça nova.
@@ -128,7 +129,7 @@ Com `centro: true`, o "comenta" e a nota centralizam, a palavra encolhe sozinha 
 
 No carrossel (fora de `slides`), em coordenadas da tela larga: x de 0 a 1080 vezes o número de cards; a divisa entre o card 1 e o 2 é x = 1080. Cada card mostra a sua fatia, e a emenda casa no pixel. As molduras pretas ficam (decisão do Filipe em 11/11: "pode manter as molduras pretas, mas pode ter elementos que ficam por cima delas de um card pro outro").
 - `panorama: { arq, x, y, w, blur, luz, op }`: a cena larga por dentro das janelas, passando por trás da moldura entre os cards. `semPanorama: true` no slide que não quer.
-- `travessia: [{ arq, x, y, w, rot, espelho, blur, luz, op, sombra, acima }]`: o que atravessa por cima da moldura. Sombra realista por padrão (contato e projetada), sem sombra quando tem `blur`; `acima: true` passa também por cima do cabeçalho e do progresso. `semTravessia: true` no slide que não quer.
+- `travessia: [{ arq, x, y, w, rot, espelho, blur, luz, op, sombra, acima }]`: o que atravessa por cima da moldura. Sem `z`, sombra realista por padrão (contato e projetada), sem sombra quando tem `blur`; com `z`, sombra só com `sombra: true`, para o que está perto de uma superfície (nada que voa ou sai da borda de baixo); `acima: true` passa também por cima do cabeçalho e do progresso. `semTravessia: true` no slide que não quer.
 - Sai também `larga.jpg` (a tela inteira em tamanho real): confira a emenda ali. Exemplo: `conteudos/infinito-cores.js`. Detalhes e cuidados no `LEIA.md` do modelo.
 - **Distância em cada elemento (`z`, de -1 o fundo a 1 colado na lente):** o desfoque e a sombra saem dela, e o exportador salva o `profundidade.jpg` (o mapa). Um exemplar nítido de cada coisa por plano, nos tamanhos de verdade; poucos elementos. Luz por cima: `{ halo: true, x, y, d, cor, op }`. Slide de dentro com `lado: 'esquerda'|'direita'` e `semTrilho`.
 - Cor para a cena em cada elemento: `matiz`, `sat`, `luz`. Vagalumes em código: `{ vagalume: true, x, y, r, blur, op }` (o foco segue a distância do assunto). Os fundos podem alternar (o panorama é opcional).
@@ -144,4 +145,4 @@ No carrossel (fora de `slides`), em coordenadas da tela larga: x de 0 a 1080 vez
 
 ## Fontes
 
-Anton (palavra condensada), Great Vibes (floreio da capa), Instrument Serif itálico (destaque e números), Outfit (textos), Inter (notificações iOS), JetBrains Mono (rótulos). A Ballet e a Pinyon foram testadas para o floreio: a Ballet escondia o C, a Pinyon ficava fraca.
+Calango Condensed Black (palavra condensada, a fonte da agência desde 11/11/2026, em `templates/fontes/`; a Anton fica de reserva e nas capas antigas, com `vars: { 'fonte-condensada': "'Anton', sans-serif", 'peso-condensada': 400 }`), Calango Signature (floreio da capa, da agência; a Great Vibes só nas antigas, por `fonteScript`), Instrument Serif itálico (destaque e números), Outfit (textos), Inter (notificações iOS), JetBrains Mono (rótulos). A Ballet e a Pinyon foram testadas para o floreio: a Ballet escondia o C, a Pinyon ficava fraca.

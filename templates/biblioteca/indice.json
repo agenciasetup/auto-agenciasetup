@@ -1054,6 +1054,113 @@
    "dica": "O vagalume que o dono quer é o inseto, não só o ponto de luz (referências: os posts do Anaconda e do Leonardo da Vinci). Junte um brilho quente na cauda ({ vagalume: true, cor: \"quente\" }) e varie a profundidade: nítido perto do texto, grande e desfocado perto da lente.",
    "adicionado": "2026-11-11",
    "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "plantas/flores/girassol-de-frente-grande.png",
+   "pasta": "plantas/flores",
+   "descricao": "Girassol de frente, caule curvo e duas folhas, ampliado em dobro (1564 px).",
+   "largura": 1564,
+   "altura": 1906,
+   "fonte": "girassol-de-frente.png ampliado 2x (Real-ESRGAN) em 11/11/2026",
+   "tags": [
+    "girassol",
+    "flor",
+    "amarelo",
+    "van-gogh",
+    "grande"
+   ],
+   "dica": "Para a cabeça ocupar metade da altura do card (uns 800 px), como no Van Gogh original: atravessando a divisa, o caule cortado pela borda de baixo.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "plantas/flores/girassol-tres-quartos-grande.png",
+   "pasta": "plantas/flores",
+   "descricao": "Girassol em três quartos, caule curvo e duas folhas, ampliado em dobro (1350 px).",
+   "largura": 1350,
+   "altura": 1846,
+   "fonte": "girassol-tres-quartos.png ampliado 2x (Real-ESRGAN) em 11/11/2026",
+   "tags": [
+    "girassol",
+    "flor",
+    "amarelo",
+    "van-gogh",
+    "grande"
+   ],
+   "dica": "O girassol saindo do quadro, na frente da headline do último card.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "personagens/esculturas/calango-marmore-terno-grande.png",
+   "pasta": "personagens/esculturas",
+   "descricao": "Estátua de mármore do Calango de terno, do peito para cima, ampliada em dobro (1304 px).",
+   "largura": 1304,
+   "altura": 1868,
+   "fonte": "calango-marmore-terno-2.png ampliado 2x (Real-ESRGAN) em 11/11/2026",
+   "tags": [
+    "calango",
+    "estatua",
+    "marmore",
+    "terno",
+    "grande"
+   ],
+   "dica": "Grande (uns 900 px de largura), atravessando a divisa, com a base cortada pela borda de baixo; sem sombra.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "personagens/historicos/van-gogh-3d-grande.png",
+   "pasta": "personagens/historicos",
+   "descricao": "Van Gogh em 3D, chapéu de palha, barba ruiva, camisa azul, ampliado em dobro (1386 px).",
+   "largura": 1386,
+   "altura": 2184,
+   "fonte": "van-gogh-3d-3.png ampliado 2x (Real-ESRGAN) em 11/11/2026",
+   "tags": [
+    "van-gogh",
+    "personagem",
+    "3d",
+    "grande"
+   ],
+   "dica": "No meio da capa, com o quadro atrás, o chapéu um pouco por cima da headline e o corpo saindo pela moldura de baixo.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "arte/quadros/quadro-moldura-dourada-noite-estrelada-grande.png",
+   "pasta": "arte/quadros",
+   "descricao": "Moldura dourada com pintura no estilo da Noite Estrelada, ampliada em dobro (1606 px).",
+   "largura": 1606,
+   "altura": 1620,
+   "fonte": "quadro-moldura-dourada-noite-estrelada-2.png ampliado 2x (Real-ESRGAN) em 11/11/2026",
+   "tags": [
+    "quadro",
+    "moldura",
+    "dourado",
+    "van-gogh",
+    "grande"
+   ],
+   "dica": "Atrás do personagem, centralizado e sutilmente desfocado.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "fundos/pinturas/fundo-laranja-noite-estrelada.png",
+   "pasta": "fundos/pinturas",
+   "descricao": "Fundo laranja vivo com textura de pintura (a Noite Estrelada em tons de laranja), 2160 x 1350, para dois cards.",
+   "largura": 2160,
+   "altura": 1350,
+   "fonte": "Feito no computador a partir do quadro da biblioteca em 11/11/2026 (scratchpad fundo-laranja.mjs)",
+   "tags": [
+    "fundo",
+    "laranja",
+    "pintura",
+    "van-gogh",
+    "textura"
+   ],
+   "dica": "O laranja do Van Gogh original (#FAA004 no alto, #F57A06 embaixo). Panorama dos cards 1 e 2.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
   }
  ]
 }

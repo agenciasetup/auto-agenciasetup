@@ -1,0 +1,12 @@
+/* As fontes da Agência Setup (do dono, 11/11/2026: "a partir de agora, instale essas duas fontes no nosso sistema pra
+   fazer os criativos. São fontes nossas."). Os arquivos .woff2 ficam nesta pasta, fora do Git (o repositório é público);
+   os .otf e .ttf, para instalar em outro programa, ficam em _local/fontes/. Ver LEIA.md.
+   Calango Condensed: a headline condensada (no lugar da Anton). Calango Signature: a letra de floreio (no lugar da Great
+   Vibes). A Calango Sans vem depois, no lugar da Outfit. */
+@font-face { font-family: 'Calango Condensed'; src: url('CalangoCondensed-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: 'Calango Condensed'; src: url('CalangoCondensed-Italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: block; }
+@font-face { font-family: 'Calango Condensed'; src: url('CalangoCondensed-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: 'Calango Condensed'; src: url('CalangoCondensed-BoldItalic.woff2') format('woff2'); font-weight: 700; font-style: italic; font-display: block; }
+@font-face { font-family: 'Calango Condensed'; src: url('CalangoCondensed-Black.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: block; }
+@font-face { font-family: 'Calango Condensed'; src: url('CalangoCondensed-BlackItalic.woff2') format('woff2'); font-weight: 900; font-style: italic; font-display: block; }
+@font-face { font-family: 'Calango Signature'; src: url('CalangoSignature-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: block; }

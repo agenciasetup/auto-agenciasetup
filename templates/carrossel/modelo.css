@@ -19,6 +19,10 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 }
 
 /* ---------------------------------------------------------------- temas */
+/* A headline condensada é a Calango Condensed Black, a fonte da agência (templates/fontes/, 11/11/2026); a Anton fica de
+   reserva. Uma peça antiga aprovada que precisa sair igual troca só no slide: vars: { 'fonte-condensada': "'Anton', sans-serif", 'peso-condensada': 400 }. */
+:root { --fonte-condensada: 'Calango Condensed', 'Anton', sans-serif; --peso-condensada: 900; }
+
 .tema-amarelo {
   --margem: #0b0b0c;
   --fundo-claro: #ffe27a; --fundo-meio: #ffbf1a; --fundo-escuro: #ff8a00;
@@ -79,8 +83,13 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
    no preto) e o que atravessa ganha uma emenda na divisa. No carrossel infinito, a textura é a mesma em todos. */
 .slide.larga { --grao: overlay; --grao-forca: 0.7; --meio-tom: 0.085; --margem: #000; }
 /* Luz por cima (halo): a camada inteira em modo tela, para clarear o que está embaixo dela. */
-.c-luz { z-index: 16; mix-blend-mode: screen; }
+.c-luz { z-index: 16; mix-blend-mode: screen; inset: var(--janela); border-radius: 46px; overflow: hidden; }
+.slide.sangra .c-luz { inset: 0; border-radius: 0; }
 .halo-luz { position: absolute; border-radius: 50%; pointer-events: none; }
+/* Desfoque nos cantos (slide.cantos, 11/11/2026, o dono: "desfoque nos cantos são bem-vindos"): o que está dentro da
+   janela desfoca do meio para fora; o centro fica nítido. */
+.cantos { position: absolute; inset: 0; z-index: 5; pointer-events: none; backdrop-filter: blur(var(--cantos-blur)); -webkit-backdrop-filter: blur(var(--cantos-blur));
+  -webkit-mask-image: radial-gradient(ellipse 72% 70% at 50% 48%, transparent var(--cantos-de), #000 100%); mask-image: radial-gradient(ellipse 72% 70% at 50% 48%, transparent var(--cantos-de), #000 100%); }
 /* Mapa de profundidade (&profundidade=1): o plano dos cartões em cinza médio, cada elemento num cinza pela distância
    (mais claro, mais perto da lente) e o número escrito em cima. Sem textura, sem luz. */
 .slide.profundidade { --margem: #000; }
@@ -122,7 +131,7 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 }
 .miudo.forte { filter: blur(1.2px); }
 .vazada {
-  position: absolute; font-family: 'Anton', sans-serif; text-transform: uppercase; line-height: 0.8;
+  position: absolute; font-family: var(--fonte-condensada); font-weight: var(--peso-condensada); text-transform: uppercase; line-height: 0.8;
   color: transparent; -webkit-text-stroke: 2px var(--tinta-fraca); opacity: 0.22; filter: blur(1.5px); white-space: nowrap;
 }
 .rabisco { position: absolute; overflow: visible; filter: blur(1.4px); opacity: 0.5; }
@@ -130,7 +139,7 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 
 /* ---------------------------------------------------------------- títulos */
 .condensada {
-  font-family: 'Anton', sans-serif; text-transform: uppercase; line-height: 0.86; letter-spacing: -0.005em; white-space: nowrap;
+  font-family: var(--fonte-condensada); font-weight: var(--peso-condensada); text-transform: uppercase; line-height: 0.86; letter-spacing: -0.005em; white-space: nowrap;
   color: transparent;
   /* meio-tom bem leve dentro da letra (textura de impressão, etapa 5), por cima da cor */
   background: radial-gradient(rgba(0, 0, 0, var(--pontos-titulo, 0.1)) 30%, transparent 34%) 0 0 / 4.5px 4.5px, linear-gradient(var(--titulo), var(--titulo));
@@ -320,7 +329,7 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 .exemplo-quadro { width: 780px; height: 400px; flex: none; border-radius: 30px; background-size: cover; background-position: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 40px; box-shadow: 0 22px 54px rgba(0, 0, 0, 0.24); }
 .combo-cores { display: flex; flex-direction: column; align-items: center; }
 .cc-quadro { width: 100%; height: 300px; border-radius: 34px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22); }
-.cc-quadro b { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 92px; line-height: 1; text-transform: uppercase; letter-spacing: 0.005em; text-align: center; }
+.cc-quadro b { font-family: var(--fonte-condensada); font-weight: var(--peso-condensada); font-size: 92px; line-height: 1; text-transform: uppercase; letter-spacing: 0.005em; text-align: center; }
 .cc-quadro span { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 28px; padding: 9px 26px; border-radius: 999px; }
 .combo-cores p { margin: 30px 0; font-size: 32px; font-weight: 400; }
 .grade-fundos { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
@@ -347,7 +356,7 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 .lista { padding: 6px 32px; }
 .item-lista { display: flex; gap: 24px; align-items: center; padding: 24px 0; }
 .item-lista + .item-lista { border-top: 1px solid var(--divisor); }
-.item-lista .calor { flex: none; width: 74px; height: 74px; border-radius: 20px; display: grid; place-items: center; font-family: 'Anton', sans-serif; font-size: 36px; color: #fff; background: linear-gradient(140deg, #ff9a00, #ff4d1a); }
+.item-lista .calor { flex: none; width: 74px; height: 74px; border-radius: 20px; display: grid; place-items: center; font-family: var(--fonte-condensada); font-weight: var(--peso-condensada); font-size: 36px; color: #fff; background: linear-gradient(140deg, #ff9a00, #ff4d1a); }
 .item-lista h4 { font-size: 27px; font-weight: 500; line-height: 1.24; letter-spacing: -0.01em; }
 .item-lista p { margin-top: 6px; font-family: 'JetBrains Mono', monospace; font-size: 19px; color: var(--tinta-fraca); }
 
@@ -426,7 +435,7 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 .curso { padding: 18px; }
 .curso-capa { position: relative; border-radius: 22px; overflow: hidden; aspect-ratio: 820 / 440; background: #0d0d0f; }
 .curso-capa img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.curso-capa-texto { position: absolute; inset: 0; display: grid; place-items: center; padding: 0 40px; text-align: center; font-family: 'Anton', sans-serif; text-transform: uppercase; font-size: 72px; line-height: 0.95; color: #fff;
+.curso-capa-texto { position: absolute; inset: 0; display: grid; place-items: center; padding: 0 40px; text-align: center; font-family: var(--fonte-condensada); font-weight: var(--peso-condensada); text-transform: uppercase; font-size: 72px; line-height: 0.95; color: #fff;
   background: radial-gradient(80% 90% at 50% 40%, #2a1a06 0%, #0d0d0f 70%); }
 .curso-capa-texto em { display: block; font-family: 'Instrument Serif', serif; font-style: italic; text-transform: none; font-size: 1.15em; line-height: 1; color: #ffb000; }
 .curso-tag { position: absolute; left: 18px; top: 18px; padding: 9px 18px; border-radius: 99px; font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #fff;

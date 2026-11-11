@@ -24,7 +24,7 @@ Dinheiro (notas, moedas, maço), mosquitos e outros insetos voando, cobras, outr
 - `templates/carrossel/imagens/elementos/`: as letras, a placa e o travessão de posts antigos.
 - `templates/frase/imagens/`: os objetos dos posts de frase.
 
-## O que tem (59 elementos)
+## O que tem (65 elementos)
 
 ### animais/abelhas (3)
 
@@ -77,7 +77,7 @@ Folha: `animais/vagalumes/folha.jpg`
 | `animais/vagalumes/vagalume-voando-de-lado-3.png` | Vagalume de verdade voando de lado, asas abertas, corpo escuro com o escudo laranja e a cauda acesa (amarelo alaranjado). | 776 x 553 | vagalume, inseto, luz, noite, floresta, voando | O vagalume que o dono quer é o inseto, não só o ponto de luz (referências: os posts do Anaconda e do Leonardo da Vinci). Junte um brilho quente na cauda ({ vagalume: true, cor: "quente" }) e varie a profundidade: nítido perto do texto, grande e desfocado perto da lente. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id SyIBn0IUb8 |
 | `animais/vagalumes/vagalume-voando-de-lado.png` | Vagalume de verdade voando de lado, asas abertas, corpo escuro com o escudo laranja e a cauda acesa (amarelo alaranjado). | 827 x 651 | vagalume, inseto, luz, noite, floresta, voando | O vagalume que o dono quer é o inseto, não só o ponto de luz (referências: os posts do Anaconda e do Leonardo da Vinci). Junte um brilho quente na cauda ({ vagalume: true, cor: "quente" }) e varie a profundidade: nítido perto do texto, grande e desfocado perto da lente. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id bx0Y4OG5Y2 |
 
-### arte/quadros (3)
+### arte/quadros (4)
 
 Folha: `arte/quadros/folha.jpg`
 
@@ -85,6 +85,7 @@ Folha: `arte/quadros/folha.jpg`
 | --- | --- | --- | --- | --- | --- |
 | `arte/quadros/quadro-moldura-dourada-noite-estrelada-2.png` | Moldura dourada antiga com uma pintura no estilo da Noite Estrelada (obra de domínio público), de frente. | 803 x 810 | quadro, moldura, dourado, pintura, van gogh, arte | Atrás do personagem, sutilmente desfocado (blur 3 a 5), como na capa do Van Gogh. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id LwXD11hswO |
 | `arte/quadros/quadro-moldura-dourada-noite-estrelada-3.png` | Moldura dourada antiga com uma pintura no estilo da Noite Estrelada (obra de domínio público), de frente. | 832 x 728 | quadro, moldura, dourado, pintura, van gogh, arte | Atrás do personagem, sutilmente desfocado (blur 3 a 5), como na capa do Van Gogh. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id xSeVKFpjfW |
+| `arte/quadros/quadro-moldura-dourada-noite-estrelada-grande.png` | Moldura dourada com pintura no estilo da Noite Estrelada, ampliada em dobro (1606 px). | 1606 x 1620 | quadro, moldura, dourado, van-gogh, grande | Atrás do personagem, centralizado e sutilmente desfocado. | quadro-moldura-dourada-noite-estrelada-2.png ampliado 2x (Real-ESRGAN) em 11/11/2026 |
 | `arte/quadros/quadro-moldura-dourada-noite-estrelada.png` | Moldura dourada antiga com uma pintura no estilo da Noite Estrelada (obra de domínio público), de frente. | 814 x 757 | quadro, moldura, dourado, pintura, van gogh, arte | Atrás do personagem, sutilmente desfocado (blur 3 a 5), como na capa do Van Gogh. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id 4REvJxP9Aa |
 
 ### ceu/nevoa (2)
@@ -136,6 +137,14 @@ Folha: `formas/pinceladas/folha.jpg`
 | `formas/pinceladas/pincelada-rosa-coral-3.png` | Pincelada longa de tinta acrílica, do rosa ao coral, com a textura das cerdas, em S deitado. | 1465 x 500 | pincelada, tinta, rosa, coral, traco | Passa por dentro das janelas de cards pretos (panorama), como no carrossel do Van Gogh. É imagem: pode ser rosa; o título nunca. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id nVxktVQYQD |
 | `formas/pinceladas/pincelada-rosa-coral.png` | Pincelada longa de tinta acrílica, do rosa ao coral, com a textura das cerdas, em S deitado. | 1462 x 554 | pincelada, tinta, rosa, coral, traco | Passa por dentro das janelas de cards pretos (panorama), como no carrossel do Van Gogh. É imagem: pode ser rosa; o título nunca. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id tC641bqmZJ |
 
+### fundos/pinturas (1)
+
+Folha: `fundos/pinturas/folha.jpg`
+
+| Arquivo | O que é | Tamanho | Tags | Dica | De onde veio |
+| --- | --- | --- | --- | --- | --- |
+| `fundos/pinturas/fundo-laranja-noite-estrelada.png` | Fundo laranja vivo com textura de pintura (a Noite Estrelada em tons de laranja), 2160 x 1350, para dois cards. | 2160 x 1350 | fundo, laranja, pintura, van-gogh, textura | O laranja do Van Gogh original (#FAA004 no alto, #F57A06 embaixo). Panorama dos cards 1 e 2. | Feito no computador a partir do quadro da biblioteca em 11/11/2026 (scratchpad fundo-laranja.mjs) |
+
 ### madeira/galhos (3)
 
 Folha: `madeira/galhos/folha.jpg`
@@ -146,7 +155,7 @@ Folha: `madeira/galhos/folha.jpg`
 | `madeira/galhos/galho-musgo-reto.png` | Galho reto e mais fino, todo coberto de musgo; horizontal. | 1234 x 273 | galho, tronco, madeira, musgo, floresta, selva | Para um bicho pousar ou para atravessar a divisa entre cards. O que tem peso precisa de apoio: deixe uma ponta saindo pela borda do card. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id vQRNByAa47 |
 | `madeira/galhos/galho-musgo-retorcido.png` | Galho grosso e retorcido coberto de musgo verde, com samambaias pequenas; horizontal, as duas pontas aparecem. | 1270 x 341 | galho, tronco, madeira, musgo, floresta, selva | Para um bicho pousar ou para atravessar a divisa entre cards. O que tem peso precisa de apoio: deixe uma ponta saindo pela borda do card. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id s7BpK2gl8e |
 
-### personagens/esculturas (3)
+### personagens/esculturas (4)
 
 Folha: `personagens/esculturas/folha.jpg`
 
@@ -154,9 +163,10 @@ Folha: `personagens/esculturas/folha.jpg`
 | --- | --- | --- | --- | --- | --- |
 | `personagens/esculturas/calango-marmore-terno-2.png` | Estátua de mármore branco de um lagarto (o Calango) de terno e gravata, do peito para cima, em três quartos olhando para a esquerda. | 652 x 934 | calango, estatua, marmore, terno, lagarto, museu | O Calango de mármore do carrossel do Van Gogh. Cortado pela borda de baixo (o peito some), para não flutuar. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id 6AFEMFliJO |
 | `personagens/esculturas/calango-marmore-terno-3.png` | Estátua de mármore branco de um lagarto (o Calango) de terno e gravata, do peito para cima, em três quartos olhando para a esquerda. | 582 x 954 | calango, estatua, marmore, terno, lagarto, museu | O Calango de mármore do carrossel do Van Gogh. Cortado pela borda de baixo (o peito some), para não flutuar. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id iGHuDud3uK |
+| `personagens/esculturas/calango-marmore-terno-grande.png` | Estátua de mármore do Calango de terno, do peito para cima, ampliada em dobro (1304 px). | 1304 x 1868 | calango, estatua, marmore, terno, grande | Grande (uns 900 px de largura), atravessando a divisa, com a base cortada pela borda de baixo; sem sombra. | calango-marmore-terno-2.png ampliado 2x (Real-ESRGAN) em 11/11/2026 |
 | `personagens/esculturas/calango-marmore-terno.png` | Estátua de mármore branco de um lagarto (o Calango) de terno e gravata, do peito para cima, em três quartos olhando para a esquerda. | 601 x 923 | calango, estatua, marmore, terno, lagarto, museu | O Calango de mármore do carrossel do Van Gogh. Cortado pela borda de baixo (o peito some), para não flutuar. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id P3CvcHc42C |
 
-### personagens/historicos (3)
+### personagens/historicos (4)
 
 Folha: `personagens/historicos/folha.jpg`
 
@@ -164,16 +174,19 @@ Folha: `personagens/historicos/folha.jpg`
 | --- | --- | --- | --- | --- | --- |
 | `personagens/historicos/van-gogh-3d-2.png` | Van Gogh em 3D, estilo filme de animação: chapéu de palha, barba ruiva, camisa azul e suspensório, da cintura para cima, olhar um pouco preocupado. | 653 x 1106 | van gogh, personagem, 3d, pintor, arte | Personagem histórico (domínio público). Na capa, na frente do quadro desfocado e atrás das abelhas. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id s7BpxMyl8e |
 | `personagens/historicos/van-gogh-3d-3.png` | Van Gogh em 3D, estilo filme de animação: chapéu de palha, barba ruiva, camisa azul e suspensório, da cintura para cima, olhar um pouco preocupado. | 693 x 1092 | van gogh, personagem, 3d, pintor, arte | Personagem histórico (domínio público). Na capa, na frente do quadro desfocado e atrás das abelhas. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id s7BpxdIl8e |
+| `personagens/historicos/van-gogh-3d-grande.png` | Van Gogh em 3D, chapéu de palha, barba ruiva, camisa azul, ampliado em dobro (1386 px). | 1386 x 2184 | van-gogh, personagem, 3d, grande | No meio da capa, com o quadro atrás, o chapéu um pouco por cima da headline e o corpo saindo pela moldura de baixo. | van-gogh-3d-3.png ampliado 2x (Real-ESRGAN) em 11/11/2026 |
 | `personagens/historicos/van-gogh-3d.png` | Van Gogh em 3D, estilo filme de animação: chapéu de palha, barba ruiva, camisa azul e suspensório, da cintura para cima, olhar um pouco preocupado. | 763 x 1099 | van gogh, personagem, 3d, pintor, arte | Personagem histórico (domínio público). Na capa, na frente do quadro desfocado e atrás das abelhas. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id O6atwE0ynm |
 
-### plantas/flores (3)
+### plantas/flores (5)
 
 Folha: `plantas/flores/folha.jpg`
 
 | Arquivo | O que é | Tamanho | Tags | Dica | De onde veio |
 | --- | --- | --- | --- | --- | --- |
 | `plantas/flores/girassol-caule-reto.png` | Girassol de frente, caule mais reto e duas folhas. | 781 x 922 | girassol, flor, amarelo, van gogh | O girassol do Van Gogh: pode atravessar a divisa entre dois cards. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id nVxKZSaYQD |
+| `plantas/flores/girassol-de-frente-grande.png` | Girassol de frente, caule curvo e duas folhas, ampliado em dobro (1564 px). | 1564 x 1906 | girassol, flor, amarelo, van-gogh, grande | Para a cabeça ocupar metade da altura do card (uns 800 px), como no Van Gogh original: atravessando a divisa, o caule cortado pela borda de baixo. | girassol-de-frente.png ampliado 2x (Real-ESRGAN) em 11/11/2026 |
 | `plantas/flores/girassol-de-frente.png` | Girassol de frente, com caule curvo e duas folhas. | 782 x 953 | girassol, flor, amarelo, van gogh | O girassol do Van Gogh: pode atravessar a divisa entre dois cards. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id ksMcHC816B |
+| `plantas/flores/girassol-tres-quartos-grande.png` | Girassol em três quartos, caule curvo e duas folhas, ampliado em dobro (1350 px). | 1350 x 1846 | girassol, flor, amarelo, van-gogh, grande | O girassol saindo do quadro, na frente da headline do último card. | girassol-tres-quartos.png ampliado 2x (Real-ESRGAN) em 11/11/2026 |
 | `plantas/flores/girassol-tres-quartos.png` | Girassol grande com caule curvo e duas folhas, em três quartos. | 675 x 923 | girassol, flor, amarelo, van gogh | O girassol do Van Gogh: pode atravessar a divisa entre dois cards. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id aFZ6IVmfSh |
 
 ### plantas/folhas (6)

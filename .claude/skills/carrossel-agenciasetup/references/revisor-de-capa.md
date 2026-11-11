@@ -51,7 +51,7 @@ Leia a peça inteira em voz alta, como quem nunca viu.
 18. O assunto passa um pouquinho por cima do título, sem tampar a leitura (no máximo uma letra e meia, nunca o começo)? Dá um charme.
 19. A luz vem de um lugar só e parece uma cena, não um recorte colado?
 20. Quantos planos existem? (`profundidade.md`) Nas capas com foto em perspectiva forte, a própria foto basta.
-20b. Carrossel infinito (`panorama` ou `travessia`): abra a `larga.jpg` (os cards colados em tamanho real). A emenda casa na divisa (nada pula, nada some, nenhum degrau)? O que atravessa por cima da moldura está apoiado ou cortado pela borda de baixo (bicho flutuando reprova)? Cobre algum texto, o cabeçalho de que precisa ou o selo? Um elemento grande por divisa, e os pequenos (pétalas, abelhas) poucos, em tamanhos e focos diferentes? Cada card ainda faz sentido sozinho, para quem para no meio do arrastar? Abra também o `profundidade.jpg` (o mapa: mais claro, mais perto da lente): o desfoque e a sombra de cada elemento batem com a distância dele? Há dois exemplares da mesma coisa nítidos e de tamanhos diferentes no mesmo plano (um vai parecer gigante)? Tem elemento demais (o dono: "exagerou na quantidade de coisas")? Vagalume é o inseto com a cauda acesa, não ponto de luz?
+20b. Carrossel infinito (`panorama` ou `travessia`): abra a `larga.jpg` (os cards colados em tamanho real). A emenda casa na divisa (nada pula, nada some, nenhum degrau)? O que atravessa por cima da moldura está apoiado ou cortado pela borda de baixo (bicho flutuando reprova)? Cobre algum texto, o cabeçalho de que precisa ou o selo? Um elemento grande por divisa, e os pequenos (pétalas, abelhas) poucos, em tamanhos e focos diferentes? Cada card ainda faz sentido sozinho, para quem para no meio do arrastar? Abra também o `profundidade.jpg` (o mapa: mais claro, mais perto da lente): o desfoque e a sombra de cada elemento batem com a distância dele? Há dois exemplares da mesma coisa nítidos e de tamanhos diferentes no mesmo plano (um vai parecer gigante)? Tem elemento demais (o dono: "exagerou na quantidade de coisas")? Vagalume é o inseto com a cauda acesa, não ponto de luz? Tem sombra em algo que voa ou sai da borda de baixo (abelha, girassol, busto)? Sombra só no que está perto de uma superfície ("a sombra na abelha ficou artificial"). O elemento da divisa é grande de verdade (a cabeça do girassol do Van Gogh tinha metade da altura do card)? Se o post refaz um original do dono, a cor do fundo foi medida nele e bate?
 
 ### 4. Poluição
 
@@ -61,10 +61,10 @@ Leia a peça inteira em voz alta, como quem nunca viu.
 
 ### 5. Título, fonte e tamanho
 
-24. Título alinhado. Duas linhas formam um bloco com a mesma largura. Floreio tem que parecer intencional.
+24. Título alinhado. Duas linhas formam um bloco com a mesma largura, de preferência a do elemento principal (o quadro atrás do personagem), o que abre espaço ao lado do assunto para o texto pequeno. Floreio tem que parecer intencional.
 25. Quebra de linha só onde faz sentido: Back / grounds e Hand / written podem; Manu / scritas não.
 26. Tamanho certo: nem miúdo ("tá pequena, pode ser maior") nem tomando a arte ("tá muito grande, dava pra diminuir"). Em tamanho de celular (300 px), lê-se em 1 segundo?
-27. Longe da margem de cima: nunca colado no cabeçalho ("é feio").
+27. Longe da margem de cima: nunca colado no cabeçalho ("é feio"). Meça: a margem de cima da headline é igual ou um pouco maior que a dos lados ("o que você faz costuma ficar muito colado"). Se o assunto encosta na headline, é só um pouco (uns 15 px), e o texto pequeno não fica embaixo dele nem sobre uma parte escura.
 28. **Sem sombra no texto** ("sombra é feio"), em todas as capas e chamadas.
 29. Centralizado de verdade: floreio pesa pouco, então desloque o conjunto para ele (`dx`) para a palavra parecer no centro.
 30. Fonte bonita, e a letra conta o assunto quando dá (manuscritas em letra de floreio). Caveat Brush foi "feio pra caralho".

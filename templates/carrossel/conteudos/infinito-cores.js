@@ -25,23 +25,30 @@ window.CARROSSEL = {
   capas: [],
   palavra: 'CORES',
   travessia: [
-    // O tronco (z 0,35): bem maior, só a beira à vista, sai de trás das folhas da capa e a ponta sobe por cima do MEL,
-    // com a sombra caindo no card branco. O musgo com o matiz girado para o verde-água da capa.
-    { arq: `${B}madeira/galhos/galho-musgo-retorcido.png`, x: 690, y: 1105, w: 1330, rot: -10, z: 0.35, acima: true, matiz: 48, sat: 0.55, luz: 0.72 },
+    // O tronco (z 0,35): sobe da borda de baixo do card 2 (a ponta de trás fica no vão preto, nunca embaixo da janela
+    // da capa) e a ponta passa por cima do MEL, com a sombra caindo no card branco. O musgo com o matiz girado para o
+    // verde-água da capa.
+    { arq: `${B}madeira/galhos/galho-musgo-retorcido.png`, x: 1115, y: 1100, w: 930, rot: -22, z: 0.35, acima: true, sombra: true, matiz: 48, sat: 0.55, luz: 0.72 },
     // A samambaia (z 0,6): maior, mais perto que o tronco, embaixo no card preto.
-    { arq: `${B}plantas/folhas/folha-samambaia-diagonal.png`, x: 2020, y: 1130, w: 980, rot: 12, z: 0.6, acima: true, matiz: 6, sat: 1.15, luz: 0.85 },
+    { arq: `${B}plantas/folhas/folha-samambaia-diagonal.png`, x: 2020, y: 1130, w: 980, rot: 12, z: 0.6, acima: true, matiz: 6, sat: 1.3, luz: 1 },
     // A morpho no plano dos cartões (z 0): nítida, por cima de tudo, do branco para o preto, com a sombra nos cartões.
-    { arq: `${B}animais/borboletas/borboleta-morpho-azul-tres-quartos.png`, x: 2010, y: 500, w: 330, rot: -10, z: 0, acima: true },
-    // A mesma borboleta, colada na lente (z 0,9): grande, muito desfocada, com a sombra grande e fraca no card.
-    { arq: `${B}animais/borboletas/borboleta-morpho-azul-de-cima.png`, x: 1780, y: -300, w: 900, rot: 24, z: 0.9, luz: 0.92, acima: true },
-    // Vagalumes de verdade, só no escuro: um nítido perto do AZUL REAL (no tamanho da borboleta) e um perto da lente.
-    ...vagalume('lado', 2850, 215, 150, { espelho: true }),
-    ...vagalume('lado', 2860, 900, 460, { z: 0.7, acima: true, brilho: 1.2 }),
+    { arq: `${B}animais/borboletas/borboleta-morpho-azul-tres-quartos.png`, x: 2010, y: 500, w: 330, rot: -10, z: 0, acima: true, sombra: true },
+    // A mesma borboleta, colada na lente (z 0,9): grande, muito desfocada, com a sombra grande e fraca no card. Mais clara e
+    // um pouco transparente (o branco atrás vaza pela borda desfocada, como na lente; escura, a borda vira fumaça cinza) e
+    // com a cor da nítida.
+    { arq: `${B}animais/borboletas/borboleta-morpho-azul-de-cima.png`, x: 1860, y: -300, w: 900, rot: 24, z: 0.9, luz: 1.12, sat: 0.65, op: 0.86, acima: true, sombra: true },
+    // Vagalumes de verdade, só no escuro: um nítido perto do AZUL REAL (no tamanho de verdade perto da morpho: uns 90 px
+    // contra 330) e um perto da lente, embaixo do CREME, com a luz da cauda dentro do card.
+    ...vagalume('lado', 2880, 230, 90, { espelho: true, brilho: 1.4 }),
+    ...vagalume('lado', 2760, 1050, 320, { z: 0.75, acima: true, brilho: 1.2 }),
   ],
   slides: [
     {
-      // A capa aprovada (cores-v2), sem mudar nada (a poeira sorteada como a dela).
-      tipo: 'capa', tema: 'preto', poeiraDe: 'cores-v2',
+      // A capa aprovada (cores-v2), sem mudar nada (a poeira sorteada como a dela). Nada atravessa a capa
+      // (`semTravessia`): assim ela fica com a textura do tema dela, igual à aprovada.
+      tipo: 'capa', tema: 'preto', poeiraDe: 'cores-v2', semTravessia: true,
+      // A capa aprovada continua na Anton (feita antes da Calango Condensed, 11/11/2026).
+      vars: { 'fonte-condensada': "'Anton', sans-serif", 'peso-condensada': 400 },
       fundoFoto: { arq: 'tucano-v2-cena.jpg', x: -60, y: -78, w: 1200 },
       titulo: {
         semSombra: true, preEspaco: 14, preLado: 'esquerda',
@@ -54,7 +61,7 @@ window.CARROSSEL = {
       selo: { aponta: '.pos-titulo .serifa', ponto: [0.9, 0.7], pequeno: true },
       frente: [{ arq: 'tucano-v2-folhas.png', x: -60, y: -78, w: 1200, dentro: true }],
     },
-    { tipo: 'miolo', tema: 'branco', rotulo: '1 de 6', semTrilho: true, prova: { tipo: 'combo', a: { nome: 'Vinho', hex: '#3B0A1E' }, b: { nome: 'Mel', hex: '#F2C879' }, clima: 'Elegante · Misterioso' } },
-    { tipo: 'miolo', tema: 'preto', rotulo: '2 de 6', semTrilho: true, prova: { tipo: 'combo', a: { nome: 'Azul real', hex: '#1238D6' }, b: { nome: 'Creme', hex: '#F6EFE0' }, clima: 'Clássico · Confiável' } },
+    { tipo: 'miolo', tema: 'branco', rotulo: '1 de 6', semTrilho: true, semPoeira: [[300, 230, 480, 110]], prova: { tipo: 'combo', a: { nome: 'Vinho', hex: '#3B0A1E' }, b: { nome: 'Mel', hex: '#F2C879' }, clima: 'Elegante · Misterioso' } },
+    { tipo: 'miolo', tema: 'preto', rotulo: '2 de 6', semTrilho: true, semPoeira: [[300, 230, 480, 110]], prova: { tipo: 'combo', a: { nome: 'Azul real', hex: '#1238D6' }, b: { nome: 'Creme', hex: '#F6EFE0' }, clima: 'Clássico · Confiável' } },
   ],
 };

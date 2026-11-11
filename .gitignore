@@ -57,3 +57,8 @@ admin/src/img/*.webp
 /templates/biblioteca/**/*.png
 /templates/biblioteca/**/*.jpg
 /templates/biblioteca/**/*.webp
+
+# As fontes da agência (são do dono; o repositório é público): só o fontes.css e o LEIA.md entram
+templates/fontes/*.woff2
+templates/fontes/*.otf
+templates/fontes/*.ttf

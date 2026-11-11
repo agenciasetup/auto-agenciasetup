@@ -193,7 +193,10 @@
     if (t.z === undefined || t.halo) return t;
     const z = Math.max(-1, Math.min(1, Number(t.z) || 0));
     const blur = t.blur ?? Math.round(z > 0 ? 30 * z * z + 6 * z : -10 * z);
-    const sombra = t.sombra === false || z < 0 ? false
+    // Sombra só quando pedida (`sombra: true` ou um objeto), para o que está perto de uma superfície: a borboleta sobre o
+    // cartão, o tronco sobre o card. O que voa ou sai da borda de baixo (abelha, girassol, busto) fica sem: o dono, em
+    // 11/11/2026, "a sombra na abelha ficou artificial... o girassol tem uma sombra artificial, o busto também".
+    const sombra = !t.sombra || z < 0 ? false
       : (typeof t.sombra === 'object' ? t.sombra : { x: Math.round(18 + 150 * z), y: Math.round(26 + 190 * z), blur: Math.round(26 + 110 * z), op: Math.max(0.12, Math.round((0.42 - 0.26 * z) * 100) / 100) });
     return { ...t, z, blur, sombra, comZ: true };
   }
@@ -202,9 +205,11 @@
     if (ETAPA < 3) return corDe(t).join(' ') || 'none';
     const f = [];
     if (t.blur) f.push(`blur(${t.blur}px)`);
-    if (t.sombra !== false && (!t.blur || t.comZ)) {
+    if (t.comZ ? t.sombra : t.sombra !== false && !t.blur) {
       const p = { x: 22, y: 34, blur: 38, op: 0.42, ...(typeof t.sombra === 'object' ? t.sombra : {}) };
-      f.push(`drop-shadow(0 4px 5px rgba(0,0,0,${Math.min(0.6, p.op + 0.1)}))`, `drop-shadow(${p.x}px ${p.y}px ${p.blur}px rgba(0,0,0,${p.op}))`);
+      // A sombra de contato (curta e escura) só no que encosta na superfície; o que voa acima dela fica só com a larga.
+      if (!t.comZ || t.z <= 0.05) f.push(`drop-shadow(0 4px 5px rgba(0,0,0,${Math.min(0.6, p.op + 0.1)}))`);
+      f.push(`drop-shadow(${p.x}px ${p.y}px ${p.blur}px rgba(0,0,0,${p.op}))`);
     }
     return [...f, ...corDe(t)].join(' ') || 'none';
   }
@@ -234,7 +239,15 @@
     const todas = s.semTravessia ? [] : listaDe(C.travessia);
     // Luz por cima (11/11/2026, a camada 4 da capa do Van Gogh): { halo: true, x, y (o centro), d (o diâmetro), cor, op }.
     // Vai numa camada própria em modo tela, que clareia o que está embaixo (o assunto, o título, o fundo).
-    const halos = todas.filter((t) => t.halo).map((t) => `<div class="halo-luz" style="${estilo({ left: t.x - dx - (t.d || 900) / 2, top: t.y - (t.d || 900) / 2, width: t.d || 900, height: t.d || 900, opacity: t.op ?? 0.5, background: `radial-gradient(circle, ${t.cor || '#fff1c2'} 0%, transparent 68%)` })}"></div>`).join('');
+    // A receita do dono (11/11/2026): "uma bola desfocada na cor do fundo (amarelo na maioria das vezes), com o centro
+    // dela um amarelo mais claro. Muda o modo de mesclagem pra tela, ou divisão, ou sobrepor. Diminui a opacidade...
+    // aumenta o desfoque se precisar pra ficar sutil." `cor` é o centro, `borda` a cor do fundo, `mistura` o modo
+    // ('screen', 'overlay', 'color-dodge', 'soft-light'; o 'overlay' e o 'soft-light' deixam o preto e o branco como
+    // estão, o efeito do blend-if do Photoshop) e `blur` o desfoque. Uma camada por modo, presa na janela (a luz não vaza
+    // para a moldura preta).
+    const bola = (t) => `<div class="halo-luz" style="${estilo({ left: t.x - dx - j - (t.d || 900) / 2, top: t.y - j - (t.d || 900) / 2, width: t.d || 900, height: t.d || 900, opacity: t.op ?? 0.5, filter: t.blur && ETAPA >= 3 ? `blur(${t.blur}px)` : 'none', background: t.borda ? `radial-gradient(circle, ${t.cor || '#fff4b0'} 0%, ${t.borda} 42%, transparent 70%)` : `radial-gradient(circle, ${t.cor || '#fff1c2'} 0%, transparent 68%)` })}"></div>`;
+    const modos = [...new Set(todas.filter((t) => t.halo).map((t) => t.mistura || 'screen'))];
+    const halos = modos.map((m) => `<div class="camada c-luz" style="mix-blend-mode:${m}">${todas.filter((t) => t.halo && (t.mistura || 'screen') === m).map(bola).join('')}</div>`).join('');
     const pecas = todas.filter((t) => !t.halo).map(comProfundidade);
     // No mapa de profundidade, cada elemento leva o número da distância escrito em cima.
     const marca = (t) => (PROF && !t.vagalume ? `<div class="rotulo-z" style="${estilo({ left: t.x - dx + (t.w || 0) / 2 - 60, top: Math.max(8, Math.min(1300, t.y + (t.w || 0) * 0.3)) })}">z ${t.z ?? 0}${t.blur ? ` · desfoque ${t.blur}` : ''}</div>` : '');
@@ -257,16 +270,21 @@
     // partes.classe: classe a mais no slide (ex.: 'sangra', a capa até a borda, sem a moldura preta; 05/11/2026).
     const larga = telaLarga(partes);
     const infinito = (larga.travessia || larga.acima || larga.luz ? ' larga' : '') + (PROF ? ' profundidade' : '');
-    return `<div class="slide tema-${tema} etapa-${ETAPA}${infinito}${partes.classe ? ` ${partes.classe}` : ''}${SO ? ` so so-${SO}` : ''}${ATE ? ` ate ate-${ATE}` : ''}">
+    // `vars` no slide: troca as cores do tema só nele (ex.: { acento: '#5c1d00' }, o destaque escuro sobre o laranja
+    // pintado, onde o laranja do tema some).
+    const sv = ((window.CARROSSEL || {}).slides || [])[n - 1] || {};
+    const vars = sv.vars ? ` style="${Object.entries(sv.vars).map(([k, v]) => `--${k}:${v}`).join(';')}"` : '';
+    return `<div class="slide tema-${tema} etapa-${ETAPA}${infinito}${partes.classe ? ` ${partes.classe}` : ''}${SO ? ` so so-${SO}` : ''}${ATE ? ` ate ate-${ATE}` : ''}"${vars}>
       <div class="janela">
         <div class="camada c0">${partes.c0 || ''}${larga.panorama}</div>
         <div class="camada c1">${partes.c1 || ''}</div>
         <div class="camada c-titulo">${partes.atras || ''}</div>
         <div class="camada c2">${partes.c2 || ''}</div>
+        ${sv.cantos && ETAPA >= 3 ? `<div class="cantos" style="--cantos-blur:${sv.cantos.blur ?? 7}px;--cantos-de:${Math.round((sv.cantos.de ?? 0.58) * 100)}%"></div>` : ''}
       </div>
       <div class="camada c3">${partes.c3 || ''}</div>
       ${larga.travessia ? `<div class="camada c-trav">${larga.travessia}</div>` : ''}
-      ${larga.luz ? `<div class="camada c-luz">${larga.luz}</div>` : ''}
+      ${larga.luz || ''}
       <div class="camada c4">${partes.c4 || ''}</div>
       ${larga.acima ? `<div class="camada c-trav acima">${larga.acima}</div>` : ''}
       <div class="camada c5">${partes.c5 || ''}</div>
@@ -449,7 +467,7 @@
       // letra de topo redondo em tamanho grande (o 3, o G e o S de "3 REGRAS" saíam com o topo cortado reto, 08/11/2026).
       const ft = t.folgaTopo || 0;
       // `scriptForte`: engrossa o floreio quando ele some ao lado da condensada (o C fino de COMBOS se lia como enfeite).
-      const linha = `<div class="linha" style="padding:${FOLGA}px">${t.script ? `<span class="script" style="font-family:'${t.fonteScript || 'Great Vibes'}',cursive;font-size:${t.scriptTam}px;margin-right:calc(${enc}em - 0.4em)${t.scriptForte ? `;-webkit-text-stroke:${t.scriptForte}px ${t.scriptCor || '#ff9a00'}` : ''}">${t.script}</span>` : ''}<span class="condensada" style="font-size:${t.tam}px${t.fonte1 ? `;font-family:'${t.fonte1}',cursive;text-transform:none;line-height:1;padding:.3em .3em;margin:-.3em -.3em` : ''}${t.cor1 ? `;background:radial-gradient(rgba(0,0,0,.05) 30%,transparent 34%) 0 0/4.5px 4.5px,${t.cor1};-webkit-background-clip:text;background-clip:text` : ''}${ft ? `;padding-top:${ft}em;margin-top:-${ft}em` : ''}">${t.condensada}</span>${t.antes ? `<span class="condensada" style="order:-1;font-size:${t.tam}px;margin-right:0.18em${ft ? `;padding-top:${ft}em;margin-top:-${ft}em` : ''}">${t.antes}</span>` : ''}</div>`;
+      const linha = `<div class="linha" style="padding:${FOLGA}px">${t.script ? `<span class="script" style="font-family:'${t.fonteScript || 'Calango Signature'}',cursive;font-size:${t.scriptTam}px;margin-right:calc(${enc}em - 0.4em)${t.scriptForte ? `;-webkit-text-stroke:${t.scriptForte}px ${t.scriptCor || '#ff9a00'}` : ''}">${t.script}</span>` : ''}<span class="condensada" style="font-size:${t.tam}px${t.fonte1 ? `;font-family:'${t.fonte1}',cursive;text-transform:none;line-height:1;padding:.3em .3em;margin:-.3em -.3em` : ''}${t.cor1 ? `;background:radial-gradient(rgba(0,0,0,.05) 30%,transparent 34%) 0 0/4.5px 4.5px,${t.cor1};-webkit-background-clip:text;background-clip:text` : ''}${ft ? `;padding-top:${ft}em;margin-top:-${ft}em` : ''}">${t.condensada}</span>${t.antes ? `<span class="condensada" style="order:-1;font-size:${t.tam}px;margin-right:0.18em${ft ? `;padding-top:${ft}em;margin-top:-${ft}em` : ''}">${t.antes}</span>` : ''}</div>`;
       // `antes`: parte da palavra grande que vem antes do floreio ("30" + D cursivo + "IAS"). Fica depois no HTML e vai para
       // a frente pelo flex, para a âncora das linhas e do selo continuar sendo a condensada principal.
       const perfil = perfilFoco(t.foco);
@@ -469,6 +487,10 @@
       const titulo2 = t.linha2 ? `<div class="titulo-capa titulo-capa-2${t.semSombra !== false ? ' sem-sombra' : ''}" style="top:${(t.y2 ?? t.y + t.tam * 0.98) - JANELA - FOLGA}px${t.dx2 ? `;margin-left:${t.dx2}px` : ''}"><div class="progressivo">${progressivo(linha2, t.foco2 ? perfilFoco(t.foco2) : perfil, { folga: FOLGA })}</div></div>` : '';
       // lado 'meio': centrado na palavra condensada (sem o floreio), que é onde o olho vê o centro (05/11/2026).
       const ancora = (lado, posicao, espaco) => `data-ancora="${t.linha2 && posicao === 'abaixo' ? '.titulo-capa-2' : '.titulo-capa'} .progressivo .condensada"${lado === 'centro' ? ' data-centro=".titulo-capa .progressivo .linha"' : lado === 'meio' ? ' data-centro=".titulo-capa .progressivo .condensada"' : ''} data-lado="${lado === 'meio' ? 'centro' : lado}" data-posicao="${posicao}" data-espaco="${espaco}"`;
+      // `posFrente`: o texto pequeno de baixo ("um designer") fica na frente do assunto, e o assunto pode passar por cima
+      // da headline sem esconder o texto (o Van Gogh do dono, 11/11/2026: o chapéu cobre o pé do CONTRATE e o "um
+      // designer" fica por cima do chapéu).
+      const posTitulo = t.pos ? `<div class="pos-titulo${t.posFrente ? ' na-frente' : ''}" style="font-size:${t.posTam || 56}px" ${ancora(t.posLado || 'direita', 'abaixo', t.posEspaco ?? 4)}>${t.pos}</div>` : '';
       const n = s.notificacao;
       return montar(tema, {
         classe: s.sangra ? 'sangra' : '',
@@ -476,11 +498,11 @@
         c1: camada1(s),
         atras: `${reguasAtras(s)}${titulo}${titulo2}
           <div class="pre-titulo" ${ancora(t.preLado || 'direita', 'acima', t.preEspaco ?? 6)}>${t.pre}</div>
-          ${t.pos ? `<div class="pos-titulo" style="font-size:${t.posTam || 56}px" ${ancora(t.posLado || 'direita', 'abaixo', t.posEspaco ?? 4)}>${t.pos}</div>` : ''}`,
+          ${t.pos && !t.posFrente ? posTitulo : ''}`,
         c2: `${s.assunto ? assuntoFoto(s.assunto) : ''}${folhas((s.nevoa || []).map((f) => ({ ...f, x: f.x - JANELA, y: f.y - JANELA })))}`,
         c3: `${folhas(s.folhas)}${bokeh(s.bokeh)}${n ? notificacao(n, '', `top:${n.y}px;${n.w ? `width:${n.w}px;` : ''}${n.x != null ? `left:${n.x}px;transform:none;` : ''}`) : ''}${(s.blocos || []).map((b) => BLOCOS[b.tipo](b)).join('')}`,
         // s.semRegua: capa sem a régua (para recortar a capa de perto como prova de outro slide, ex.: as etapas).
-        c4: `${cromo()}${topo(ctx.marca)}${s.reguasAtras || s.semRegua ? '' : reguas()}${s.selo ? selo(s.selo) : ''}`,
+        c4: `${cromo()}${topo(ctx.marca)}${s.reguasAtras || s.semRegua ? '' : reguas()}${s.selo ? selo(s.selo) : ''}${t.posFrente ? posTitulo : ''}`,
         // s.frente: o que fica entre a lente e tudo o mais (a folha desfocada da própria foto, por cima da régua e do
         // cabeçalho), em coordenadas da página. Pedido do dono em 05/11/2026: "dar sensação de profundidade".
         // `dentro: true`: fica por cima da régua, mas cortado pela moldura (a folha da cena). Sem ele, o objeto pode
