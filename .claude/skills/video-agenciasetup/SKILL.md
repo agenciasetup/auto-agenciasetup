@@ -34,6 +34,8 @@ Pasta do vídeo: `videos\pt-reel-<n>` (o próximo número livre). Comece de um m
 
 Para variar o movimento (desde 11/11/2026, o dono mandou levar para o motor): gancho com `entra: 'letras'` e `marca: true`, troca de cena com `transicao: 'giro'`, palavra-chave com `anota` (círculo à mão com nota), `entra: 'linhas'` no título do passo, o elemento `antes-depois` (post comum contra post no padrão) e a função `gsap` de uma cena. Tudo no vocabulário do estúdio (`references/vocabulario.md` da skill `video-com-claude`); o teste com tudo junto é `videos\teste-motor-novo`. Use um ou dois por vídeo, não todos.
 
+**O começo prende no primeiro segundo** (crítica do dono em 11/11/2026: "muito estático, muito texto e fundo genérico, não tem profundidade, não tem impacto"). O quadro zero já tem movimento e coisa de verdade; duas ou três palavras grandes, no máximo (a frase inteira está na voz e na legenda); fundo com profundidade (foto, camadas em 3D, algo desfocado na frente, câmera andando), nunca gradiente liso; e um golpe no ritmo da fala (a palavra batendo, tremida, clarão, som de impacto). Monte e confira o começo antes do resto. Exemplo: a cena 1 de `videos\teste-motor-novo` (posts reais voando em 3D e "só aprovo." batendo).
+
 1. Imagens reais em `midia\` (posts e carrosséis de verdade: `_local\carrossel\<nome>\`, `templates\carrossel\`, posts do perfil em `_local\ig-perfil`). Nada de número, depoimento ou resultado inventado; tela desenhada (conversa, botão) é ilustração e não pode parecer print real de cliente.
 2. `node ferramentas/montar.mjs videos/pt-reel-<n> --falas`
 3. A voz, com regravação até o Whisper ouvir certo (umas 1,5 min):
