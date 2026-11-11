@@ -673,6 +673,8 @@ function porQueNaoPega(p, a) {
   // O teste de estilo da semana não é obra para o Executor: o Designer aplica nas próximas capas, e o Diretor de arte
   // mede e fecha o cartão sozinho (agentes/diretor-de-arte.js). Na fila, ele gastaria a rodada de um dia à toa.
   if (p.agente_id === 'diretor-de-arte') return 'É um teste de estilo: o Designer aplica nas próximas capas, e o Diretor de arte mede e fecha o cartão.';
+  // O roteiro aprovado vira vídeo na tarefa "video-do-roteiro" (Windows, 14h; scripts/video-vez.mjs escolhe a vez).
+  if (p.agente_id === 'roteirista') return 'É um roteiro de vídeo: a tarefa do vídeo produz às 14h, um por dia, e entrega em rascunho.';
   if (p.esforco !== 'p') return `Só cartão pequeno entra na fila do Executor. Este é ${p.esforco === 'g' ? 'grande' : 'médio'}: peça ao Claude para fazer.`;
   if (!a) return null;
   if (a.estado === 'falta_publicar') return 'Já foi feito no projeto. Falta publicar.';

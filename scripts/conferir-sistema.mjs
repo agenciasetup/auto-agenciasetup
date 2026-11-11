@@ -295,6 +295,17 @@ confere('com o turno do dia (fez, saiu sem cartão ou ainda está trabalhando), 
 confere('no dia em que o Executor entra no cadastro a tarefa não é cobrada; no dia seguinte, sim', doExecutor([], '17:07', executor({ criado_em: '2026-11-12T19:00:00Z' })).length === 0 && doExecutor([], '08:07', executor({ criado_em: '2026-11-11T19:00:00Z' })).length === 1);
 confere('as outras tarefas continuam cobradas quando o agente não aparece na lista', direct([], '11:07', executor()).length === 1);
 
+// ---------------------------------------------------------------- a tarefa do vídeo do roteiro (14h)
+// Ela grava turno todo dia (sem_trabalho quando não tem roteiro aprovado), com dados.tarefa = 'video-do-roteiro'.
+console.log('\nA tarefa "video-do-roteiro" (o vídeo do roteiro aprovado, todo dia às 14h):');
+const doVideo = (turnos, hhmm) => tarefasQueNaoRodaram(turnos, cadastro, hora(hhmm)).filter((x) => x.tipo === 'nao-rodou:video');
+const deVideo = (hhmm, extra = {}) => ({ id: 960, agente_id: 'animador', status: 'sem_trabalho', inicio: iso(hora(hhmm)), fim: iso(hora(hhmm)), tarefa: 'video-do-roteiro', ...extra });
+a = doVideo([], '15:07');
+confere('sem turno do dia: alerta às 15h07, com o nome da tarefa', a.length === 1 && a[0].titulo === 'A tarefa do vídeo do roteiro não rodou hoje' && /Ela está agendada para as 14h/.test(a[0].corpo) && /"video-do-roteiro"/.test(a[0].acao), a);
+confere('antes das 14h45 (14h mais 45 minutos) ainda não cobra', doVideo([], '14:40').length === 0);
+confere('dia sem roteiro (sem_trabalho), dia de vídeo (ok) e produção em andamento contam como rodou', ['sem_trabalho', 'ok', 'rodando'].every((s) => doVideo([deVideo('14:05', { status: s })], '15:07').length === 0));
+confere('turno de vídeo feito à mão (sem a tarefa marcada) não conta como a tarefa', doVideo([deVideo('11:00', { tarefa: null })], '15:07').length === 1);
+
 // ---------------------------------------------------------------- a rodada inteira do Zelador
 console.log('\nA rodada do Zelador, com banco de mentira:');
 const parados = ['vendedor-calango', 'vendedor-pergunta', 'redator-de-frase', 'redator-de-carrossel']; // em pausa: as tarefas do computador não são cobradas aqui
@@ -377,6 +388,8 @@ mundo.cai = null;
 confere('se a leitura do sinal falhar, não afirma nada sobre a cópia (e segue com o resto)', r.alertas.length === 0 && r.leu.copia_do_banco === null && r.leu.atendente_em_ensaio === false, r.alertas);
 // Alerta menor: a cópia saiu, com um aviso dentro. Avisa uma vez, não segura o turno "em ordem" e volta depois de 3 dias.
 tabelas.config.push(copia);
+// A tarefa do vídeo do roteiro rodou nesse dia (sem roteiro para produzir): o assunto continua sendo só a cópia.
+tabelas.turnos.push({ id: 970, agente_id: 'animador', status: 'sem_trabalho', inicio: iso(maisTarde + 2 * HORA), fim: iso(maisTarde + 2 * HORA), tarefa: 'video-do-roteiro' });
 const comAviso = (em) => { copia.valor = { ...sinal(9 - (em - quando) / HORA).valor, avisos: ['O extra auth-users não foi copiado: 401'] }; resumoEmDia(em); };
 comAviso(maisTarde);
 r = await rodarZ(maisTarde);

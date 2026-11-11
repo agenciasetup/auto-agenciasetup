@@ -74,7 +74,8 @@ const COPIA_PARADA = 36 * HORA;
 const DO_SISTEMA = { papel: 'administrador' };
 
 // As tarefas agendadas do Claude no computador e a hora de Brasília em que cada uma começa (as mesmas do app, em
-// Agendadas: direct-followup, posts-de-frase-do-dia, carrossel-em-alta-do-dia e fazer-aprovadas). agentes: basta um deles ter turno.
+// Agendadas: direct-followup, posts-de-frase-do-dia, carrossel-em-alta-do-dia, fazer-aprovadas e video-do-roteiro).
+// agentes: basta um deles ter turno.
 // horas: uma rodada em cada hora marcada. diaria: uma vez por dia. Para as diárias a hora é só o ponto de partida: o
 // Zelador aprende, nos turnos, a que horas o turno costuma chegar (horaDeCostume).
 // tarefa: desde 10/11/2026 o Redator e o Designer trabalham nas duas tarefas de post (frase às 8h, carrossel às 10h), e
@@ -109,6 +110,15 @@ const TAREFAS = [
     agentes: ['executor'], diaria: 7, minuto: 10, admitido: true,
     acao: 'Ver se o computador ficou ligado de manhã e rodar a tarefa "fazer-aprovadas" à mão. Para desligar de propósito, pausar o Executor no Escritório.',
     ganho: 'O cartão aprovado pequeno do dia é feito sem ninguém precisar pedir.',
+  },
+  {
+    // O vídeo do roteiro aprovado (desde 10/11/2026, às 14h). Ela grava turno todo dia, mesmo sem roteiro para produzir
+    // (sem_trabalho, com o motivo), sempre com dados.tarefa = 'video-do-roteiro'. Os turnos dos vídeos feitos à mão não
+    // têm tarefa e não contam (sem legado).
+    tipo: 'nao-rodou:video', nome: 'A tarefa do vídeo do roteiro', problema: 'A tarefa do vídeo do roteiro está falhando',
+    agentes: ['locutor', 'animador', 'revisor-de-video'], tarefa: 'video-do-roteiro', diaria: 14,
+    acao: 'Ver se o computador ficou ligado à tarde e rodar a tarefa "video-do-roteiro" à mão. Sem roteiro aprovado, ela só confere a mesa e sai.',
+    ganho: 'O roteiro que você aprovou vira vídeo em rascunho no mesmo dia, sem ninguém precisar lembrar.',
   },
 ];
 

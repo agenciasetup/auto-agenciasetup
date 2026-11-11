@@ -9,6 +9,8 @@ O caminho: o **Caçador de virais** acha o Short que saiu da curva, a **Roteiris
 
 Quem faz cada parte (sala Vídeo do Escritório, todos no Windows): **Locutor** (Arão S.) narra, **Animador** (Noemi T.) monta e renderiza, **Revisor de vídeo** (Gideão F.) assiste aos quadros e corrige. No fim, um turno de cada um no Escritório.
 
+**Sozinho, desde 10/11/2026:** a tarefa agendada `video-do-roteiro` (Windows, todo dia às 14h) segue esta skill para o roteiro aprovado mais antigo, um vídeo por rodada e até 5 em 7 dias, só com o limite semanal do Claude abaixo de 80%. A vez sai de `node scripts/video-vez.mjs` (só lê o banco): ele confere o roteiro contra as regras e o preço de hoje, vê se a placa está livre, sugere a música do rodízio e o número do Reel. Roteiro que esbarra numa regra não é produzido: o dono recebe o aviso e decide. Feito à mão, fora da tarefa, rode o `video-vez.mjs --travar <cartão>` antes de usar a placa e o `--soltar` no fim, para a tarefa não começar outro vídeo junto.
+
 Leia antes: a memória `reels-e-voz.md` (o que o dono aprovou e reprovou em vídeo) e `clonar-estilo-nao-reinventar.md`, `docs/estilo-instagram.md` e o `CLAUDE.md` do estúdio (`Curso-Videos/estudio/CLAUDE.md`, com a skill `video-com-claude` dele).
 
 ## A mensagem (o erro que já aconteceu)
@@ -38,7 +40,7 @@ Pasta do vídeo: `videos\pt-reel-<n>` (o próximo número livre). Comece de um m
 4. Se mudar o ritmo da voz no `video.js` (velocidade, pausas), rode o passo 2 de novo.
 5. `.\videos\_reels-en\juntar-voz.ps1 pt <n>` (junta e marca o tempo de cada palavra).
 6. A música, do Pixabay sem Content ID (`musicas\pixabay`, veja o `LICENCA.md`; nunca o `piano.mjs`): `ffmpeg -v error -y -ss <início> -t <duração> -i musicas/pixabay/<faixa>.mp3 -ar 48000 -ac 2 -c:a pcm_s16le videos/pt-reel-<n>/audio/musica.wav`. `musica.volume` de 0,55 deixa a música uns 12,5 dB abaixo da voz (0,62 dá uns 11,5 dB e 0,7, uns 10,4 dB, medidos nos Reels 41 a 43). Os efeitos das trocas de cena caem nas pausas: meça o mix final também. Trocar só a música não pede render novo: `node ferramentas/mix.mjs` e um ffmpeg que copia o vídeo (`-c:v copy`) e troca o áudio.
-   Músicas já usadas: Upbeat Funk (Reels 33 e 41), Lofi Upbeat (32), Energetic Upbeat (42), Good Morning (43). Faixa nova só com o ok do dono e sem "Content ID Registered" na página (anote no `LICENCA.md`).
+   Rodízio: nunca a faixa de nenhum dos 3 vídeos anteriores, sempre com outro trecho. O `node scripts/video-vez.mjs --local` diz qual usar (a nunca usada primeiro); depois do vídeo, anote com `--musica <faixa> --reel <n> --inicio <s>` (fica em `musicas/pixabay/uso.json`). São 8 faixas: Upbeat Funk (Reels 33 e 41), Lofi Upbeat (32), Energetic Upbeat (42), Good Morning (43) e, desde 10/11/2026, Hip Hop Upbeat, Future Bass, Upbeat Corporate e Tropical House Paradise. Faixa nova só com o ok do dono e sem "Content ID Registered" na página (anote no `LICENCA.md`).
 7. Prévia com as conferências: `node ferramentas/fazer.mjs videos/pt-reel-<n> previa --zona-segura`. As quatro conferências precisam dar zero.
 8. Quadros de perto: `node ferramentas/render.mjs videos/pt-reel-<n> quadros 5.0 6.2 ...`.
 9. Final: `.\videos\_reels-en\final.ps1 pt <n>` (umas 1,5 min). Sai em `Curso-Videos\videos-pt\reel-<n>.mp4`, até 50 MB. O de `estudio\prontos\` passa do limite: não use.

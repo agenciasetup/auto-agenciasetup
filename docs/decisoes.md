@@ -824,6 +824,20 @@ Pedido do dono: "ao invés do MCP atual, construa o MCP estilo code mode do Clou
 - **Preço de campanha não fica escrito em item.** O vendedor fala "o preço de hoje", que vem da oferta. Exceção: curso sem oferta no sistema (Formação Design), que fica com o preço no item.
 - **Regra é para o que vale em toda conversa.** Os itens gigantes eram regras e entravam em todas as conversas; divididos, viraram perguntas e situações, que só entram na conversa que tem a ver.
 
+## Tomadas em 10/11/2026 (vídeo sozinho do roteiro aprovado)
+
+Pedido do dono: "quando você aprovar um roteiro na mesa, eu produzo sozinho?" Resposta dele: "Sim, sozinho". As escolhas abaixo foram dele, na proposta.
+
+- **Aprovou o roteiro, o vídeo sai sozinho.** A tarefa agendada `video-do-roteiro` roda no Windows **todo dia às 14h**: o Windows está sempre ligado nesse horário (nos 14 dias antes, ligava entre 8h46 e 13h e desligava entre 23h e 4h) e ela não disputa a placa de vídeo e o Chrome com a frase (8h) e o carrossel (10h, às vezes até 11h). O direct usa o Chrome do MacBook. Roteiro aprovado de manhã vira vídeo lá pelas 15h.
+- **1 vídeo por rodada e no máximo 5 em 7 dias**, contando os cartões da Roteirista que viraram "feita". O dono escolheu 5 (a recomendação era 3).
+- **Trava do limite: só começa um vídeo com o limite semanal do Claude ("all models") abaixo de 80%.** Cada vídeo gasta de 400 a 570 mil tokens. A tarefa mede o limite antes e depois e conta no resumo. Sem conseguir ler o limite, não produz.
+- **A vez sai de um script que só lê o banco** (`node scripts/video-vez.mjs`), para a rodada sem trabalho gastar pouco: o roteiro aprovado mais antigo, a mesma conferência da Roteirista com o preço e as palavras ligadas de hoje, o teto da semana, a placa livre (marca de produção em `_local/video/produzindo.json`, programas de voz, render e foto abertos, e uso da placa) e a música do rodízio.
+- **Roteiro que esbarra numa regra não é produzido** (palavra desligada, preço diferente do de hoje, diminui o design do dono, travessão, link, roteiro sumido): aviso no celular com o motivo e o cartão vira "Espera você" (turno com `dados.desfecho = espera_dono`), fora da fila até o dono decidir. A tarefa não conserta roteiro.
+- **O trabalho pesado vai para um subagente** (voz, cenas, render, folha de revisão e o `peca.json`); a revisão dos quadros é da própria tarefa, com olho de quem não fez, até 2 voltas. Entrega sempre em rascunho, com a palavra desligada.
+- **Música em rodízio**: nunca a faixa de nenhum dos 3 vídeos anteriores, com outro trecho. O dono mandou baixar mais 4 do Pixabay sem Content ID (hip hop, future bass, corporate e tropical house); agora são 8 faixas. Faixa nova continua dependendo do ok dele. O uso fica em `Curso-Videos/estudio/musicas/pixabay/uso.json`.
+- **Aviso no celular pelo conector** (`escritorio_avisar`, tipo "Escritório de IA"): "Vídeo novo para assistir", que abre o rascunho, e "Roteiro de vídeo travou". Um aviso por acontecimento.
+- **O Zelador cobra a tarefa todo dia** (a tarefa grava turno mesmo sem roteiro, com `dados.tarefa = 'video-do-roteiro'`). O Executor deixa os roteiros de fora, com o motivo na tela.
+
 ## Em aberto
 
 - **Follow-up do direct:** no ar desde 08/11/2026 (versão `8267d516`) com a tarefa `direct-followup`. Falta a primeira rodada com o dono olhando e conferir na primeira semana se o "achado pelo nome" erra. Sete rodadas por dia lendo o direct gastam bastante do limite semanal do Claude: se apertar, ficar com 9h, 14h e 20h.

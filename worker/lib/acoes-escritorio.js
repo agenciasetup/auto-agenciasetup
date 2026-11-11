@@ -4,6 +4,7 @@ import { auditar, exigir } from '../nucleo/auth.js';
 import { db } from '../nucleo/db.js';
 import { Erro } from '../nucleo/util.js';
 import { salvarConfigAtendente } from './atendente.js';
+import { avisarEquipe } from './push.js';
 import { VENDEDORES } from './followup.js';
 import { CONTROLA, baterPonto, sinalDeVida, criarProposta, decidirProposta, lerAgente, registrarTurno, resultadoProposta, salvarAgente, salvarTeto, verEscritorio, verFilaDoExecutor } from './escritorio.js';
 
@@ -99,6 +100,22 @@ export async function resultadoDaProposta(x, id, dados) {
   const r = await resultadoProposta(x.env, id, dados || {});
   await auditar(x.env, x.u, 'escritorio.proposta.resultado', `proposta:${id}`, {});
   return r;
+}
+
+// Um aviso no celular da equipe (tipo "Escritório de IA"), mandado por uma tarefa do computador que terminou algo que o
+// dono precisa ver: o vídeo novo para assistir, o roteiro que travou numa regra. Vai para quem recebe os avisos do
+// Escritório (push.js decide quem). O endereço só pode ser do painel. Devolve quantos aparelhos receberam.
+const umaLinha = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+export async function avisarDoEscritorio(x, dados = {}) {
+  exigir(x.u, 'escritorio.trabalhar');
+  const titulo = umaLinha(dados.titulo, 80);
+  const corpo = umaLinha(dados.corpo, 240);
+  if (!titulo || !corpo) throw new Erro(400, 'O aviso precisa de título e corpo.');
+  const url = /^\/admin\/[a-z0-9/_-]*$/i.test(String(dados.url || '')) ? dados.url : '/admin/escritorio';
+  const tag = /^[a-z0-9-]{1,60}$/.test(String(dados.tag || '')) ? dados.tag : undefined;
+  const aparelhos = await avisarEquipe(x.env, 'escritorio', { titulo, corpo, url, ...(tag ? { tag } : {}) });
+  await auditar(x.env, x.u, 'escritorio.aviso', 'push:escritorio', { titulo, url, aparelhos });
+  return { aparelhos };
 }
 
 export async function salvarTetoDoEscritorio(x, valor) {
