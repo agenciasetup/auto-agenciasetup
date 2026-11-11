@@ -32,6 +32,8 @@ O primeiro vídeo (Reel 41, 10/11/2026) dizia "Pedi pro Claude reinventar o meu 
 
 Pasta do vídeo: `videos\pt-reel-<n>` (o próximo número livre). Comece de um molde parecido (`pt-reel-31` a `pt-reel-34`, ou `pt-reel-41` para o formato de tela) e mude gancho, cenário e música: o dono reprova o que fica "muito igual".
 
+Para variar o movimento (desde 11/11/2026, o dono mandou levar para o motor): gancho com `entra: 'letras'` e `marca: true`, troca de cena com `transicao: 'giro'`, palavra-chave com `anota` (círculo à mão com nota), `entra: 'linhas'` no título do passo, o elemento `antes-depois` (post comum contra post no padrão) e a função `gsap` de uma cena. Tudo no vocabulário do estúdio (`references/vocabulario.md` da skill `video-com-claude`); o teste com tudo junto é `videos\teste-motor-novo`. Use um ou dois por vídeo, não todos.
+
 1. Imagens reais em `midia\` (posts e carrosséis de verdade: `_local\carrossel\<nome>\`, `templates\carrossel\`, posts do perfil em `_local\ig-perfil`). Nada de número, depoimento ou resultado inventado; tela desenhada (conversa, botão) é ilustração e não pode parecer print real de cliente.
 2. `node ferramentas/montar.mjs videos/pt-reel-<n> --falas`
 3. A voz, com regravação até o Whisper ouvir certo (umas 1,5 min):

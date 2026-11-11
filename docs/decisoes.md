@@ -870,6 +870,16 @@ O dono pediu: "verifique pra mim, todos aprovados, tudo que está pendente. Reso
 - **O Caçador de virais tenta de novo.** O cartão do Zelador ("2 dias seguidos com erro") não era agente quebrado: o feed de Shorts do YouTube responde 404 ao servidor de vez em quando (de 12 a 16 dos 36 canais numa volta de 11/11), e do computador os 36 abriam. Cada canal ganhou uma segunda tentativa, um segundo depois; a folga de chamadas da rodada passou de 12 para 16.
 - **Dúvidas que não eram do dono saem da lista.** A Morphix saiu pela ordem dele de 10/11 (sem mensagem) e a Paula (@diasolivp), que só escreveu "consegui sim, obrigada!", voltou para a fila normal. A do desconto (@ogabrielmetran) ficou com ele, que estava atendendo pelo aplicativo.
 
+## Tomadas em 11/11/2026 (motor de vídeo com GSAP e blocos do HyperFrames)
+
+O dono viu os três vídeos de teste dos cartões aprovados (GSAP, HyperFrames e Calango que fala) e disse "Pode levar" para o GSAP e os três blocos do HyperFrames.
+
+- **O que entrou no motor do estúdio** (`Curso-Videos/estudio`, fora do Git): `transicao: 'giro'` e `'giro-direita'` (a câmera vira de lado, com borrão), `entra: 'letras'` e `'linhas'` (GSAP com SplitText), `marca` (o marca-texto se desenha), `anota` (círculo, sublinhado, marca-texto ou rabisco à mão numa palavra, com uma nota), o elemento `antes-depois` (a barra mostra o depois por cima do antes) e a função `gsap` de cada cena. Tudo no vocabulário do estúdio e na skill `video-agenciasetup`.
+- **O mesmo t, o mesmo quadro.** O GSAP entra como uma linha do tempo parada, levada pelo `seek` do motor; nada de relógio próprio. O giro, a anotação e o antes e depois foram reescritos no jeito do motor, sem o runtime do HyperFrames.
+- **Licenças.** GSAP 3.15.1 (grátis para uso comercial, "Standard no charge license") e HyperFrames (Apache 2.0, Copyright 2026 HeyGen, Inc.): os arquivos e a licença ficam em `motor/vendor`, com o aviso de origem nos comentários. Blocos do HyperFrames com marca de terceiros (Claude, ChatGPT, X) e os 3D com textura de licença a confirmar ficaram de fora.
+- **Vídeo antigo não muda.** Antes e depois da mudança, 24 quadros de 3 vídeos (Reel 43, aula 1 e um Reel em inglês) saíram idênticos (`_local/testes-video/motor/regressao.mjs`). A primeira versão mudou um quadro do Reel 43 porque a classe nova tinha o mesmo nome da do passo `risca`; por isso a anotação se chama `anota`.
+- **Calango que fala:** a versão simples (3 bocas em pixel trocadas pelo volume da voz) está em `_local/testes-video/calango-fala/`; o MuseTalk espera a opinião do dono.
+
 ## Em aberto
 
 - **Follow-up do direct:** no ar desde 08/11/2026 (versão `8267d516`) com a tarefa `direct-followup`. Falta a primeira rodada com o dono olhando e conferir na primeira semana se o "achado pelo nome" erra. Sete rodadas por dia lendo o direct gastam bastante do limite semanal do Claude: se apertar, ficar com 9h, 14h e 20h.
