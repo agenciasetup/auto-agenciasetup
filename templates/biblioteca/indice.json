@@ -1,0 +1,1059 @@
+{
+ "itens": [
+  {
+   "arquivo": "madeira/galhos/galho-musgo-retorcido.png",
+   "pasta": "madeira/galhos",
+   "descricao": "Galho grosso e retorcido coberto de musgo verde, com samambaias pequenas; horizontal, as duas pontas aparecem.",
+   "largura": 1270,
+   "altura": 341,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id s7BpK2gl8e",
+   "tags": [
+    "galho",
+    "tronco",
+    "madeira",
+    "musgo",
+    "floresta",
+    "selva"
+   ],
+   "dica": "Para um bicho pousar ou para atravessar a divisa entre cards. O que tem peso precisa de apoio: deixe uma ponta saindo pela borda do card.",
+   "adicionado": "2026-11-11",
+   "como": "recorte padrão"
+  },
+  {
+   "arquivo": "madeira/galhos/galho-musgo-reto.png",
+   "pasta": "madeira/galhos",
+   "descricao": "Galho reto e mais fino, todo coberto de musgo; horizontal.",
+   "largura": 1234,
+   "altura": 273,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id vQRNByAa47",
+   "tags": [
+    "galho",
+    "tronco",
+    "madeira",
+    "musgo",
+    "floresta",
+    "selva"
+   ],
+   "dica": "Para um bicho pousar ou para atravessar a divisa entre cards. O que tem peso precisa de apoio: deixe uma ponta saindo pela borda do card.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "madeira/galhos/galho-musgo-pontas-finas.png",
+   "pasta": "madeira/galhos",
+   "descricao": "Galho retorcido com musgo e duas pontas finas de graveto; horizontal.",
+   "largura": 1256,
+   "altura": 274,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id yifmgWaPW9",
+   "tags": [
+    "galho",
+    "tronco",
+    "madeira",
+    "musgo",
+    "floresta",
+    "selva"
+   ],
+   "dica": "Para um bicho pousar ou para atravessar a divisa entre cards. O que tem peso precisa de apoio: deixe uma ponta saindo pela borda do card.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "plantas/folhas/folha-filodendro-recortada.png",
+   "pasta": "plantas/folhas",
+   "descricao": "Folha de filodendro partida (recortes nas bordas), verde-escuro, com o talo.",
+   "largura": 786,
+   "altura": 816,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id 1lD0FqNr4r",
+   "tags": [
+    "folha",
+    "filodendro",
+    "tropical",
+    "selva",
+    "verde"
+   ],
+   "dica": "Na selva verde-água escura do tucano: matiz +15, sat 0,7, luz 0,8. Perto da lente: blur 6 a 10.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "plantas/folhas/folha-filodendro-coracao.png",
+   "pasta": "plantas/folhas",
+   "descricao": "Folha de filodendro inteira em forma de coração, verde-escuro, com o talo.",
+   "largura": 654,
+   "altura": 728,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id BhP7VTxoQR",
+   "tags": [
+    "folha",
+    "filodendro",
+    "tropical",
+    "selva",
+    "verde"
+   ],
+   "dica": "Na selva verde-água escura do tucano: matiz +15, sat 0,7, luz 0,8. Perto da lente: blur 6 a 10.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "plantas/folhas/folha-filodendro-coracao-longa.png",
+   "pasta": "plantas/folhas",
+   "descricao": "Folha de filodendro grande, coração alongado e brilhante, com o talo.",
+   "largura": 776,
+   "altura": 787,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id YMjkRNFWeC",
+   "tags": [
+    "folha",
+    "filodendro",
+    "tropical",
+    "selva",
+    "verde"
+   ],
+   "dica": "Na selva verde-água escura do tucano: matiz +15, sat 0,7, luz 0,8. Perto da lente: blur 6 a 10.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "plantas/folhas/folha-samambaia-arqueada.png",
+   "pasta": "plantas/folhas",
+   "descricao": "Folha de samambaia arqueada, verde-água, pontas naturais.",
+   "largura": 877,
+   "altura": 790,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id EbGRhRtuuO",
+   "tags": [
+    "folha",
+    "samambaia",
+    "selva",
+    "verde",
+    "floresta"
+   ],
+   "dica": "Na selva verde-água escura do tucano: matiz +15, sat 0,7, luz 0,8. Perto da lente: blur 6 a 10.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "plantas/folhas/folha-samambaia-diagonal.png",
+   "pasta": "plantas/folhas",
+   "descricao": "Folha de samambaia longa na diagonal, verde-água, pontas naturais.",
+   "largura": 844,
+   "altura": 783,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id LwXDk0NswO",
+   "tags": [
+    "folha",
+    "samambaia",
+    "selva",
+    "verde",
+    "floresta"
+   ],
+   "dica": "Na selva verde-água escura do tucano: matiz +15, sat 0,7, luz 0,8. Perto da lente: blur 6 a 10.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/borboletas/borboleta-morpho-azul-tres-quartos.png",
+   "pasta": "animais/borboletas",
+   "descricao": "Borboleta morpho azul de asas abertas, inclinada em três quartos (parece voando).",
+   "largura": 902,
+   "altura": 740,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id KLVWQ3Rkqp",
+   "tags": [
+    "borboleta",
+    "morpho",
+    "azul",
+    "inseto",
+    "floresta",
+    "voando"
+   ],
+   "dica": "Azul elétrico: conversa com azul real e com cena verde. No plano do assunto, nítida e com sombra.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/borboletas/borboleta-morpho-azul-de-cima.png",
+   "pasta": "animais/borboletas",
+   "descricao": "Borboleta morpho azul de asas abertas vista de cima, simétrica.",
+   "largura": 877,
+   "altura": 786,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id UPtBjnhwny",
+   "tags": [
+    "borboleta",
+    "morpho",
+    "azul",
+    "inseto",
+    "floresta",
+    "voando"
+   ],
+   "dica": "Azul elétrico: conversa com azul real e com cena verde. No plano do assunto, nítida e com sombra.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/borboletas/borboleta-morpho-azul-pousada.png",
+   "pasta": "animais/borboletas",
+   "descricao": "Borboleta morpho azul de asas abertas em três quartos, como pousada.",
+   "largura": 852,
+   "altura": 717,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id s7BpkN1l8e",
+   "tags": [
+    "borboleta",
+    "morpho",
+    "azul",
+    "inseto",
+    "floresta",
+    "voando"
+   ],
+   "dica": "Azul elétrico: conversa com azul real e com cena verde. No plano do assunto, nítida e com sombra.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/ninhos/ninho-ovos-tucano.png",
+   "pasta": "animais/ninhos",
+   "descricao": "Ninho de gravetos, palha e musgo com três ovos creme pintados (ovos de tucano), visto de cima em três quartos.",
+   "largura": 833,
+   "altura": 684,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id P3ChU7g42C",
+   "tags": [
+    "ninho",
+    "ovos",
+    "tucano",
+    "passaro",
+    "floresta"
+   ],
+   "dica": "Precisa estar apoiado: em cima de um galho ou cortado pela borda de baixo.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/ninhos/ninho-ovos-tucano-2.png",
+   "pasta": "animais/ninhos",
+   "descricao": "Ninho de gravetos, palha e musgo com três ovos creme pintados (ovos de tucano), visto de cima em três quartos.",
+   "largura": 820,
+   "altura": 713,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id TdgjnMnVNR",
+   "tags": [
+    "ninho",
+    "ovos",
+    "tucano",
+    "passaro",
+    "floresta"
+   ],
+   "dica": "Precisa estar apoiado: em cima de um galho ou cortado pela borda de baixo.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/ninhos/ninho-ovos-tucano-3.png",
+   "pasta": "animais/ninhos",
+   "descricao": "Ninho de gravetos, palha e musgo com três ovos creme pintados (ovos de tucano), visto de cima em três quartos.",
+   "largura": 787,
+   "altura": 662,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id w4moLxk7EI",
+   "tags": [
+    "ninho",
+    "ovos",
+    "tucano",
+    "passaro",
+    "floresta"
+   ],
+   "dica": "Precisa estar apoiado: em cima de um galho ou cortado pela borda de baixo.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "plantas/flores/girassol-tres-quartos.png",
+   "pasta": "plantas/flores",
+   "descricao": "Girassol grande com caule curvo e duas folhas, em três quartos.",
+   "largura": 675,
+   "altura": 923,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id aFZ6IVmfSh",
+   "tags": [
+    "girassol",
+    "flor",
+    "amarelo",
+    "van gogh"
+   ],
+   "dica": "O girassol do Van Gogh: pode atravessar a divisa entre dois cards.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "plantas/flores/girassol-de-frente.png",
+   "pasta": "plantas/flores",
+   "descricao": "Girassol de frente, com caule curvo e duas folhas.",
+   "largura": 782,
+   "altura": 953,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id ksMcHC816B",
+   "tags": [
+    "girassol",
+    "flor",
+    "amarelo",
+    "van gogh"
+   ],
+   "dica": "O girassol do Van Gogh: pode atravessar a divisa entre dois cards.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "plantas/flores/girassol-caule-reto.png",
+   "pasta": "plantas/flores",
+   "descricao": "Girassol de frente, caule mais reto e duas folhas.",
+   "largura": 781,
+   "altura": 922,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id nVxKZSaYQD",
+   "tags": [
+    "girassol",
+    "flor",
+    "amarelo",
+    "van gogh"
+   ],
+   "dica": "O girassol do Van Gogh: pode atravessar a divisa entre dois cards.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/abelhas/abelha-voando.png",
+   "pasta": "animais/abelhas",
+   "descricao": "Abelha voando de lado, asas abertas, corpo listrado dourado e preto.",
+   "largura": 804,
+   "altura": 647,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id 9ZuaOzENYZ",
+   "tags": [
+    "abelha",
+    "inseto",
+    "voando",
+    "van gogh",
+    "girassol"
+   ],
+   "dica": "Em profundidades diferentes: perto da lente maior e desfocada, no plano do assunto nítida, no fundo pequena e desfocada.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/abelhas/abelha-voando-2.png",
+   "pasta": "animais/abelhas",
+   "descricao": "Abelha voando de lado, asas abertas, corpo listrado dourado e preto.",
+   "largura": 802,
+   "altura": 661,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id IfNyXfdtvE",
+   "tags": [
+    "abelha",
+    "inseto",
+    "voando",
+    "van gogh",
+    "girassol"
+   ],
+   "dica": "Em profundidades diferentes: perto da lente maior e desfocada, no plano do assunto nítida, no fundo pequena e desfocada.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/abelhas/abelha-voando-3.png",
+   "pasta": "animais/abelhas",
+   "descricao": "Abelha voando de lado, asas abertas, corpo listrado dourado e preto.",
+   "largura": 850,
+   "altura": 699,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id cpsrGcj0eP",
+   "tags": [
+    "abelha",
+    "inseto",
+    "voando",
+    "van gogh",
+    "girassol"
+   ],
+   "dica": "Em profundidades diferentes: perto da lente maior e desfocada, no plano do assunto nítida, no fundo pequena e desfocada.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "ceu/nuvens/nuvem-fofa.png",
+   "pasta": "ceu/nuvens",
+   "descricao": "Nuvem branca fofa (cúmulo), com sombra suave; fundo transparente pelo claro.",
+   "largura": 849,
+   "altura": 664,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id Dowl0kXpcl",
+   "tags": [
+    "nuvem",
+    "ceu",
+    "branco",
+    "van gogh"
+   ],
+   "dica": "Fica bem sobre amarelo, céu ou preto; sobre o branco some. Desfocada quando está longe ou perto da lente.",
+   "adicionado": "2026-11-11",
+   "como": "o claro virou transparência"
+  },
+  {
+   "arquivo": "ceu/nuvens/nuvem-fofa-2.png",
+   "pasta": "ceu/nuvens",
+   "descricao": "Nuvem branca fofa (cúmulo), com sombra suave; fundo transparente pelo claro.",
+   "largura": 854,
+   "altura": 729,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id WDL1GCJcXe",
+   "tags": [
+    "nuvem",
+    "ceu",
+    "branco",
+    "van gogh"
+   ],
+   "dica": "Fica bem sobre amarelo, céu ou preto; sobre o branco some. Desfocada quando está longe ou perto da lente.",
+   "adicionado": "2026-11-11",
+   "como": "o claro virou transparência"
+  },
+  {
+   "arquivo": "arte/quadros/quadro-moldura-dourada-noite-estrelada.png",
+   "pasta": "arte/quadros",
+   "descricao": "Moldura dourada antiga com uma pintura no estilo da Noite Estrelada (obra de domínio público), de frente.",
+   "largura": 814,
+   "altura": 757,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id 4REvJxP9Aa",
+   "tags": [
+    "quadro",
+    "moldura",
+    "dourado",
+    "pintura",
+    "van gogh",
+    "arte"
+   ],
+   "dica": "Atrás do personagem, sutilmente desfocado (blur 3 a 5), como na capa do Van Gogh.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "arte/quadros/quadro-moldura-dourada-noite-estrelada-2.png",
+   "pasta": "arte/quadros",
+   "descricao": "Moldura dourada antiga com uma pintura no estilo da Noite Estrelada (obra de domínio público), de frente.",
+   "largura": 803,
+   "altura": 810,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id LwXD11hswO",
+   "tags": [
+    "quadro",
+    "moldura",
+    "dourado",
+    "pintura",
+    "van gogh",
+    "arte"
+   ],
+   "dica": "Atrás do personagem, sutilmente desfocado (blur 3 a 5), como na capa do Van Gogh.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "arte/quadros/quadro-moldura-dourada-noite-estrelada-3.png",
+   "pasta": "arte/quadros",
+   "descricao": "Moldura dourada antiga com uma pintura no estilo da Noite Estrelada (obra de domínio público), de frente.",
+   "largura": 832,
+   "altura": 728,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id xSeVKFpjfW",
+   "tags": [
+    "quadro",
+    "moldura",
+    "dourado",
+    "pintura",
+    "van gogh",
+    "arte"
+   ],
+   "dica": "Atrás do personagem, sutilmente desfocado (blur 3 a 5), como na capa do Van Gogh.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "personagens/historicos/van-gogh-3d.png",
+   "pasta": "personagens/historicos",
+   "descricao": "Van Gogh em 3D, estilo filme de animação: chapéu de palha, barba ruiva, camisa azul e suspensório, da cintura para cima, olhar um pouco preocupado.",
+   "largura": 763,
+   "altura": 1099,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id O6atwE0ynm",
+   "tags": [
+    "van gogh",
+    "personagem",
+    "3d",
+    "pintor",
+    "arte"
+   ],
+   "dica": "Personagem histórico (domínio público). Na capa, na frente do quadro desfocado e atrás das abelhas.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "personagens/historicos/van-gogh-3d-2.png",
+   "pasta": "personagens/historicos",
+   "descricao": "Van Gogh em 3D, estilo filme de animação: chapéu de palha, barba ruiva, camisa azul e suspensório, da cintura para cima, olhar um pouco preocupado.",
+   "largura": 653,
+   "altura": 1106,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id s7BpxMyl8e",
+   "tags": [
+    "van gogh",
+    "personagem",
+    "3d",
+    "pintor",
+    "arte"
+   ],
+   "dica": "Personagem histórico (domínio público). Na capa, na frente do quadro desfocado e atrás das abelhas.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "personagens/historicos/van-gogh-3d-3.png",
+   "pasta": "personagens/historicos",
+   "descricao": "Van Gogh em 3D, estilo filme de animação: chapéu de palha, barba ruiva, camisa azul e suspensório, da cintura para cima, olhar um pouco preocupado.",
+   "largura": 693,
+   "altura": 1092,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id s7BpxdIl8e",
+   "tags": [
+    "van gogh",
+    "personagem",
+    "3d",
+    "pintor",
+    "arte"
+   ],
+   "dica": "Personagem histórico (domínio público). Na capa, na frente do quadro desfocado e atrás das abelhas.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "plantas/folhas/folha-monstera.png",
+   "pasta": "plantas/folhas",
+   "descricao": "Folha de monstera (costela-de-adão) grande, verde vivo, de frente.",
+   "largura": 1610,
+   "altura": 1728,
+   "fonte": "templates/carrossel/imagens/folha.png",
+   "tags": [
+    "folha",
+    "monstera",
+    "tropical",
+    "selva",
+    "verde"
+   ],
+   "dica": "Verde vivo: numa cena verde-água escura, matiz +20, sat 0,6, luz 0,75 (sem ajuste, quebra a cena).",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "animais/aves/tucano-toco-lado.png",
+   "pasta": "animais/aves",
+   "descricao": "Tucano-toco de lado, olhando para a direita, bico laranja grande, sem o galho.",
+   "largura": 1185,
+   "altura": 1140,
+   "fonte": "Magnific (capa do CORES, 05/11/2026)",
+   "tags": [
+    "tucano",
+    "ave",
+    "passaro",
+    "selva",
+    "laranja"
+   ],
+   "dica": "Sem apoio: os pés ficam fora do card ou em cima de um galho da biblioteca.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "formas/gotas/gota-tinta-preta-1.png",
+   "pasta": "formas/gotas",
+   "descricao": "Gota de tinta preta brilhante, com reflexo (líquido espesso).",
+   "largura": 128,
+   "altura": 148,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "gota",
+    "tinta",
+    "preto",
+    "liquido"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "formas/gotas/gota-tinta-preta-2.png",
+   "pasta": "formas/gotas",
+   "descricao": "Gota de tinta preta brilhante, com reflexo (líquido espesso).",
+   "largura": 122,
+   "altura": 121,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "gota",
+    "tinta",
+    "preto",
+    "liquido"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "formas/gotas/gota-tinta-preta-3.png",
+   "pasta": "formas/gotas",
+   "descricao": "Gota de tinta preta brilhante, com reflexo (líquido espesso).",
+   "largura": 30,
+   "altura": 31,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "gota",
+    "tinta",
+    "preto",
+    "liquido"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "formas/gotas/gota-tinta-preta-4.png",
+   "pasta": "formas/gotas",
+   "descricao": "Gota de tinta preta brilhante, com reflexo (líquido espesso).",
+   "largura": 180,
+   "altura": 186,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "gota",
+    "tinta",
+    "preto",
+    "liquido"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "formas/gotas/gota-tinta-preta-5.png",
+   "pasta": "formas/gotas",
+   "descricao": "Gota de tinta preta brilhante, com reflexo (líquido espesso).",
+   "largura": 254,
+   "altura": 342,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "gota",
+    "tinta",
+    "preto",
+    "liquido"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "formas/gotas/gota-tinta-preta-6.png",
+   "pasta": "formas/gotas",
+   "descricao": "Gota de tinta preta brilhante, com reflexo (líquido espesso).",
+   "largura": 144,
+   "altura": 139,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "gota",
+    "tinta",
+    "preto",
+    "liquido"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "formas/gotas/gota-tinta-preta-7.png",
+   "pasta": "formas/gotas",
+   "descricao": "Gota de tinta preta brilhante, com reflexo (líquido espesso).",
+   "largura": 200,
+   "altura": 160,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "gota",
+    "tinta",
+    "preto",
+    "liquido"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "formas/gotas/gota-tinta-preta-8.png",
+   "pasta": "formas/gotas",
+   "descricao": "Gota de tinta preta brilhante, com reflexo (líquido espesso).",
+   "largura": 175,
+   "altura": 177,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "gota",
+    "tinta",
+    "preto",
+    "liquido"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "formas/gotas/gota-tinta-preta-9.png",
+   "pasta": "formas/gotas",
+   "descricao": "Gota de tinta preta brilhante, com reflexo (líquido espesso).",
+   "largura": 116,
+   "altura": 120,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "gota",
+    "tinta",
+    "preto",
+    "liquido"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "formas/gotas/gota-tinta-preta-10.png",
+   "pasta": "formas/gotas",
+   "descricao": "Gota de tinta preta brilhante, com reflexo (líquido espesso).",
+   "largura": 211,
+   "altura": 153,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "gota",
+    "tinta",
+    "preto",
+    "liquido"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "formas/gotas/gota-tinta-preta-11.png",
+   "pasta": "formas/gotas",
+   "descricao": "Gota de tinta preta brilhante, com reflexo (líquido espesso).",
+   "largura": 141,
+   "altura": 145,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "gota",
+    "tinta",
+    "preto",
+    "liquido"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "formas/gotas/gota-tinta-preta-12.png",
+   "pasta": "formas/gotas",
+   "descricao": "Gota de tinta preta brilhante, com reflexo (líquido espesso).",
+   "largura": 150,
+   "altura": 206,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "gota",
+    "tinta",
+    "preto",
+    "liquido"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "formas/gotas/gota-tinta-preta-13.png",
+   "pasta": "formas/gotas",
+   "descricao": "Gota de tinta preta brilhante, com reflexo (líquido espesso).",
+   "largura": 156,
+   "altura": 142,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "gota",
+    "tinta",
+    "preto",
+    "liquido"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "formas/gotas/gota-tinta-preta-14.png",
+   "pasta": "formas/gotas",
+   "descricao": "Gota de tinta preta brilhante, com reflexo (líquido espesso).",
+   "largura": 127,
+   "altura": 126,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "gota",
+    "tinta",
+    "preto",
+    "liquido"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "plantas/grama/grama-com-flores.png",
+   "pasta": "plantas/grama",
+   "descricao": "Tufo de grama verde com florzinhas brancas.",
+   "largura": 2239,
+   "altura": 1536,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "grama",
+    "campo",
+    "verde"
+   ],
+   "dica": "A base é reta (cortada da foto): a borda de baixo precisa ficar fora do card.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "ceu/nevoa/nevoa-de-baixo.png",
+   "pasta": "ceu/nevoa",
+   "descricao": "Névoa branca suave que sobe de baixo.",
+   "largura": 1200,
+   "altura": 498,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "nevoa",
+    "neblina",
+    "branco"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "ceu/nevoa/nevoa-de-cima.png",
+   "pasta": "ceu/nevoa",
+   "descricao": "Névoa branca suave que desce de cima.",
+   "largura": 1200,
+   "altura": 520,
+   "fonte": "templates/carrossel/imagens/elementos/",
+   "tags": [
+    "nevoa",
+    "neblina",
+    "branco"
+   ],
+   "dica": null,
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "personagens/esculturas/calango-marmore-terno.png",
+   "pasta": "personagens/esculturas",
+   "descricao": "Estátua de mármore branco de um lagarto (o Calango) de terno e gravata, do peito para cima, em três quartos olhando para a esquerda.",
+   "largura": 601,
+   "altura": 923,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id P3CvcHc42C",
+   "tags": [
+    "calango",
+    "estatua",
+    "marmore",
+    "terno",
+    "lagarto",
+    "museu"
+   ],
+   "dica": "O Calango de mármore do carrossel do Van Gogh. Cortado pela borda de baixo (o peito some), para não flutuar.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "personagens/esculturas/calango-marmore-terno-2.png",
+   "pasta": "personagens/esculturas",
+   "descricao": "Estátua de mármore branco de um lagarto (o Calango) de terno e gravata, do peito para cima, em três quartos olhando para a esquerda.",
+   "largura": 652,
+   "altura": 934,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id 6AFEMFliJO",
+   "tags": [
+    "calango",
+    "estatua",
+    "marmore",
+    "terno",
+    "lagarto",
+    "museu"
+   ],
+   "dica": "O Calango de mármore do carrossel do Van Gogh. Cortado pela borda de baixo (o peito some), para não flutuar.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "personagens/esculturas/calango-marmore-terno-3.png",
+   "pasta": "personagens/esculturas",
+   "descricao": "Estátua de mármore branco de um lagarto (o Calango) de terno e gravata, do peito para cima, em três quartos olhando para a esquerda.",
+   "largura": 582,
+   "altura": 954,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id iGHuDud3uK",
+   "tags": [
+    "calango",
+    "estatua",
+    "marmore",
+    "terno",
+    "lagarto",
+    "museu"
+   ],
+   "dica": "O Calango de mármore do carrossel do Van Gogh. Cortado pela borda de baixo (o peito some), para não flutuar.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "formas/pinceladas/pincelada-rosa-coral.png",
+   "pasta": "formas/pinceladas",
+   "descricao": "Pincelada longa de tinta acrílica, do rosa ao coral, com a textura das cerdas, em S deitado.",
+   "largura": 1462,
+   "altura": 554,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id tC641bqmZJ",
+   "tags": [
+    "pincelada",
+    "tinta",
+    "rosa",
+    "coral",
+    "traco"
+   ],
+   "dica": "Passa por dentro das janelas de cards pretos (panorama), como no carrossel do Van Gogh. É imagem: pode ser rosa; o título nunca.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "formas/pinceladas/pincelada-rosa-coral-2.png",
+   "pasta": "formas/pinceladas",
+   "descricao": "Pincelada longa de tinta acrílica, do rosa ao coral, com a textura das cerdas, em S deitado.",
+   "largura": 1334,
+   "altura": 376,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id eIJUFhOdqL",
+   "tags": [
+    "pincelada",
+    "tinta",
+    "rosa",
+    "coral",
+    "traco"
+   ],
+   "dica": "Passa por dentro das janelas de cards pretos (panorama), como no carrossel do Van Gogh. É imagem: pode ser rosa; o título nunca.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "formas/pinceladas/pincelada-rosa-coral-3.png",
+   "pasta": "formas/pinceladas",
+   "descricao": "Pincelada longa de tinta acrílica, do rosa ao coral, com a textura das cerdas, em S deitado.",
+   "largura": 1465,
+   "altura": 500,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id nVxktVQYQD",
+   "tags": [
+    "pincelada",
+    "tinta",
+    "rosa",
+    "coral",
+    "traco"
+   ],
+   "dica": "Passa por dentro das janelas de cards pretos (panorama), como no carrossel do Van Gogh. É imagem: pode ser rosa; o título nunca.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/vagalumes/vagalume-voando-de-lado.png",
+   "pasta": "animais/vagalumes",
+   "descricao": "Vagalume de verdade voando de lado, asas abertas, corpo escuro com o escudo laranja e a cauda acesa (amarelo alaranjado).",
+   "largura": 827,
+   "altura": 651,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id bx0Y4OG5Y2",
+   "tags": [
+    "vagalume",
+    "inseto",
+    "luz",
+    "noite",
+    "floresta",
+    "voando"
+   ],
+   "dica": "O vagalume que o dono quer é o inseto, não só o ponto de luz (referências: os posts do Anaconda e do Leonardo da Vinci). Junte um brilho quente na cauda ({ vagalume: true, cor: \"quente\" }) e varie a profundidade: nítido perto do texto, grande e desfocado perto da lente.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/vagalumes/vagalume-voando-de-lado-2.png",
+   "pasta": "animais/vagalumes",
+   "descricao": "Vagalume de verdade voando de lado, asas abertas, corpo escuro com o escudo laranja e a cauda acesa (amarelo alaranjado).",
+   "largura": 786,
+   "altura": 684,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id gO8XzzASXO",
+   "tags": [
+    "vagalume",
+    "inseto",
+    "luz",
+    "noite",
+    "floresta",
+    "voando"
+   ],
+   "dica": "O vagalume que o dono quer é o inseto, não só o ponto de luz (referências: os posts do Anaconda e do Leonardo da Vinci). Junte um brilho quente na cauda ({ vagalume: true, cor: \"quente\" }) e varie a profundidade: nítido perto do texto, grande e desfocado perto da lente.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/vagalumes/vagalume-voando-de-lado-3.png",
+   "pasta": "animais/vagalumes",
+   "descricao": "Vagalume de verdade voando de lado, asas abertas, corpo escuro com o escudo laranja e a cauda acesa (amarelo alaranjado).",
+   "largura": 776,
+   "altura": 553,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id SyIBn0IUb8",
+   "tags": [
+    "vagalume",
+    "inseto",
+    "luz",
+    "noite",
+    "floresta",
+    "voando"
+   ],
+   "dica": "O vagalume que o dono quer é o inseto, não só o ponto de luz (referências: os posts do Anaconda e do Leonardo da Vinci). Junte um brilho quente na cauda ({ vagalume: true, cor: \"quente\" }) e varie a profundidade: nítido perto do texto, grande e desfocado perto da lente.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/vagalumes/vagalume-voando-de-cima.png",
+   "pasta": "animais/vagalumes",
+   "descricao": "Vagalume de verdade voando visto de cima em três quartos, asas transparentes abertas, a cauda acesa.",
+   "largura": 786,
+   "altura": 693,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id YMj1a17WeC",
+   "tags": [
+    "vagalume",
+    "inseto",
+    "luz",
+    "noite",
+    "floresta",
+    "voando"
+   ],
+   "dica": "O vagalume que o dono quer é o inseto, não só o ponto de luz (referências: os posts do Anaconda e do Leonardo da Vinci). Junte um brilho quente na cauda ({ vagalume: true, cor: \"quente\" }) e varie a profundidade: nítido perto do texto, grande e desfocado perto da lente.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/vagalumes/vagalume-voando-de-cima-2.png",
+   "pasta": "animais/vagalumes",
+   "descricao": "Vagalume de verdade voando visto de cima em três quartos, asas transparentes abertas, a cauda acesa.",
+   "largura": 810,
+   "altura": 698,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id eIJUbOedqL",
+   "tags": [
+    "vagalume",
+    "inseto",
+    "luz",
+    "noite",
+    "floresta",
+    "voando"
+   ],
+   "dica": "O vagalume que o dono quer é o inseto, não só o ponto de luz (referências: os posts do Anaconda e do Leonardo da Vinci). Junte um brilho quente na cauda ({ vagalume: true, cor: \"quente\" }) e varie a profundidade: nítido perto do texto, grande e desfocado perto da lente.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "animais/vagalumes/vagalume-voando-de-cima-3.png",
+   "pasta": "animais/vagalumes",
+   "descricao": "Vagalume de verdade voando visto de cima em três quartos, asas transparentes abertas, a cauda acesa.",
+   "largura": 722,
+   "altura": 678,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id ksM06BU16B",
+   "tags": [
+    "vagalume",
+    "inseto",
+    "luz",
+    "noite",
+    "floresta",
+    "voando"
+   ],
+   "dica": "O vagalume que o dono quer é o inseto, não só o ponto de luz (referências: os posts do Anaconda e do Leonardo da Vinci). Junte um brilho quente na cauda ({ vagalume: true, cor: \"quente\" }) e varie a profundidade: nítido perto do texto, grande e desfocado perto da lente.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  }
+ ]
+}

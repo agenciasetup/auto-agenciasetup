@@ -130,6 +130,9 @@ No carrossel (fora de `slides`), em coordenadas da tela larga: x de 0 a 1080 vez
 - `panorama: { arq, x, y, w, blur, luz, op }`: a cena larga por dentro das janelas, passando por trás da moldura entre os cards. `semPanorama: true` no slide que não quer.
 - `travessia: [{ arq, x, y, w, rot, espelho, blur, luz, op, sombra, acima }]`: o que atravessa por cima da moldura. Sombra realista por padrão (contato e projetada), sem sombra quando tem `blur`; `acima: true` passa também por cima do cabeçalho e do progresso. `semTravessia: true` no slide que não quer.
 - Sai também `larga.jpg` (a tela inteira em tamanho real): confira a emenda ali. Exemplo: `conteudos/infinito-cores.js`. Detalhes e cuidados no `LEIA.md` do modelo.
+- **Distância em cada elemento (`z`, de -1 o fundo a 1 colado na lente):** o desfoque e a sombra saem dela, e o exportador salva o `profundidade.jpg` (o mapa). Um exemplar nítido de cada coisa por plano, nos tamanhos de verdade; poucos elementos. Luz por cima: `{ halo: true, x, y, d, cor, op }`. Slide de dentro com `lado: 'esquerda'|'direita'` e `semTrilho`.
+- Cor para a cena em cada elemento: `matiz`, `sat`, `luz`. Vagalumes em código: `{ vagalume: true, x, y, r, blur, op }` (o foco segue a distância do assunto). Os fundos podem alternar (o panorama é opcional).
+- **Os elementos vêm da biblioteca** `templates/biblioteca/` (procure no `LEIA.md` de lá antes de gerar): `arq: '../../biblioteca/<arquivo>'`. Elemento novo: gere sozinho no Magnific (nunca a cena inteira, regra do dono de 11/11/2026) e guarde com `node scripts/biblioteca.mjs adicionar <imagem> <tema/pasta> <nome> "<o que é>"`.
 
 ## O que o modelo já faz sozinho (não refaça na mão)
 

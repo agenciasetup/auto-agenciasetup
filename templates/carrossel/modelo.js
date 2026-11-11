@@ -178,16 +178,46 @@
   //     (o mínimo), entra sem sombra e sem desfoque. A textura (ruído, meio-tom) continua por cima de tudo.
   const CARD = 1080;
   const listaDe = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+  // A cor de cada elemento, para a harmonia da cena (11/11/2026: "Folha verde que tá numa cor completamente diferente
+  // do cenário, quebra tudo e deixa amador"): `matiz` em graus, `sat` (1 = igual) e `luz` (1 = igual).
+  const corDe = (t) => [t.matiz ? `hue-rotate(${t.matiz}deg)` : '', t.sat !== undefined && t.sat !== 1 ? `saturate(${t.sat})` : '', t.luz && t.luz !== 1 ? `brightness(${t.luz})` : ''].filter(Boolean);
+  // Profundidade (11/11/2026, o dono: "você precisa criar um mapa de profundidade pra entender"; "nesse tamanho, a
+  // borboleta estaria bem mais desfocada, considerando proporção... não teria uma sombra também embaixo dela? embaixo
+  // do tronco?"). `z` de -1 (o fundo, longe) a 0 (o plano do foco, o dos cartões) a 1 (colado na lente). Sem `blur`
+  // próprio, o desfoque sai do z, com a mesma conta para todos: perto da lente cresce rápido (z 0,35 = 6 px, z 0,6 = 14,
+  // z 0,9 = 30), no fundo mais devagar (z -1 = 10). A sombra também: quanto mais longe da superfície, mais deslocada,
+  // maior e mais fraca; no fundo não há sombra. Dois elementos nítidos no mesmo plano precisam ter tamanhos de verdade
+  // parecidos (uma borboleta nítida maior que a outra parece gigante).
+  const PROF = new URLSearchParams(location.search).get('profundidade') === '1';
+  function comProfundidade(t) {
+    if (t.z === undefined || t.halo) return t;
+    const z = Math.max(-1, Math.min(1, Number(t.z) || 0));
+    const blur = t.blur ?? Math.round(z > 0 ? 30 * z * z + 6 * z : -10 * z);
+    const sombra = t.sombra === false || z < 0 ? false
+      : (typeof t.sombra === 'object' ? t.sombra : { x: Math.round(18 + 150 * z), y: Math.round(26 + 190 * z), blur: Math.round(26 + 110 * z), op: Math.max(0.12, Math.round((0.42 - 0.26 * z) * 100) / 100) });
+    return { ...t, z, blur, sombra, comZ: true };
+  }
   function filtroDaTravessia(t) {
-    if (ETAPA < 3) return t.luz && t.luz !== 1 ? `brightness(${t.luz})` : 'none';
+    if (PROF) { const g = 0.5 + 0.5 * (t.z || 0); return `brightness(0) invert(${g.toFixed(2)})`; }
+    if (ETAPA < 3) return corDe(t).join(' ') || 'none';
     const f = [];
     if (t.blur) f.push(`blur(${t.blur}px)`);
-    if (t.sombra !== false && !t.blur) {
+    if (t.sombra !== false && (!t.blur || t.comZ)) {
       const p = { x: 22, y: 34, blur: 38, op: 0.42, ...(typeof t.sombra === 'object' ? t.sombra : {}) };
       f.push(`drop-shadow(0 4px 5px rgba(0,0,0,${Math.min(0.6, p.op + 0.1)}))`, `drop-shadow(${p.x}px ${p.y}px ${p.blur}px rgba(0,0,0,${p.op}))`);
     }
-    if (t.luz && t.luz !== 1) f.push(`brightness(${t.luz})`);
-    return f.join(' ') || 'none';
+    return [...f, ...corDe(t)].join(' ') || 'none';
+  }
+  // Vagalume (11/11/2026, pedido do dono: "vagalumes, em profundidades desfocadas... mais perto da câmera desfoca, mais
+  // perto do assunto foca, mais longe do assunto no fundo desfoca, e a luz também afeta"): a luz feita em código, sem
+  // imagem. { vagalume: true, x, y (o centro), r (o raio do núcleo), blur, op, mistura }. O brilho em volta vai até 5
+  // vezes o raio e ilumina o que está atrás (mistura `screen`; num fundo branco, `mistura: 'normal'`). No plano do
+  // assunto: núcleo nítido (blur 0). Perto da lente: maior e bem desfocado. No fundo: menor, desfocado e mais fraco
+  // (melhor dentro das janelas, no `panorama`).
+  function vagalume(v, x, y) {
+    const r = v.r || 6;
+    const d = r * 10;
+    return `<div class="vagalume${v.cor === 'quente' ? ' quente' : ''}" style="${estilo({ left: x - d / 2, top: y - d / 2, width: d, height: d, filter: v.blur && ETAPA >= 3 ? `blur(${v.blur}px)` : 'none', opacity: v.op ?? 1, mixBlendMode: v.mistura || 'screen' })}"></div>`;
   }
   function telaLarga(partes) {
     const C = window.CARROSSEL || {};
@@ -195,21 +225,29 @@
     const j = String(partes.classe || '').split(' ').includes('sangra') ? 0 : JANELA;
     const dx = (n - 1) * CARD;
     const largura = CARD * ((C.slides || []).length || 1);
-    const panorama = s.semPanorama ? '' : listaDe(C.panorama).map((p) => img(p.arq, {
-      left: (p.x || 0) - dx - j, top: (p.y || 0) - j, width: p.w || largura,
-      filter: [p.blur && ETAPA >= 3 ? `blur(${p.blur}px)` : '', p.luz && p.luz !== 1 ? `brightness(${p.luz})` : ''].filter(Boolean).join(' ') || 'none',
-      opacity: p.op ?? 1,
-    }, 'panorama')).join('');
-    const pecas = s.semTravessia ? [] : listaDe(C.travessia);
-    const travessa = (t) => img(t.arq, {
-      left: t.x - dx, top: t.y, width: t.w,
+    const panorama = s.semPanorama ? '' : listaDe(C.panorama).map(comProfundidade).map((p) => (p.vagalume ? vagalume(p, p.x - dx - j, p.y - j) : img(p.arq, {
+      left: (p.x || 0) - dx - j, top: (p.y || 0) - j, width: p.w || largura, ...(p.h ? { height: p.h } : {}),
+      transform: `rotate(${p.rot || 0}deg)${p.espelho ? ' scaleX(-1)' : ''}`,
+      filter: PROF ? `brightness(0) invert(${(0.5 + 0.5 * (p.z || 0)).toFixed(2)})` : [p.blur && ETAPA >= 3 ? `blur(${p.blur}px)` : '', ...corDe(p)].filter(Boolean).join(' ') || 'none',
+      opacity: PROF ? 1 : p.op ?? 1,
+    }, 'panorama'))).join('');
+    const todas = s.semTravessia ? [] : listaDe(C.travessia);
+    // Luz por cima (11/11/2026, a camada 4 da capa do Van Gogh): { halo: true, x, y (o centro), d (o diâmetro), cor, op }.
+    // Vai numa camada própria em modo tela, que clareia o que está embaixo (o assunto, o título, o fundo).
+    const halos = todas.filter((t) => t.halo).map((t) => `<div class="halo-luz" style="${estilo({ left: t.x - dx - (t.d || 900) / 2, top: t.y - (t.d || 900) / 2, width: t.d || 900, height: t.d || 900, opacity: t.op ?? 0.5, background: `radial-gradient(circle, ${t.cor || '#fff1c2'} 0%, transparent 68%)` })}"></div>`).join('');
+    const pecas = todas.filter((t) => !t.halo).map(comProfundidade);
+    // No mapa de profundidade, cada elemento leva o número da distância escrito em cima.
+    const marca = (t) => (PROF && !t.vagalume ? `<div class="rotulo-z" style="${estilo({ left: t.x - dx + (t.w || 0) / 2 - 60, top: Math.max(8, Math.min(1300, t.y + (t.w || 0) * 0.3)) })}">z ${t.z ?? 0}${t.blur ? ` · desfoque ${t.blur}` : ''}</div>` : '');
+    const travessa = (t) => (t.vagalume ? (PROF ? '' : vagalume(t, t.x - dx, t.y)) : img(t.arq, {
+      left: t.x - dx, top: t.y, width: t.w, ...(t.h ? { height: t.h } : {}),
       transform: `rotate(${t.rot || 0}deg)${t.espelho ? ' scaleX(-1)' : ''}`,
-      filter: filtroDaTravessia(t), opacity: t.op ?? 1,
-    }, 'travessa');
+      filter: filtroDaTravessia(t), opacity: PROF ? 1 : t.op ?? 1,
+    }, 'travessa') + marca(t));
     return {
       panorama,
       travessia: pecas.filter((t) => !t.acima).map(travessa).join(''),
       acima: pecas.filter((t) => t.acima).map(travessa).join(''),
+      luz: halos,
     };
   }
 
@@ -218,7 +256,8 @@
   function montar(tema, partes) {
     // partes.classe: classe a mais no slide (ex.: 'sangra', a capa até a borda, sem a moldura preta; 05/11/2026).
     const larga = telaLarga(partes);
-    return `<div class="slide tema-${tema} etapa-${ETAPA}${partes.classe ? ` ${partes.classe}` : ''}${SO ? ` so so-${SO}` : ''}${ATE ? ` ate ate-${ATE}` : ''}">
+    const infinito = (larga.travessia || larga.acima || larga.luz ? ' larga' : '') + (PROF ? ' profundidade' : '');
+    return `<div class="slide tema-${tema} etapa-${ETAPA}${infinito}${partes.classe ? ` ${partes.classe}` : ''}${SO ? ` so so-${SO}` : ''}${ATE ? ` ate ate-${ATE}` : ''}">
       <div class="janela">
         <div class="camada c0">${partes.c0 || ''}${larga.panorama}</div>
         <div class="camada c1">${partes.c1 || ''}</div>
@@ -227,6 +266,7 @@
       </div>
       <div class="camada c3">${partes.c3 || ''}</div>
       ${larga.travessia ? `<div class="camada c-trav">${larga.travessia}</div>` : ''}
+      ${larga.luz ? `<div class="camada c-luz">${larga.luz}</div>` : ''}
       <div class="camada c4">${partes.c4 || ''}</div>
       ${larga.acima ? `<div class="camada c-trav acima">${larga.acima}</div>` : ''}
       <div class="camada c5">${partes.c5 || ''}</div>
@@ -237,7 +277,9 @@
   // Poeirinhas da etapa 5: pontos de tamanhos diferentes e um ou outro fiapo, sempre os mesmos em cada slide (a semente é o
   // nome e o número). Ficam fora do miolo, onde está o texto pequeno.
   function poeira() {
-    let r = [...nome].reduce((a, c) => a + c.charCodeAt(0), n * 97);
+    // `poeiraDe` no slide: sorteia como outra peça (a capa aprovada reaproveitada fica igual no pixel).
+    const semente = ((window.CARROSSEL && window.CARROSSEL.slides[n - 1]) || {}).poeiraDe || nome;
+    let r = [...semente].reduce((a, c) => a + c.charCodeAt(0), n * 97);
     const sorte = () => (r = (r * 9301 + 49297) % 233280) / 233280;
     const fora = ((window.CARROSSEL && window.CARROSSEL.slides[n - 1]) || {}).semPoeira || [];
     const longe = (x, y) => x > 25 && x < 975 && y > 125 && y < 1245 && !(x > 150 && x < 850 && y > 260 && y < 1010) &&
@@ -462,13 +504,13 @@
         c1: camada1(s),
         c3: `${folhas(s.folhas)}${bokeh(s.bokeh)}`,
         c4: `${cromo()}${topo(ctx.marca)}
-          <div class="miolo">
+          <div class="miolo${s.lado === 'esquerda' || s.lado === 'direita' ? ` ${s.lado}` : ''}">
             ${s.rotulo ? `<div class="rotulo-miolo ${s.vocativo ? 'vocativo' : ''}"${entra(0)}>${s.rotulo}</div>` : ''}
             ${s.titulo ? `<h2 class="t-miolo"${entra(0.05)}>${s.titulo}</h2>` : ''}
             ${s.texto ? `<p class="texto-miolo"${entra(0.12)}>${s.texto}</p>` : ''}
             ${p ? `<div class="prova">${p}</div>` : ''}
           </div>
-          ${trilho(ctx.i, ctx.total)}`,
+          ${s.semTrilho ? '' : trilho(ctx.i, ctx.total)}`,
       });
     },
 

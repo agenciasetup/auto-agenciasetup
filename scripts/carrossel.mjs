@@ -90,6 +90,21 @@ if (!so) {
     await pagina.goto(pathToFileURL(arqL).href, { waitUntil: 'load' });
     await pagina.screenshot({ path: join(saida, 'larga.jpg'), type: 'jpeg', quality: 90, clip: { x: 0, y: 0, width: feitos.length * 1080, height: 1350 } });
     console.log(`  larga.jpg (a tela de ${feitos.length * 1080} x 1350)`);
+    // O mapa de profundidade (pedido do dono, 11/11/2026): cada elemento num cinza pela distância (mais claro, mais
+    // perto da lente) e o número escrito, para conferir se o desfoque, o tamanho e a sombra batem com a distância.
+    await pagina.setViewport({ width: 1080, height: 1350, deviceScaleFactor: 1 });
+    const mapas = [];
+    for (let k = 1; k <= feitos.length; k++) {
+      await pagina.goto(`${modelo}?c=${nome}&s=${k}&profundidade=1`, { waitUntil: 'networkidle0' });
+      await pagina.waitForFunction(() => window.PRONTO === true, { timeout: 5000 }).catch(() => {});
+      mapas.push(await pagina.screenshot({ type: 'jpeg', quality: 80, encoding: 'base64', clip: { x: 0, y: 0, width: 1080, height: 1350 } }));
+    }
+    const arqP = join(saida, 'profundidade.html');
+    writeFileSync(arqP, `<html><body style="margin:0;display:flex">${mapas.map((b) => `<img src="data:image/jpeg;base64,${b}" style="width:1080px;height:1350px;display:block">`).join('')}</body></html>`);
+    await pagina.setViewport({ width: feitos.length * 1080, height: 1350, deviceScaleFactor: 1 });
+    await pagina.goto(pathToFileURL(arqP).href, { waitUntil: 'load' });
+    await pagina.screenshot({ path: join(saida, 'profundidade.jpg'), type: 'jpeg', quality: 85, clip: { x: 0, y: 0, width: feitos.length * 1080, height: 1350 } });
+    console.log('  profundidade.jpg (o mapa: mais claro, mais perto da lente)');
   }
 }
 await navegador.close();
