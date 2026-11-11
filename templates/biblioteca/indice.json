@@ -1161,6 +1161,180 @@
    "dica": "O laranja do Van Gogh original (#FAA004 no alto, #F57A06 embaixo). Panorama dos cards 1 e 2.",
    "adicionado": "2026-11-11",
    "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "plantas/flores/girassol-luz-tres-quartos.png",
+   "pasta": "plantas/flores",
+   "descricao": "Girassol em três quartos com as pétalas vindo para a frente, luz de contorno dourada, caule cortado embaixo.",
+   "largura": 841,
+   "altura": 1091,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id LwXeMnqswO",
+   "tags": [
+    "girassol",
+    "flor",
+    "amarelo",
+    "van-gogh",
+    "contorno"
+   ],
+   "dica": "O girassol com vida: atravessa a divisa com o caule saindo pela borda de baixo.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "plantas/flores/girassol-luz-de-frente.png",
+   "pasta": "plantas/flores",
+   "descricao": "Girassol de frente, cabeça grande, duas folhas, luz de contorno dourada, caule cortado embaixo.",
+   "largura": 835,
+   "altura": 1099,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id hu36PdIvqL",
+   "tags": [
+    "girassol",
+    "flor",
+    "amarelo",
+    "van-gogh",
+    "contorno"
+   ],
+   "dica": "Saindo do quadro, por cima do pé da headline (o CTA do Van Gogh).",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "arte/quadros/quadro-moldura-dourada-girassois.png",
+   "pasta": "arte/quadros",
+   "descricao": "Moldura dourada barroca com uma pintura no estilo dos Girassóis de Van Gogh (obra de domínio público), de frente.",
+   "largura": 742,
+   "altura": 904,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id N2QEavd6D9",
+   "tags": [
+    "quadro",
+    "moldura",
+    "dourado",
+    "van-gogh",
+    "girassol"
+   ],
+   "dica": "Nos cards escuros, embaixo do texto, como os quadros do carrossel do Leonardo.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "arte/quadros/quadro-moldura-dourada-terraco-cafe.png",
+   "pasta": "arte/quadros",
+   "descricao": "Moldura dourada barroca com uma pintura no estilo do Terraço do Café à Noite de Van Gogh (obra de domínio público), de frente.",
+   "largura": 695,
+   "altura": 844,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id YMjrKLsWeC",
+   "tags": [
+    "quadro",
+    "moldura",
+    "dourado",
+    "van-gogh",
+    "noite"
+   ],
+   "dica": "Nos cards escuros, embaixo do texto; a quina desfocada atravessa entre dois cards.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "plantas/flores/girassol-luz-tres-quartos-grande.png",
+   "pasta": "plantas/flores",
+   "descricao": "O girassol em três quartos com luz de contorno, ampliado em dobro.",
+   "largura": 1682,
+   "altura": 2182,
+   "fonte": "girassol-luz-tres-quartos ampliado 2x (Real-ESRGAN) em 11/11/2026",
+   "tags": [
+    "girassol",
+    "flor",
+    "grande",
+    "contorno"
+   ],
+   "dica": "Para a cabeça com uns 800 px.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "plantas/flores/girassol-luz-de-frente-grande.png",
+   "pasta": "plantas/flores",
+   "descricao": "O girassol de frente com luz de contorno, ampliado em dobro.",
+   "largura": 1670,
+   "altura": 2198,
+   "fonte": "girassol-luz-de-frente ampliado 2x (Real-ESRGAN) em 11/11/2026",
+   "tags": [
+    "girassol",
+    "flor",
+    "grande",
+    "contorno"
+   ],
+   "dica": "Saindo do quadro no CTA.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "plantas/flores/girassol-contraluz-tres-quartos.png",
+   "pasta": "plantas/flores",
+   "descricao": "Girassol em três quartos em contraluz dourado: pétalas translúcidas acesas por dentro, fio de luz no caule e nas folhas; caule cortado embaixo.",
+   "largura": 778,
+   "altura": 1073,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id bx0WVP75Y2",
+   "tags": [
+    "girassol",
+    "flor",
+    "amarelo",
+    "van-gogh",
+    "contraluz"
+   ],
+   "dica": "A luz de trás é o que dá vida (as referências do dono). Atravessando a divisa, caule pela borda de baixo.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "plantas/flores/girassol-contraluz-de-frente.png",
+   "pasta": "plantas/flores",
+   "descricao": "Girassol de frente em contraluz dourado: pétalas translúcidas acesas por dentro, fio de luz no caule e nas folhas; caule reto cortado embaixo.",
+   "largura": 628,
+   "altura": 1069,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id MBUg78bDCm",
+   "tags": [
+    "girassol",
+    "flor",
+    "amarelo",
+    "van-gogh",
+    "contraluz"
+   ],
+   "dica": "Saindo do quadro no CTA, por cima do pé da headline.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "plantas/flores/girassol-contraluz-tres-quartos-grande.png",
+   "pasta": "plantas/flores",
+   "descricao": "O girassol em três quartos em contraluz, ampliado em dobro.",
+   "largura": 1556,
+   "altura": 2146,
+   "fonte": "girassol-contraluz-tres-quartos ampliado 2x (Real-ESRGAN) em 11/11/2026",
+   "tags": [
+    "girassol",
+    "contraluz",
+    "grande"
+   ],
+   "dica": "Cabeça com uns 800 px na divisa.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "plantas/flores/girassol-contraluz-de-frente-grande.png",
+   "pasta": "plantas/flores",
+   "descricao": "O girassol de frente em contraluz, ampliado em dobro.",
+   "largura": 1256,
+   "altura": 2138,
+   "fonte": "girassol-contraluz-de-frente ampliado 2x (Real-ESRGAN) em 11/11/2026",
+   "tags": [
+    "girassol",
+    "contraluz",
+    "grande"
+   ],
+   "dica": "Saindo do quadro no CTA.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
   }
  ]
 }

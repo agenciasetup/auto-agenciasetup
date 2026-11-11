@@ -24,7 +24,7 @@ Dinheiro (notas, moedas, maço), mosquitos e outros insetos voando, cobras, outr
 - `templates/carrossel/imagens/elementos/`: as letras, a placa e o travessão de posts antigos.
 - `templates/frase/imagens/`: os objetos dos posts de frase.
 
-## O que tem (65 elementos)
+## O que tem (75 elementos)
 
 ### animais/abelhas (3)
 
@@ -77,16 +77,18 @@ Folha: `animais/vagalumes/folha.jpg`
 | `animais/vagalumes/vagalume-voando-de-lado-3.png` | Vagalume de verdade voando de lado, asas abertas, corpo escuro com o escudo laranja e a cauda acesa (amarelo alaranjado). | 776 x 553 | vagalume, inseto, luz, noite, floresta, voando | O vagalume que o dono quer é o inseto, não só o ponto de luz (referências: os posts do Anaconda e do Leonardo da Vinci). Junte um brilho quente na cauda ({ vagalume: true, cor: "quente" }) e varie a profundidade: nítido perto do texto, grande e desfocado perto da lente. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id SyIBn0IUb8 |
 | `animais/vagalumes/vagalume-voando-de-lado.png` | Vagalume de verdade voando de lado, asas abertas, corpo escuro com o escudo laranja e a cauda acesa (amarelo alaranjado). | 827 x 651 | vagalume, inseto, luz, noite, floresta, voando | O vagalume que o dono quer é o inseto, não só o ponto de luz (referências: os posts do Anaconda e do Leonardo da Vinci). Junte um brilho quente na cauda ({ vagalume: true, cor: "quente" }) e varie a profundidade: nítido perto do texto, grande e desfocado perto da lente. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id bx0Y4OG5Y2 |
 
-### arte/quadros (4)
+### arte/quadros (6)
 
 Folha: `arte/quadros/folha.jpg`
 
 | Arquivo | O que é | Tamanho | Tags | Dica | De onde veio |
 | --- | --- | --- | --- | --- | --- |
+| `arte/quadros/quadro-moldura-dourada-girassois.png` | Moldura dourada barroca com uma pintura no estilo dos Girassóis de Van Gogh (obra de domínio público), de frente. | 742 x 904 | quadro, moldura, dourado, van-gogh, girassol | Nos cards escuros, embaixo do texto, como os quadros do carrossel do Leonardo. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id N2QEavd6D9 |
 | `arte/quadros/quadro-moldura-dourada-noite-estrelada-2.png` | Moldura dourada antiga com uma pintura no estilo da Noite Estrelada (obra de domínio público), de frente. | 803 x 810 | quadro, moldura, dourado, pintura, van gogh, arte | Atrás do personagem, sutilmente desfocado (blur 3 a 5), como na capa do Van Gogh. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id LwXD11hswO |
 | `arte/quadros/quadro-moldura-dourada-noite-estrelada-3.png` | Moldura dourada antiga com uma pintura no estilo da Noite Estrelada (obra de domínio público), de frente. | 832 x 728 | quadro, moldura, dourado, pintura, van gogh, arte | Atrás do personagem, sutilmente desfocado (blur 3 a 5), como na capa do Van Gogh. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id xSeVKFpjfW |
 | `arte/quadros/quadro-moldura-dourada-noite-estrelada-grande.png` | Moldura dourada com pintura no estilo da Noite Estrelada, ampliada em dobro (1606 px). | 1606 x 1620 | quadro, moldura, dourado, van-gogh, grande | Atrás do personagem, centralizado e sutilmente desfocado. | quadro-moldura-dourada-noite-estrelada-2.png ampliado 2x (Real-ESRGAN) em 11/11/2026 |
 | `arte/quadros/quadro-moldura-dourada-noite-estrelada.png` | Moldura dourada antiga com uma pintura no estilo da Noite Estrelada (obra de domínio público), de frente. | 814 x 757 | quadro, moldura, dourado, pintura, van gogh, arte | Atrás do personagem, sutilmente desfocado (blur 3 a 5), como na capa do Van Gogh. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id 4REvJxP9Aa |
+| `arte/quadros/quadro-moldura-dourada-terraco-cafe.png` | Moldura dourada barroca com uma pintura no estilo do Terraço do Café à Noite de Van Gogh (obra de domínio público), de frente. | 695 x 844 | quadro, moldura, dourado, van-gogh, noite | Nos cards escuros, embaixo do texto; a quina desfocada atravessa entre dois cards. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id YMjrKLsWeC |
 
 ### ceu/nevoa (2)
 
@@ -177,15 +179,23 @@ Folha: `personagens/historicos/folha.jpg`
 | `personagens/historicos/van-gogh-3d-grande.png` | Van Gogh em 3D, chapéu de palha, barba ruiva, camisa azul, ampliado em dobro (1386 px). | 1386 x 2184 | van-gogh, personagem, 3d, grande | No meio da capa, com o quadro atrás, o chapéu um pouco por cima da headline e o corpo saindo pela moldura de baixo. | van-gogh-3d-3.png ampliado 2x (Real-ESRGAN) em 11/11/2026 |
 | `personagens/historicos/van-gogh-3d.png` | Van Gogh em 3D, estilo filme de animação: chapéu de palha, barba ruiva, camisa azul e suspensório, da cintura para cima, olhar um pouco preocupado. | 763 x 1099 | van gogh, personagem, 3d, pintor, arte | Personagem histórico (domínio público). Na capa, na frente do quadro desfocado e atrás das abelhas. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id O6atwE0ynm |
 
-### plantas/flores (5)
+### plantas/flores (13)
 
 Folha: `plantas/flores/folha.jpg`
 
 | Arquivo | O que é | Tamanho | Tags | Dica | De onde veio |
 | --- | --- | --- | --- | --- | --- |
 | `plantas/flores/girassol-caule-reto.png` | Girassol de frente, caule mais reto e duas folhas. | 781 x 922 | girassol, flor, amarelo, van gogh | O girassol do Van Gogh: pode atravessar a divisa entre dois cards. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id nVxKZSaYQD |
+| `plantas/flores/girassol-contraluz-de-frente-grande.png` | O girassol de frente em contraluz, ampliado em dobro. | 1256 x 2138 | girassol, contraluz, grande | Saindo do quadro no CTA. | girassol-contraluz-de-frente ampliado 2x (Real-ESRGAN) em 11/11/2026 |
+| `plantas/flores/girassol-contraluz-de-frente.png` | Girassol de frente em contraluz dourado: pétalas translúcidas acesas por dentro, fio de luz no caule e nas folhas; caule reto cortado embaixo. | 628 x 1069 | girassol, flor, amarelo, van-gogh, contraluz | Saindo do quadro no CTA, por cima do pé da headline. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id MBUg78bDCm |
+| `plantas/flores/girassol-contraluz-tres-quartos-grande.png` | O girassol em três quartos em contraluz, ampliado em dobro. | 1556 x 2146 | girassol, contraluz, grande | Cabeça com uns 800 px na divisa. | girassol-contraluz-tres-quartos ampliado 2x (Real-ESRGAN) em 11/11/2026 |
+| `plantas/flores/girassol-contraluz-tres-quartos.png` | Girassol em três quartos em contraluz dourado: pétalas translúcidas acesas por dentro, fio de luz no caule e nas folhas; caule cortado embaixo. | 778 x 1073 | girassol, flor, amarelo, van-gogh, contraluz | A luz de trás é o que dá vida (as referências do dono). Atravessando a divisa, caule pela borda de baixo. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id bx0WVP75Y2 |
 | `plantas/flores/girassol-de-frente-grande.png` | Girassol de frente, caule curvo e duas folhas, ampliado em dobro (1564 px). | 1564 x 1906 | girassol, flor, amarelo, van-gogh, grande | Para a cabeça ocupar metade da altura do card (uns 800 px), como no Van Gogh original: atravessando a divisa, o caule cortado pela borda de baixo. | girassol-de-frente.png ampliado 2x (Real-ESRGAN) em 11/11/2026 |
 | `plantas/flores/girassol-de-frente.png` | Girassol de frente, com caule curvo e duas folhas. | 782 x 953 | girassol, flor, amarelo, van gogh | O girassol do Van Gogh: pode atravessar a divisa entre dois cards. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id ksMcHC816B |
+| `plantas/flores/girassol-luz-de-frente-grande.png` | O girassol de frente com luz de contorno, ampliado em dobro. | 1670 x 2198 | girassol, flor, grande, contorno | Saindo do quadro no CTA. | girassol-luz-de-frente ampliado 2x (Real-ESRGAN) em 11/11/2026 |
+| `plantas/flores/girassol-luz-de-frente.png` | Girassol de frente, cabeça grande, duas folhas, luz de contorno dourada, caule cortado embaixo. | 835 x 1099 | girassol, flor, amarelo, van-gogh, contorno | Saindo do quadro, por cima do pé da headline (o CTA do Van Gogh). | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id hu36PdIvqL |
+| `plantas/flores/girassol-luz-tres-quartos-grande.png` | O girassol em três quartos com luz de contorno, ampliado em dobro. | 1682 x 2182 | girassol, flor, grande, contorno | Para a cabeça com uns 800 px. | girassol-luz-tres-quartos ampliado 2x (Real-ESRGAN) em 11/11/2026 |
+| `plantas/flores/girassol-luz-tres-quartos.png` | Girassol em três quartos com as pétalas vindo para a frente, luz de contorno dourada, caule cortado embaixo. | 841 x 1091 | girassol, flor, amarelo, van-gogh, contorno | O girassol com vida: atravessa a divisa com o caule saindo pela borda de baixo. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id LwXeMnqswO |
 | `plantas/flores/girassol-tres-quartos-grande.png` | Girassol em três quartos, caule curvo e duas folhas, ampliado em dobro (1350 px). | 1350 x 1846 | girassol, flor, amarelo, van-gogh, grande | O girassol saindo do quadro, na frente da headline do último card. | girassol-tres-quartos.png ampliado 2x (Real-ESRGAN) em 11/11/2026 |
 | `plantas/flores/girassol-tres-quartos.png` | Girassol grande com caule curvo e duas folhas, em três quartos. | 675 x 923 | girassol, flor, amarelo, van gogh | O girassol do Van Gogh: pode atravessar a divisa entre dois cards. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id aFZ6IVmfSh |
 

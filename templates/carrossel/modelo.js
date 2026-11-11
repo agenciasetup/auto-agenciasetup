@@ -149,7 +149,7 @@
   // Assunto recortado de foto (camada 2): sombra projetada no fundo, halo quente e, se pedir, desfoque progressivo no que
   // está mais perto da câmera (`foco`: nítido até `de`, cresce até `max` px em `ate`, na direção `angulo`).
   function assuntoFoto(a) {
-    const caixa = { left: a.x - JANELA, top: a.y - JANELA, width: a.w };
+    const caixa = { left: a.x - JANELA, top: a.y - JANELA, width: a.w, ...(a.contorno ? { filter: `drop-shadow(0 0 3px ${a.contorno}) drop-shadow(0 0 26px ${a.contorno}70)` } : {}) };
     const f = a.foco;
     // `brilho: false`: sem o halo quente em volta da pessoa (o Filipe reprovou o "glow sem sentido" atrás dele, 24/10/2026).
     const classes = `assunto limpo${a.cru ? ' cru' : ''}${a.brilho === false ? ' sem-brilho' : ''}`;
@@ -205,6 +205,9 @@
     if (ETAPA < 3) return corDe(t).join(' ') || 'none';
     const f = [];
     if (t.blur) f.push(`blur(${t.blur}px)`);
+    // `contorno`: a luz de contorno na borda (o dono, 11/11/2026: "um girassol lindo, com uma luz de contorno nos lados,
+    // amarelo"), um brilho fino e outro largo na cor pedida.
+    if (t.contorno && ETAPA >= 3) f.push(`drop-shadow(0 0 3px ${t.contorno})`, `drop-shadow(0 0 26px ${t.contorno}70)`);
     if (t.comZ ? t.sombra : t.sombra !== false && !t.blur) {
       const p = { x: 22, y: 34, blur: 38, op: 0.42, ...(typeof t.sombra === 'object' ? t.sombra : {}) };
       // A sombra de contato (curta e escura) só no que encosta na superfície; o que voa acima dela fica só com a larga.
@@ -490,7 +493,8 @@
       // `posFrente`: o texto pequeno de baixo ("um designer") fica na frente do assunto, e o assunto pode passar por cima
       // da headline sem esconder o texto (o Van Gogh do dono, 11/11/2026: o chapéu cobre o pé do CONTRATE e o "um
       // designer" fica por cima do chapéu).
-      const posTitulo = t.pos ? `<div class="pos-titulo${t.posFrente ? ' na-frente' : ''}" style="font-size:${t.posTam || 56}px" ${ancora(t.posLado || 'direita', 'abaixo', t.posEspaco ?? 4)}>${t.pos}</div>` : '';
+      // `posFonte` e `posCor`: o texto pequeno noutra fonte ("um designer" na Calango Signature, 11/11/2026).
+      const posTitulo = t.pos ? `<div class="pos-titulo${t.posFrente ? ' na-frente' : ''}" style="font-size:${t.posTam || 56}px${t.posFonte ? `;font-family:'${t.posFonte}',cursive;font-weight:400;letter-spacing:0` : ''}${t.posCor ? `;color:${t.posCor}` : ''}" ${ancora(t.posLado || 'direita', 'abaixo', t.posEspaco ?? 4)}>${t.pos}</div>` : '';
       const n = s.notificacao;
       return montar(tema, {
         classe: s.sangra ? 'sangra' : '',
@@ -526,7 +530,7 @@
         c1: camada1(s),
         c3: `${folhas(s.folhas)}${bokeh(s.bokeh)}`,
         c4: `${cromo()}${topo(ctx.marca)}
-          <div class="miolo${s.lado === 'esquerda' || s.lado === 'direita' ? ` ${s.lado}` : ''}">
+          <div class="miolo${s.lado === 'esquerda' || s.lado === 'direita' ? ` ${s.lado}` : ''}${s.alto ? ' alto' : ''}">
             ${s.rotulo ? `<div class="rotulo-miolo ${s.vocativo ? 'vocativo' : ''}"${entra(0)}>${s.rotulo}</div>` : ''}
             ${s.titulo ? `<h2 class="t-miolo"${entra(0.05)}>${s.titulo}</h2>` : ''}
             ${s.texto ? `<p class="texto-miolo"${entra(0.12)}>${s.texto}</p>` : ''}

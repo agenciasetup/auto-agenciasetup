@@ -5,6 +5,8 @@
 // as imagens ficam em _local/design-arquivo/.
 //   node scripts/design-arquivo.mjs              a amostra padrão (as 4 épocas)
 //   node scripts/design-arquivo.mjs --listar     só mostra quais carrosséis entrariam
+//   node scripts/design-arquivo.mjs --post DTycWllEa_C [--post ...]   um post de referência que o dono mandou (o código
+//                                                do link instagram.com/p/<código>/), em _local/design-arquivo/ref-<código>/
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
@@ -55,6 +57,32 @@ if (!conta) { console.error('Sem a conta do Instagram do Brasil conectada.'); pr
 const token = encodeURIComponent((await decifrar(env, conta.credenciais)).token);
 
 fs.mkdirSync(path.join(SAIDA, 'folhas'), { recursive: true });
+
+// Um post de referência pelo código do link (o dono manda o link e o time estuda o post inteiro).
+const posts = process.argv.flatMap((a, i, l) => (a === '--post' ? [l[i + 1]] : [])).filter(Boolean);
+if (posts.length) {
+  for (const codigo of posts) {
+    const limpo = codigo.replace(/[^A-Za-z0-9_-]/g, '');
+    const [p] = await sql(`select id_na_rede, publicado_em, curtidas, comentarios, salvos, nota, link from posts_redes where rede = 'instagram' and link like '%/${limpo}%' limit 1`);
+    if (!p) { console.log(`${limpo}: não achei esse post na conta (só os posts da @agenciasetup)`); continue; }
+    const m = await (await fetch(`${GRAPH}/${p.id_na_rede}?fields=children{media_type,media_url,thumbnail_url},media_url&access_token=${token}`)).json();
+    if (m.error) { console.log(`${limpo}: Instagram: ${m.error.message}`); continue; }
+    const filhos = (m.children && m.children.data) || [{ media_type: 'IMAGE', media_url: m.media_url }];
+    const pasta = path.join(SAIDA, `ref-${limpo}`);
+    fs.mkdirSync(pasta, { recursive: true });
+    const arquivos = [];
+    for (const [i, fi] of filhos.entries()) {
+      const url = fi.media_type === 'VIDEO' ? fi.thumbnail_url : fi.media_url;
+      if (!url) continue;
+      const arq = path.join(pasta, `${String(i + 1).padStart(2, '0')}.jpg`);
+      await baixar(url, arq);
+      arquivos.push(arq);
+    }
+    if (arquivos.length) await folha(arquivos, path.join(pasta, 'folha.jpg'));
+    console.log(`${limpo}: ${arquivos.length} slides em ${pasta} (curtidas ${p.curtidas}, comentários ${p.comentarios}, salvos ${p.salvos ?? '?'}, nota ${p.nota ?? '?'})`);
+  }
+  process.exit(0);
+}
 const indice = [];
 for (const e of EPOCAS) {
   const lista = await amostra(e);

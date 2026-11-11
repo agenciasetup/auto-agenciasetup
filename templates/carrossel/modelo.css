@@ -313,6 +313,8 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 /* `lado` no slide de dentro (11/11/2026): o texto vai para um lado e o elemento grande que atravessa ocupa o outro. */
 .miolo.esquerda { left: 130px; right: 470px; align-items: flex-start; text-align: left; }
 .miolo.direita { left: 470px; right: 130px; align-items: flex-end; text-align: right; }
+/* `alto`: o texto no alto e o espaço de baixo para um elemento (o quadro embaixo da frase, como no carrossel do Leonardo). */
+.miolo.alto { justify-content: flex-start; padding-top: 110px; }
 .rotulo-miolo { font-family: 'JetBrains Mono', monospace; font-size: 20px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--tinta-fraca); margin-bottom: 28px; }
 .rotulo-miolo.vocativo { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 64px; letter-spacing: 0; text-transform: none; color: var(--acento); margin-bottom: 18px; }
 .t-miolo { font-weight: 300; font-size: 68px; line-height: 1.08; letter-spacing: -0.025em; }
