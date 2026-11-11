@@ -5,7 +5,8 @@
 // Rodar de verdade é pelo conector, com o código que está no ar (no computador a chave do Claude não abre, de propósito):
 //   node scripts/conector.mjs design_olheiro '{}'    e    node scripts/conector.mjs design_diretor '{}'
 import { env as local } from './env.mjs';
-import { separar, tipoDe, conferirLeitura, contar, cartaoDe, textoLivre, tituloCurto, rodarOlheiroVisual, montarPedido as pedidoDoOlheiro } from '../worker/lib/agentes/olheiro-visual.js';
+import { separar, tipoDe, conferirLeitura, contar, cartaoDe, textoLivre, tituloCurto, doGuiaEmTexto, rodarOlheiroVisual, montarPedido as pedidoDoOlheiro } from '../worker/lib/agentes/olheiro-visual.js';
+import { GUIA, contraOGuia, blocoDoCaderno } from '../worker/lib/agentes/direcao-de-arte.js';
 import { conferirTeste, medir, cartaoDoResultado, resumoDaLeitura, rodarDiretorDeArte, lerDesign, montarPedido as pedidoDoDiretor } from '../worker/lib/agentes/diretor-de-arte.js';
 import { blocoDaMemoria, textoDaMemoria } from '../worker/lib/escritorio.js';
 import { daTarefa, tarefasQueNaoRodaram } from '../worker/lib/agentes/zelador.js';
@@ -100,6 +101,46 @@ ok('medida: nota acima sem os salvos não vira regra', medir([p(18, 10), p(15, 1
 const m = medir([p(18, 90, 'FUNDOS'), p(15, 80, 'CORES')], [p(10, 40), p(9, 30), p(11, 50)]);
 const cr = cartaoDoResultado({ titulo: 'Bicho perto da lente', regra: 'O bicho perto da lente.', aprovado_em: '2026-11-16T14:00:00Z' }, m, [p(18, 90, 'FUNDOS'), p(15, 80, 'CORES')]);
 ok('o cartão do resultado tem os números das duas pontas', cr.prova.includes('nota mediana 16,5') && cr.prova.includes('nota 10') && cr.titulo.includes('virar regra'), cr);
+
+// ---------------------------------------------------------------- o guia de direção de arte do dono (11/11/2026)
+ok('o guia fala de respiro, bloco, contraluz, cor em ser vivo e sombra', ['respiro em cima', 'bloco da mesma largura', 'Contraluz', 'Ser vivo nunca fica cinza', 'o que voa não tem sombra', 'Calango Condensed'].every((p) => GUIA.includes(p)));
+const contra = (nome, texto) => ok(`contraria o guia: ${nome}`, typeof contraOGuia(texto) === 'string', contraOGuia(texto));
+const dentro = (nome, texto) => ok(`dentro do guia: ${nome}`, contraOGuia(texto) === null, contraOGuia(texto));
+contra('fonte de fora', 'Troque o título para a fonte Poppins, mais moderna.');
+contra('sombra no texto', 'Ponha uma sombra forte no título para destacar.');
+contra('título colado no alto', 'O título bem grande, colado no topo da janela.');
+contra('bicho cinza', 'A abelha em cinza, para não brigar com o fundo.');
+contra('pincelada de tinta', 'Uma pincelada rosa cruzando a capa por trás do assunto.');
+contra('nuvem cinza', 'Nuvens cinza e pesadas no canto da capa.');
+contra('flare', 'Um flare quente saindo de trás do bicho.');
+contra('sombra no que voa', 'Cada abelha com a sua sombra, e uma sombra na borboleta também.');
+dentro('negação da sombra', 'Título sem sombra no texto, com respiro em cima.');
+dentro('negação em lista', 'Sem pôr do sol, flare ou névoa dourada: luz de trás acendendo as bordas.');
+dentro('nada de pincelada', 'Nada de pincelada de tinta: o quadro de verdade, com luz quente atrás.');
+dentro('regra boa', 'O bicho em contraluz, com a cor cheia, num fundo com textura e uma folha desfocada perto da lente.');
+dentro('nunca cinza', 'O bicho nunca em cinza: cor viva e luz de trás.');
+barraL('regra que contraria o guia', { regra: 'Na próxima capa, ponha uma pincelada rosa atrás do bicho para dar movimento.' }, 'guia');
+ok('o padrão pode descrever o que se vê embaixo (não é ordem)', typeof conferirLeitura({ ...leituraBoa, padrao_baixo: 'As de baixo têm flare, nuvem cinza e pincelada de tinta atrás do texto.' }, sel.capas) === 'object');
+barraT('teste com fonte de fora', { regra: 'Nas próximas capas, a palavra grande na fonte Montserrat, com o bicho perto da lente.' }, 'guia');
+barraT('teste que deixa o bicho cinza', { titulo: 'Bicho em preto e branco na cena colorida' }, 'guia');
+ok('o por que pode citar o que deu errado', typeof conferirTeste({ ...testeBom, por_que: 'As de cima têm nota 30 e as de baixo tinham flare e nuvem cinza.' }, ctx) === 'object', conferirTeste({ ...testeBom, por_que: 'As de cima têm nota 30 e as de baixo tinham flare e nuvem cinza.' }, ctx));
+// A leitura no vocabulário do guia: luz, respiro, planos e elementos, contados pelo código.
+const leituraDoGuia = { ...leituraBoa, capas: leituraBoa.capas.map((c, i) => ({ ...c, luz: i % 2 ? 'frente' : 'contraluz', respiro: 'folgado', planos: 'tres', elementos: i === 0 ? 'coisa inventada' : 'da_cena' })) };
+const lg = conferirLeitura(leituraDoGuia, sel.capas);
+ok('a leitura guarda luz, respiro, planos e elementos', typeof lg === 'object' && lg.capas.get('c1').luz === 'contraluz' && lg.capas.get('c2').respiro === 'folgado' && lg.capas.get('c2').planos === 'tres', lg && lg.capas && lg.capas.get('c1'));
+ok('valor fora da lista fica vazio e a capa continua', lg.capas.get('c1').elementos === null && lg.capas.size === sel.capas.length);
+const kg = contar(sel.capas, lg.capas);
+ok('o código conta a leitura do guia em cima e embaixo', kg.carrossel.topo.luz.contraluz + (kg.carrossel.topo.luz.frente || 0) === kg.carrossel.topo.n && kg.carrossel.topo.respiro.folgado === kg.carrossel.topo.n, kg.carrossel.topo);
+ok('a contagem do guia vira frase', doGuiaEmTexto(kg.carrossel.topo).includes('contraluz') && doGuiaEmTexto(kg.carrossel.topo).includes('título com respiro') && doGuiaEmTexto({}) === '', doGuiaEmTexto(kg.carrossel.topo));
+const cartaoG = cartaoDe(sel, lg, kg);
+ok('o cartão do Olheiro traz a leitura pelo guia e cabe', cartaoG.prova.includes('Pelo guia, em cima') && cartaoG.prova.length <= 1500, cartaoG.prova);
+const resumoG = resumoDaLeitura({ ...leituraGuardada, capas: sel.capas.map((c) => ({ ...c, ...(lg.capas.get(c.ref) || {}) })), contagem: kg });
+ok('o Diretor recebe a leitura pelo guia', resumoG.includes('Pelo guia, em cima') && resumoG.includes('contraluz') && resumoG.includes('três planos ou mais'), resumoG.slice(0, 700));
+ok('leitura antiga (sem os campos do guia) continua valendo', !resumo.includes('Pelo guia') && !cartao.prova.includes('Pelo guia'));
+// O caderno do Escritório chega ao pedido dos dois.
+const cad = '2026-11-11: o padrão é o guia de direção de arte.';
+ok('o caderno entra no pedido do Diretor, marcado', pedidoDoDiretor(leituraGuardada, [], '', cad).includes(blocoDoCaderno(cad)) && !pedidoDoDiretor(leituraGuardada, [], '').includes('<caderno>'));
+ok('o caderno entra no pedido do Olheiro, antes das capas', pedidoDoOlheiro(sel, null, '', cad).some((b) => b.type === 'text' && b.text.includes(blocoDoCaderno(cad))) && !pedidoDoOlheiro(sel, null, '').some((b) => b.type === 'text' && b.text.includes('<caderno>')));
 
 // ---------------------------------------------------------------- a memória: o recado do dono nos cartões de antes
 const memTexto = textoDaMemoria([

@@ -891,7 +891,8 @@ O dono refez o carrossel do Van Gogh comigo, volta por volta, e pediu no fim: "q
 - **Banco de capas** em `templates/carrossel/referencias/banco/` (as imagens fora do Git; o índice e o que cada capa ensina, dentro). As medidas de cor do banco calibram a conferência.
 - **Dependência nova, sem pacote novo:** o Depth Anything V2 Small (Apache 2.0) roda no ambiente do `tratar` (`profundidade` e `foco`). O Base e o Large ficaram de fora porque a licença deles não é comercial.
 - **No modelo:** sombra só quando pedida, `mistura`, `escurece`, `rastro`, `contorno`, `cantos`, luz com cor de borda e modo de mesclagem, `posFrente`, `posFonte`, `alto`, `vars` e `luzDe`.
-- Nada foi publicado: o Van Gogh está só no computador, sem a palavra do "Comenta" e fora da fila.
+- **Os agentes do Worker da sala Design seguem o guia** (`worker/lib/agentes/direcao-de-arte.js`): o Olheiro visual lê cada capa também pela luz, pelo respiro do título, pelos planos e pelos elementos, e o código conta; a regra do Olheiro e o teste do Diretor de arte que mandam fazer o que o dono já reprovou não passam (`contraOGuia`); os dois recebem o caderno deles no Escritório (antes a lição escrita ali não chegava ao código). Mudou o guia da skill, muda o resumo nesse arquivo.
+- O Van Gogh foi para a fila como rascunho no mesmo dia, com o ok do dono (peça 317e1185), com o Comenta POSTS desligado. Nada foi publicado.
 
 ## Em aberto
 
