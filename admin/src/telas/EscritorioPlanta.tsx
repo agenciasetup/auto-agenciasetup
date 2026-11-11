@@ -125,7 +125,7 @@ export function Planta({ salas, arte, abrir }: { salas: any[]; arte: any; abrir:
 
 type Boneco = { b: HTMLElement; x: number; y: number; tx: number; ty: number; ponto: number; ate: number; anda: boolean; senta: boolean; parado: boolean };
 
-function SalaIso({ s, imagem, bonecos, abrir, expandir, grande = false }: { s: any; imagem?: string; bonecos: Record<string, string>; abrir: (a: any) => void; expandir?: () => void; grande?: boolean }) {
+export function SalaIso({ s, imagem, bonecos, abrir, expandir, grande = false }: { s: any; imagem?: string; bonecos: Record<string, string>; abrir: (a: any) => void; expandir?: () => void; grande?: boolean }) {
   const chao = useRef<HTMLDivElement>(null);
   // Cada sala troca a vez em um instante diferente, para os balões da planta não mudarem todos juntos.
   const fase = useRef(Math.random() * TEMPO_DA_FALA);

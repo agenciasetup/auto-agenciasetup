@@ -218,6 +218,71 @@ button.cel-espera:active { transform: scale(0.985); }
 button.cel-linha { cursor: pointer; }
 button.cel-linha:active { transform: scale(0.99); }
 
+/* ------------------------------------------------------------------------------------------------------------------
+   O palco: o escritório ao vivo, com cara de jogo. Uma sala por vez do tamanho da tela (a mesma sala viva da planta da
+   tela grande), o placar em cima e o mapa das salas embaixo. O palco é sempre escuro, no tema claro também: é a cena. */
+.cel-palco {
+  position: relative; margin: -14px -14px 16px; padding: 12px 0 10px; overflow: hidden; color: #fff;
+  background:
+    radial-gradient(90% 46% at 50% 44%, color-mix(in srgb, var(--cor) 30%, transparent), transparent 72%),
+    linear-gradient(180deg, #0a0b10, #0d0e15 70%, #0a0b10);
+  transition: --cor 400ms; border-bottom: 1px solid var(--borda);
+}
+/* o chão de pixel, que some para baixo */
+.cel-palco::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 18px 18px; -webkit-mask-image: radial-gradient(80% 60% at 50% 45%, #000, transparent); mask-image: radial-gradient(80% 60% at 50% 45%, #000, transparent);
+}
+.cel-hud { position: relative; z-index: 3; display: flex; align-items: stretch; gap: 7px; padding: 0 12px; }
+.cel-hud-sala, .cel-hud-pilula {
+  border: 0; border-radius: 15px; background: rgba(8, 9, 13, 0.74); color: #fff; font: inherit; text-align: left;
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.cel-hud-sala { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 11px; cursor: pointer; }
+.cel-hud-sala > i { flex: none; width: 13px; height: 13px; border-radius: 4px; background: var(--cor); box-shadow: 0 0 14px var(--cor); }
+.cel-hud-sala > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.cel-hud-sala strong { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cel-hud-sala small { font-size: 11.5px; color: rgba(255, 255, 255, 0.66); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cel-hud-sala > svg { flex: none; width: 16px; height: 16px; color: rgba(255, 255, 255, 0.5); }
+.cel-hud-pilula { flex: none; width: 76px; display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 7px 9px; }
+.cel-hud-pilula > span { display: flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600; color: rgba(255, 255, 255, 0.62); }
+.cel-hud-pilula svg { width: 11px; height: 11px; }
+.cel-hud-pilula b { font-size: 17px; line-height: 1.05; font-weight: 700; letter-spacing: -0.02em; }
+.cel-hud-pilula small { font-size: 10px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; }
+.cel-hud-pilula em { display: block; height: 5px; margin-top: 2px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
+.cel-hud-pilula em i { display: block; height: 100%; border-radius: 999px; transition: width 500ms var(--suave); }
+button.cel-hud-pilula { cursor: pointer; }
+.cel-hud-pilula.chama { box-shadow: inset 0 0 0 1.5px var(--vermelho), 0 6px 18px rgba(0, 0, 0, 0.35); }
+.cel-hud-pilula.chama b { color: #ff6b61; }
+.cel-hud-sala:active, button.cel-hud-pilula:active { transform: scale(0.97); }
+
+/* O trilho: as salas lado a lado, uma por tela. A folga em cima é do balão e a de baixo é do crachá do Calango. */
+.cel-trilho { position: relative; z-index: 1; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.cel-trilho::-webkit-scrollbar { display: none; }
+.cel-trilho-sala { flex: 0 0 100%; min-width: 0; scroll-snap-align: center; scroll-snap-stop: always; padding: 30px 8px 26px; }
+.app-cel .pl-sala.pl-grande { max-width: none; }
+.cel-palco .pl-chao { filter: drop-shadow(0 18px 22px rgba(0, 0, 0, 0.55)); }
+.cel-palco .pl-boneco { -webkit-tap-highlight-color: transparent; }
+.cel-palco .pl-boneco:active .pl-sprite { scale: 1.12; }
+
+/* O mapa: as salas em miniatura. A da vez acende na cor dela. */
+.cel-mapa { position: relative; z-index: 2; display: flex; gap: 6px; padding: 4px 12px 2px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.cel-mapa::-webkit-scrollbar { display: none; }
+.cel-mapa button { position: relative; flex: none; width: 62px; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 3px 0 0; border: 0; background: none; cursor: pointer; color: rgba(255, 255, 255, 0.55); font: 600 10.5px/1.15 var(--sans); }
+.cel-mapa button > span {
+  width: 54px; height: 50px; border-radius: 14px; background: #15161d center 46% / 122% no-repeat; image-rendering: pixelated;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.1); transition: transform 240ms var(--mola), box-shadow 240ms var(--suave);
+}
+.cel-mapa button.ativo { color: #fff; }
+.cel-mapa button.ativo > span { transform: translateY(-2px) scale(1.07); box-shadow: inset 0 0 0 2px var(--cor), 0 0 18px color-mix(in srgb, var(--cor) 60%, transparent); }
+.cel-mapa button > b { position: absolute; top: 0; right: 2px; width: 11px; height: 11px; border-radius: 50%; background: var(--ambar); box-shadow: 0 0 0 2px #0b0c12; }
+.cel-palco-dica { position: relative; z-index: 2; margin: 8px 0 0; text-align: center; font-size: 11.5px; color: rgba(255, 255, 255, 0.42); }
+.cel-ancora { scroll-margin-top: calc(env(safe-area-inset-top) + 64px); }
+.cel-ver-perfil { align-self: flex-start; margin-top: 2px; }
+/* O perfil do Calango cobre a tela inteira no celular, por cima da barra de baixo. */
+.app-cel .pl-perfil { width: 100vw; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+
 /* As salas do Escritório, com a arte em pixel de cada uma. */
 .cel-salas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .cel-sala {

@@ -852,6 +852,16 @@ Pedido do dono, com o print dos avisos na tela bloqueada: "atualize pra mim o mo
 - **Número no ícone.** Ao abrir, o app põe no ícone quanto espera o dono; os avisos que chegam depois somam um.
 - **Ficou de fora.** Widgets (o dono mandou deixar; o caminho sem app nativo é o Scriptable), escolher aviso por sala e horário de silêncio (o iPhone já tem o Não Perturbe).
 
+## Tomadas em 10/11/2026 (escritório vivo no celular)
+
+O dono viu o app novo e pediu: "senti falta de conseguir ver os calanguinho la se mexendo... essa parte imersiva é a mais daora", "podia ter um aspecto de jogo", "estética de habbo mesmo, só que mobile".
+
+- **A mesma sala, não outra.** O palco do celular usa a sala viva da planta da tela grande (`SalaIso`, que passou a ser exportada). O que mudar na planta muda nos dois lugares, e os lugares dos Calangos (`SENTAR` e `ANDAR`) continuam num lugar só.
+- **Uma sala por tela.** No celular a planta com oito salas juntas fica miúda demais para tocar num Calango. Por isso cada sala ocupa a largura da tela e a troca é deslizando ou pelo mapa de baixo. O app lembra a sala em que a pessoa estava.
+- **Placar de jogo, com números de verdade.** "Energia" é quanto sobra do teto de IA do dia e "Mesa" é quantas propostas esperam o dono (o toque leva até elas). Nada inventado para enfeitar.
+- **O palco é sempre escuro,** também no tema claro: é a cena.
+- **O que não mudou.** A mesa de propostas, as aprovadas e o resto da aba continuam abaixo do palco. A lista estática de salas saiu; a equipe da sala abre no toque do nome dela, e de lá dá para abrir o perfil.
+
 ## Em aberto
 
 - **Follow-up do direct:** no ar desde 08/11/2026 (versão `8267d516`) com a tarefa `direct-followup`. Falta a primeira rodada com o dono olhando e conferir na primeira semana se o "achado pelo nome" erra. Sete rodadas por dia lendo o direct gastam bastante do limite semanal do Claude: se apertar, ficar com 9h, 14h e 20h.
