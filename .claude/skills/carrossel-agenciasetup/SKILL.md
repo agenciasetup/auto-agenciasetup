@@ -14,7 +14,13 @@ Esta skill junta tudo o que o Filipe aprovou e tudo o que ele corrigiu. Cada cor
 | O quê | Onde |
 | --- | --- |
 | Modelo em código (camadas, temas, etapas) | repositório Auto-AgenciaSetup, `templates/carrossel/` (o `LEIA.md` de lá) |
-| Exportar em JPEG 1080 × 1350 | `node scripts/carrossel.mjs <conteudo> [--etapa 1\|3] [--so 1,5]` (PowerShell, na raiz) |
+| Exportar em JPEG 1080 × 1350 | `node scripts/carrossel.mjs <conteudo> [--etapa 1\|3] [--so 1,5]` (PowerShell, na raiz). Salva também os **mapas** em `mapas/` (construção, margens, luz, profundidade, desfoque) |
+| **A direção de arte** (imagem criativa; profundidade, camadas, tamanho e desfoque; headline, margens e fontes; luz, tratamento e cor; elementos e sombra; o processo com os mapas) | `references/direcao-de-arte.md`. Leia antes da Fase 3: é o que o dono ensinou no Van Gogh de 11/11/2026 e vale mais que os documentos antigos |
+| **A conferência da arte** (mede margem, bloco, texto coberto, contraste, cor, sombra, tamanho no mesmo plano, luz vazando, emenda) | `node scripts/conferir-arte.mjs <conteudo>`; o relatório sai em `_local/carrossel/<conteudo>/conferencia.md`. Zero erro antes do revisor |
+| **Banco de capas** (as que ensinam, com o que cada uma ensina e as medidas) | `templates/carrossel/referencias/banco/` (`LEIA.md` e `folha.jpg`); `node scripts/banco-capas.mjs` |
+| **Biblioteca de elementos** (recortes por tema; procurar antes de gerar) | `templates/biblioteca/LEIA.md`; `node scripts/biblioteca.mjs adicionar` (`--volume` para nuvem de verdade) |
+| Fontes da agência (Calango Condensed, Signature e Sans) | `templates/fontes/` (fora do Git; o `LEIA.md` de lá) |
+| Tratamento no computador, de graça (ampliar, apagar, **profundidade de uma foto e foco de lente**) | `node scripts/tratar.mjs ampliar \| apagar \| profundidade \| foco` |
 | **O padrão visual atual** (assunto, como gerar, título, chamada, efeitos, finalização) | `references/profundidade.md` |
 | Fotos reais do Filipe | `templates/carrossel/referencias/filipe/` (fora do Git) e no Magnific, projeto "Agência Setup · Filipe (referências e capas)" |
 | Capas da agência que servem de gabarito | `templates/carrossel/referencias/capas/` (`gabarito-*` e `aprovada-*` primeiro) |
@@ -82,9 +88,13 @@ Leia `references/voz.md` antes de escrever uma linha.
 
 ### Fase 3. Direção de arte intencional
 
-Leia `references/profundidade.md` (o padrão atual; vale mais que os outros) e `references/capa-intencional.md`. Olhe os vizinhos na fila e escolha o **assunto: rosto, bicho ou objeto**, alternando também a cor. Preencha a **ficha da capa** com o motivo de cada escolha: assunto, cor da capa, conceito da imagem, pose, expressão, roupa, ambiente e luz, elementos, palavra grande, floreio, linhas de apoio, para onde o selo aponta e cada efeito. Depois, a sequência de fundos e a prova de cada slide de dentro.
+**Leia primeiro `references/direcao-de-arte.md`** (o que o dono ensinou no Van Gogh de 11/11/2026: imagem criativa, camadas e distância, headline e margens, luz e cor, elementos e sombra) e abra o banco de capas (`templates/carrossel/referencias/banco/folha.jpg` e `LEIA.md`): escolha de 1 a 3 capas como direção e diga quais. Depois leia `references/profundidade.md` (o padrão da foto do bicho e do objeto) e `references/capa-intencional.md`. Olhe os vizinhos na fila e escolha o **assunto: rosto, bicho ou objeto**, alternando também a cor. Preencha a **ficha da capa** com o motivo de cada escolha: assunto, cor da capa, conceito da imagem, pose, expressão, roupa, ambiente e luz, elementos, palavra grande, floreio, linhas de apoio, para onde o selo aponta e cada efeito. Depois, a sequência de fundos e a prova de cada slide de dentro.
 
 **Verificação 3, direção de arte:**
+- [ ] A ficha diz quais capas do banco são a direção (de 1 a 3) e o que se tira de cada uma. Nunca copiar uma delas.
+- [ ] A ficha lista as **camadas** de trás para a frente (0 o fundo, 1 o objeto de fundo, 2 a headline, 3 o assunto, 4 a luz, 5 em diante o que voa e o que está perto da lente), a distância `z` de cada elemento e **de onde vem a luz**.
+- [ ] Todo elemento pertence à cena do post (liste o que existe naquele mundo) e tem um lugar que se explica. Nada solto ("meio aleatórias").
+- [ ] A luz dá vida: contraluz, luz atrás do elemento, luz de contorno. Luz de estúdio de frente deixa bonito e morto.
 - [ ] Cada item da ficha tem um motivo ligado à tese. "Ficou bonito" não é motivo.
 - [ ] A pose e a expressão contam a mesma coisa que o título.
 - [ ] A cor da capa foi escolhida pela tese (não por costume).
@@ -101,6 +111,8 @@ Leia `references/profundidade.md` (o padrão atual; vale mais que os outros) e `
 - [ ] O carrossel é infinito? Desde 11/11/2026 o modelo faz a tela larga (3 cards = 3240 × 1350, cortada a cada 1080): a cena contínua por dentro das janelas (`panorama`) e o que atravessa de um card para o outro por cima da moldura preta (`travessia`), como o girassol do Van Gogh entre dois cards. A ficha diz qual elemento cruza qual divisa e por quê (ele conta a tese), e a cena da imagem é gerada já larga (ou com o elemento recortado à parte). Detalhes no `LEIA.md` do modelo; confira a emenda na `larga.jpg`.
 
 ### Fase 4. A imagem
+
+**Cada camada é uma imagem** ("não gere a imagem INTEIRA, gere cada camada dela"): procure na biblioteca (`templates/biblioteca/LEIA.md`) antes de gerar; o que gerar novo entra nela. Diga a luz no pedido (o contraluz está em `references/direcao-de-arte.md`, seção 1) e use o fundo liso certo para o recorte (cinza claro; preto para nuvem e fumaça; branco para a nuvem que funde no card claro). Use só o modelo que mostra "Unlimited" no botão (em 11/11/2026, o Nano Banana 2.1 em 1K, no Chrome do Mac que está logado no projeto). Elemento que vai crescer se amplia antes (`node scripts/tratar.mjs ampliar`).
 
 **Sempre:** gere no site do Magnific, **pelo Chrome do Windows** (`select_browser`; o do MacBook é reserva), modo ilimitado, Nano Banana Pro, que não gasta crédito. Confira o formato 4:5, que muda ao recarregar. Gere 3 opções e **mande a folha ao Filipe** (`templates/carrossel/ferramentas/folha.py`) antes de montar. Recorte no computador: `node scripts/recortar.mjs <foto> <saida.png> --modelo hr-matting`, e compare com a original. Pelo conector custa 75 créditos por imagem e 3 por recorte: avise antes e informe o gasto no fim.
 
@@ -172,6 +184,14 @@ Leia `references/modelo-em-codigo.md`. A regra é do Filipe e vale para toda pe�
 - [ ] Ruído presente, meio-tom de pontos pequenos (3 px) e poeirinhas poucas, nada em cima de texto pequeno nem na margem preta. Olhe a 100%: em tamanho reduzido a textura some.
 - [ ] As capas extras (preta e branca), se pedidas, também conferidas.
 - [ ] A prévia (`previa.jpg`) lida em sequência: a história fecha, nada se repete, a chamada está clara.
+
+**Verificação 5m, os mapas e a conferência (antes do revisor):** a exportação salva os mapas em `_local/carrossel/<conteudo>/mapas/`. Abra todos e rode a conferência (`references/direcao-de-arte.md`, seção 6).
+- [ ] `construcao.jpg`: cada camada está onde a ficha disse, na ordem certa, e as peças principais se alinham (as linhas magenta: a headline na largura do elemento principal).
+- [ ] `margens.jpg`: nenhuma cota vermelha. A margem de cima da headline tem pelo menos 85% da lateral e nunca menos de 110 px; as duas linhas com a mesma largura e coladas.
+- [ ] `profundidade.jpg` e `desfoque.jpg`: o tamanho e o desfoque de cada elemento batem com a distância dele; um exemplar nítido de cada coisa por plano; o que voa tem rastro.
+- [ ] `luz.jpg`: a luz vem de um lado só, cada sombra cai para o lado oposto (seta branca) e só tem sombra o que está perto de uma superfície.
+- [ ] `node scripts/conferir-arte.mjs <conteudo>`: **zero erro**. Cada aviso foi consertado ou tem motivo dito (uma decisão do dono, por exemplo).
+- [ ] Ser vivo com cor (nada de abelha cinza); no escuro, o que está no escuro escurece; nuvem de verdade, com volume, e com lugar que se explica.
 
 **Verificação 5d, o revisor (obrigatória antes de mostrar ao Filipe):** todo carrossel passa inteiro pelo revisor separado (`references/revisor-de-capa.md`; no Claude Code, o agente `revisor-de-capa`): conteúdo de cada slide, imagem, perspectiva e profundidade, poluição, centralização vertical, tamanho das fontes, desfoques, acabamento e a comparação com os gabaritos, com os vizinhos da fila e com a versão no outro idioma. Reprovou, conserte e rode de novo.
 

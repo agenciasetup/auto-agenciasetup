@@ -9,7 +9,8 @@
 //       --tags borboleta,azul,inseto                                     palavras para achar depois
 //       --dica "Combina com cena verde-água; matiz +15 na selva"         como usar bem
 //       --ja-recortado    a imagem já é PNG sem fundo (só corta justo)
-//       --luz             elemento claro sobre fundo preto (nuvem, fumaça, brilho): o próprio claro vira a transparência
+//       --luz             elemento claro sobre fundo preto (fumaça, brilho, névoa): o próprio claro vira a transparência
+//       --volume          nuvem com sombra, em fundo preto: a borda vira transparência e o corpo fica opaco, com o volume
 //   node scripts/biblioteca.mjs indice     refaz as folhas de miniaturas e o LEIA.md a partir do indice.json
 //
 // No conteúdo do carrossel, o caminho é relativo a templates/carrossel/imagens/: arq: '../../biblioteca/<arquivo>'.
@@ -31,13 +32,16 @@ const gravarIndice = (ind) => fs.writeFileSync(INDICE, `${JSON.stringify(ind, nu
 const slug = (t) => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 // O que é claro sobre o preto vira transparência (nuvem, fumaça): a luz é a opacidade, e a cor fica sem o preto.
-async function claroViraAlfa(entrada) {
+// Com `volume` (11/11/2026, as nuvens que o dono achou "falsas, cinzas e feias"): a transparência satura cedo, e o corpo
+// da nuvem fica opaco com a sombra dela dentro (o volume). Sem isso a parte sombreada vira branco meio transparente e a
+// nuvem fica chapada.
+async function claroViraAlfa(entrada, { piso = 14, faixa = 190, exp = 0.85 } = {}) {
   const { data, info } = await sharp(entrada).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   const out = Buffer.alloc(info.width * info.height * 4);
   for (let i = 0, j = 0; i < data.length; i += 3, j += 4) {
     const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
     const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    const a = Math.max(0, Math.min(1, (l - 14) / 190)) ** 0.85;
+    const a = Math.max(0, Math.min(1, (l - piso) / faixa)) ** exp;
     const k = a > 0.02 ? 1 / a : 0;
     out[j] = Math.min(255, r * k * 0.98); out[j + 1] = Math.min(255, g * k * 0.98); out[j + 2] = Math.min(255, b * k * 0.98);
     out[j + 3] = Math.round(a * 255);
@@ -70,7 +74,8 @@ async function adicionar() {
   for (let n = 2; fs.existsSync(arq); n++) arq = path.join(destinoPasta, `${base}-${n}.png`);
   let png;
   let como;
-  if (tem('--luz')) { png = await claroViraAlfa(imagem); como = 'o claro virou transparência'; }
+  if (tem('--volume')) { png = await claroViraAlfa(imagem, { piso: 7, faixa: 58, exp: 1.15 }); como = 'o claro virou transparência, com o volume guardado'; }
+  else if (tem('--luz')) { png = await claroViraAlfa(imagem); como = 'o claro virou transparência'; }
   else if (tem('--ja-recortado')) { png = fs.readFileSync(imagem); como = 'já vinha recortado'; }
   else {
     const tmp = path.join(raiz, '_local', 'biblioteca-tmp.png');
@@ -128,7 +133,7 @@ Recortes sem fundo para compor posts (carrossel, frase, capa), organizados por t
 
 ## Como acrescentar
 1. Gere o elemento **sozinho**, nunca a cena inteira, em fundo liso cinza claro (o que é claro, como nuvem e fumaça, em fundo preto), com a luz de cima à esquerda e o elemento inteiro dentro do quadro (borda natural, sem corte). No Magnific, só o modelo que diz "Unlimited".
-2. \`node scripts/biblioteca.mjs adicionar <imagem> <tema/pasta> <nome> "<o que é>" --fonte "..." --tags a,b --dica "..."\` (com \`--luz\` para nuvem e fumaça; com \`--ja-recortado\` se já for PNG sem fundo). O script tira o fundo no computador, corta justo, salva e refaz este índice.
+2. \`node scripts/biblioteca.mjs adicionar <imagem> <tema/pasta> <nome> "<o que é>" --fonte "..." --tags a,b --dica "..."\` (com \`--volume\` para nuvem de verdade em fundo preto, que guarda a sombra dela; com \`--luz\` para fumaça e brilho; com \`--ja-recortado\` se já for PNG sem fundo ou for para usar com \`mistura: 'multiply'\`, como o banco de nuvens em fundo branco). O script tira o fundo no computador, corta justo, salva e refaz este índice.
 3. Confira a folha da pasta: recorte com borda reta, fundo sobrando ou pedaço comido não fica.
 
 ## Temas que ainda não têm nada

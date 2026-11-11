@@ -4,7 +4,7 @@
 // Sai em _local/carrossel/<nome>/: 01.jpg ... NN.jpg, capa-<tema>.jpg para cada capa extra e previa.jpg (todos lado a lado).
 // --etapa 1 (só o mínimo, sem efeito nem textura) e --etapa 3 (com efeitos, sem textura) saem em <nome>/etapa-N/:
 // é a regra das 5 etapas (templates/carrossel/LEIA.md). Sem --etapa, sai a peça final (etapa 5).
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import puppeteer from 'puppeteer-core';
@@ -90,21 +90,39 @@ if (!so) {
     await pagina.goto(pathToFileURL(arqL).href, { waitUntil: 'load' });
     await pagina.screenshot({ path: join(saida, 'larga.jpg'), type: 'jpeg', quality: 90, clip: { x: 0, y: 0, width: feitos.length * 1080, height: 1350 } });
     console.log(`  larga.jpg (a tela de ${feitos.length * 1080} x 1350)`);
-    // O mapa de profundidade (pedido do dono, 11/11/2026): cada elemento num cinza pela distância (mais claro, mais
-    // perto da lente) e o número escrito, para conferir se o desfoque, o tamanho e a sombra batem com a distância.
-    await pagina.setViewport({ width: 1080, height: 1350, deviceScaleFactor: 1 });
-    const mapas = [];
-    for (let k = 1; k <= feitos.length; k++) {
-      await pagina.goto(`${modelo}?c=${nome}&s=${k}&profundidade=1`, { waitUntil: 'networkidle0' });
-      await pagina.waitForFunction(() => window.PRONTO === true, { timeout: 5000 }).catch(() => {});
-      mapas.push(await pagina.screenshot({ type: 'jpeg', quality: 80, encoding: 'base64', clip: { x: 0, y: 0, width: 1080, height: 1350 } }));
-    }
-    const arqP = join(saida, 'profundidade.html');
-    writeFileSync(arqP, `<html><body style="margin:0;display:flex">${mapas.map((b) => `<img src="data:image/jpeg;base64,${b}" style="width:1080px;height:1350px;display:block">`).join('')}</body></html>`);
-    await pagina.setViewport({ width: feitos.length * 1080, height: 1350, deviceScaleFactor: 1 });
-    await pagina.goto(pathToFileURL(arqP).href, { waitUntil: 'load' });
-    await pagina.screenshot({ path: join(saida, 'profundidade.jpg'), type: 'jpeg', quality: 85, clip: { x: 0, y: 0, width: feitos.length * 1080, height: 1350 } });
-    console.log('  profundidade.jpg (o mapa: mais claro, mais perto da lente)');
+  }
+  // Os mapas de conferência (11/11/2026, pedido do dono: "crie mapa de margem, mapa de construção, mapa de profundidade,
+  // de desfoque, desfoque de movimento, luz, sombra realista"). Saem em <nome>/mapas/, uma tira com todos os cards:
+  //   construcao.jpg   o esqueleto: cada camada na sua cor e na ordem, os terços, o centro e as bordas alinhadas
+  //   margens.jpg      as distâncias do título e do texto até a janela, em verde (dentro da regra) ou vermelho
+  //   luz.jpg          de onde vem a luz, cada bola de luz e para onde cai cada sombra
+  //   profundidade.jpg cada elemento num cinza pela distância (mais claro, mais perto da lente), com o número
+  //   desfoque.jpg     cada elemento num cinza pelo desfoque (branco é nítido), com o rastro de movimento
+  // Os três últimos só no carrossel infinito. --sem-mapas pula.
+  if (!process.argv.includes('--sem-mapas')) {
+    const pastaM = join(saida, 'mapas');
+    mkdirSync(pastaM, { recursive: true });
+    const tira = async (mapa) => {
+      await pagina.setViewport({ width: 1080, height: 1350, deviceScaleFactor: 1 });
+      const fotos = [];
+      for (let k = 1; k <= feitos.length; k++) {
+        await pagina.goto(`${modelo}?c=${nome}&s=${k}&mapa=${mapa}`, { waitUntil: 'networkidle0' });
+        await pagina.waitForFunction(() => window.PRONTO === true, { timeout: 5000 }).catch(() => {});
+        await new Promise((r) => setTimeout(r, 120));
+        fotos.push(await pagina.screenshot({ type: 'jpeg', quality: 82, encoding: 'base64', clip: { x: 0, y: 0, width: 1080, height: 1350 } }));
+      }
+      const arqH = join(pastaM, `${mapa}.html`);
+      writeFileSync(arqH, `<html><body style="margin:0;display:flex">${fotos.map((b) => `<img src="data:image/jpeg;base64,${b}" style="width:1080px;height:1350px;display:block">`).join('')}</body></html>`);
+      await pagina.setViewport({ width: feitos.length * 1080, height: 1350, deviceScaleFactor: 1 });
+      await pagina.goto(pathToFileURL(arqH).href, { waitUntil: 'load' });
+      await pagina.screenshot({ path: join(pastaM, `${mapa}.jpg`), type: 'jpeg', quality: 85, clip: { x: 0, y: 0, width: feitos.length * 1080, height: 1350 } });
+      rmSync(arqH);
+    };
+    const lista = ['construcao', 'margens', ...(larga ? ['luz', 'profundidade', 'desfoque'] : [])];
+    for (const m of lista) await tira(m);
+    // O mapa de profundidade continua também na raiz (a skill e o revisor abrem ali).
+    if (larga) copyFileSync(join(pastaM, 'profundidade.jpg'), join(saida, 'profundidade.jpg'));
+    console.log(`  mapas/ (${lista.join(', ')})`);
   }
 }
 await navegador.close();

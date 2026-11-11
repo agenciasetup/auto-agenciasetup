@@ -1335,6 +1335,78 @@
    "dica": "Saindo do quadro no CTA.",
    "adicionado": "2026-11-11",
    "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "ceu/nuvens/nuvem-real-quente.png",
+   "pasta": "ceu/nuvens",
+   "descricao": "Nuvem de verdade (cúmulo), com volume: topo claro em luz quente e sombra cinza embaixo; a borda some no ar.",
+   "largura": 1179,
+   "altura": 602,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id p87UDO3ehw",
+   "tags": [
+    "nuvem",
+    "ceu",
+    "real",
+    "volume",
+    "quente"
+   ],
+   "dica": "Na frente das coisas (perto da lente, desfocada) ou sobre cor e preto. Tem volume: não chapar com luz nem sat 0.",
+   "adicionado": "2026-11-11",
+   "como": "o claro virou transparência, com o volume guardado"
+  },
+  {
+   "arquivo": "ceu/nuvens/nuvem-real-quente-2.png",
+   "pasta": "ceu/nuvens",
+   "descricao": "Nuvem de verdade (cúmulo), com volume: topo claro em luz quente e sombra cinza embaixo; a borda some no ar.",
+   "largura": 1231,
+   "altura": 640,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id JNvm7vtOq4",
+   "tags": [
+    "nuvem",
+    "ceu",
+    "real",
+    "volume",
+    "quente"
+   ],
+   "dica": "Na frente das coisas (perto da lente, desfocada) ou sobre cor e preto.",
+   "adicionado": "2026-11-11",
+   "como": "o claro virou transparência, com o volume guardado"
+  },
+  {
+   "arquivo": "ceu/nuvens/banco-de-nuvens-branco.png",
+   "pasta": "ceu/nuvens",
+   "descricao": "Banco de nuvens de verdade, largo, fotografado em FUNDO BRANCO (não tem transparência).",
+   "largura": 1376,
+   "altura": 768,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id LwXejM6swO",
+   "tags": [
+    "nuvem",
+    "ceu",
+    "real",
+    "banco",
+    "multiply"
+   ],
+   "dica": "Só em card claro, no panorama, com mistura: 'multiply': o branco some e o volume da nuvem funde no card. Como um chão de nuvens na base dos cards.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "ceu/nuvens/banco-de-nuvens-branco-2.png",
+   "pasta": "ceu/nuvens",
+   "descricao": "Banco de nuvens de verdade, largo, fotografado em FUNDO BRANCO (não tem transparência).",
+   "largura": 1376,
+   "altura": 768,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id XmyJdgCBfo",
+   "tags": [
+    "nuvem",
+    "ceu",
+    "real",
+    "banco",
+    "multiply"
+   ],
+   "dica": "Só em card claro, no panorama, com mistura: 'multiply'.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
   }
  ]
 }

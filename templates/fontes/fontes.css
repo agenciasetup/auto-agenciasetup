@@ -2,7 +2,9 @@
    fazer os criativos. São fontes nossas."). Os arquivos .woff2 ficam nesta pasta, fora do Git (o repositório é público);
    os .otf e .ttf, para instalar em outro programa, ficam em _local/fontes/. Ver LEIA.md.
    Calango Condensed: a headline condensada (no lugar da Anton). Calango Signature: a letra de floreio (no lugar da Great
-   Vibes). A Calango Sans vem depois, no lugar da Outfit. */
+   Vibes). Calango Sans (desde 11/11/2026, "instale essa fonte no nosso projeto no lugar da sans serif que usamos"): os
+   textos, no lugar da Outfit (carrossel) e da Inter Tight (frase). Vai do Light (300) ao Bold (700): quem pede 800 recebe
+   o Bold, quem pede 200 recebe o Light. */
 @font-face { font-family: 'Calango Condensed'; src: url('CalangoCondensed-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: block; }
 @font-face { font-family: 'Calango Condensed'; src: url('CalangoCondensed-Italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: block; }
 @font-face { font-family: 'Calango Condensed'; src: url('CalangoCondensed-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: block; }
@@ -10,3 +12,13 @@
 @font-face { font-family: 'Calango Condensed'; src: url('CalangoCondensed-Black.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: block; }
 @font-face { font-family: 'Calango Condensed'; src: url('CalangoCondensed-BlackItalic.woff2') format('woff2'); font-weight: 900; font-style: italic; font-display: block; }
 @font-face { font-family: 'Calango Signature'; src: url('CalangoSignature-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: 'Calango Sans'; src: url('CalangoSans-Light.woff2') format('woff2'); font-weight: 300; font-style: normal; font-display: block; }
+@font-face { font-family: 'Calango Sans'; src: url('CalangoSans-LightItalic.woff2') format('woff2'); font-weight: 300; font-style: italic; font-display: block; }
+@font-face { font-family: 'Calango Sans'; src: url('CalangoSans-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: 'Calango Sans'; src: url('CalangoSans-Italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: block; }
+@font-face { font-family: 'Calango Sans'; src: url('CalangoSans-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: block; }
+@font-face { font-family: 'Calango Sans'; src: url('CalangoSans-MediumItalic.woff2') format('woff2'); font-weight: 500; font-style: italic; font-display: block; }
+@font-face { font-family: 'Calango Sans'; src: url('CalangoSans-SemiBold.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: block; }
+@font-face { font-family: 'Calango Sans'; src: url('CalangoSans-SemiBoldItalic.woff2') format('woff2'); font-weight: 600; font-style: italic; font-display: block; }
+@font-face { font-family: 'Calango Sans'; src: url('CalangoSans-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: 'Calango Sans'; src: url('CalangoSans-BoldItalic.woff2') format('woff2'); font-weight: 700; font-style: italic; font-display: block; }

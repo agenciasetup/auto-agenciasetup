@@ -7,6 +7,8 @@ Uso (o atalho acha o Python do ambiente):
   node scripts/tratar.mjs ampliar <img> [--escala 2] [--modelo geral] [--ruido 0.2] [saida]
   node scripts/tratar.mjs ajustar <img> [--brilho N] [--contraste N] [--saturacao N] [--temperatura N] [--nitidez N] [saida]
   node scripts/tratar.mjs comparar <antes> <depois> [saida.jpg] [--caixa x,y,w,h] [--vezes 3]
+  node scripts/tratar.mjs profundidade <img> [saida.png] [--planos 3]   (o mapa de profundidade da foto: branco = perto)
+  node scripts/tratar.mjs foco <img> [saida] [--ponto x,y] [--abertura 18] [--alcance 0.08]   (desfoque de lente pela profundidade)
   node scripts/tratar.mjs editor [img] [--clique]     (IOPaint no navegador: pincel, apagar, ampliar)
   node scripts/tratar.mjs --modelos                   (lista os modelos e as licenças)
 Direto:
@@ -65,6 +67,9 @@ AMPLIADORES = {
         desc='RealESRGAN_x2plus: o mesmo da "foto", feito para 2x.'),
 }
 PADRAO_AMPLIAR = 'geral'
+
+# Profundidade. Depth Anything V2 Small (Apache 2.0). O Base e o Large são CC-BY-NC (não comercial): ficam de fora.
+PROFUNDIDADE = 'depth-anything/Depth-Anything-V2-Small-hf'
 
 
 # ---------------------------------------------------------------- arquivos
@@ -497,6 +502,102 @@ def ajustar(args):
 
 # ---------------------------------------------------------------- comparar
 
+# ---------------------------------------------------------------- profundidade e foco
+def medir_profundidade(rgb, dispositivo):
+    """A distância de cada ponto da foto, de 0 (longe) a 1 (perto da lente), HxW float32."""
+    import numpy as np
+    import torch
+    from PIL import Image
+    from transformers import AutoImageProcessor, AutoModelForDepthEstimation
+    proc = AutoImageProcessor.from_pretrained(PROFUNDIDADE)
+    modelo = AutoModelForDepthEstimation.from_pretrained(PROFUNDIDADE).to(dispositivo).eval()
+    entrada = proc(images=Image.fromarray(rgb), return_tensors='pt').to(dispositivo)
+    with torch.no_grad():
+        saida = modelo(**entrada).predicted_depth
+    d = torch.nn.functional.interpolate(saida.unsqueeze(1), size=rgb.shape[:2], mode='bicubic', align_corners=False)[0, 0]
+    d = d.float().cpu().numpy()
+    # O modelo devolve disparidade (maior = mais perto). Normaliza pelos percentis, para um ponto estourado não achatar o resto.
+    lo, hi = np.percentile(d, 1), np.percentile(d, 99)
+    return np.clip((d - lo) / max(1e-6, hi - lo), 0, 1).astype(np.float32)
+
+
+def profundidade(args):
+    """O mapa de profundidade de uma foto (para o desfoque bater com a distância e para separar os planos)."""
+    import numpy as np
+    from PIL import Image
+    rgb, alfa, info = abrir(args.img)
+    dispositivo = dispositivo_de(args.cpu)
+    t0 = time.time()
+    d = medir_profundidade(rgb, dispositivo)
+    entrada = Path(args.img).resolve()
+    destino = Path(args.saida).resolve() if args.saida else entrada.with_name(f'{entrada.stem}-profundidade.png')
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray((d * 255).round().astype(np.uint8), 'L').save(destino)
+    print(f'{entrada.name} -> {destino} ({rgb.shape[1]}x{rgb.shape[0]}, {nome_da_placa(dispositivo)}, {time.time() - t0:.1f} s). Branco = perto da lente.')
+    if args.planos and args.planos > 1:
+        # Os planos: a foto cortada em N fatias de distância, cada uma num PNG com a borda suave. A 1 é o fundo. Serve
+        # para pôr um elemento ENTRE dois planos da foto (atrás da folha da frente, na frente do fundo) e para a capa
+        # animada mexer cada plano num passo diferente.
+        import cv2
+        cortes = np.quantile(d, np.linspace(0, 1, args.planos + 1))
+        for k in range(args.planos):
+            de, ate = cortes[k], cortes[k + 1] if k < args.planos - 1 else 1.01
+            m = ((d >= de) & (d < ate)).astype(np.float32)
+            m = cv2.GaussianBlur(m, (0, 0), max(1.5, min(rgb.shape[:2]) / 400))
+            a = (np.clip(m, 0, 1) * 255).astype(np.uint8)
+            if alfa is not None:
+                a = np.minimum(a, alfa)
+            arq = destino.with_name(f'{entrada.stem}-plano-{k + 1}.png')
+            Image.fromarray(np.dstack([rgb, a]), 'RGBA').save(arq)
+            perto = (de + min(ate, 1)) / 2
+            print(f'  plano {k + 1}: {arq.name} (distância {de:.2f} a {min(ate, 1):.2f}; no carrossel, z perto de {perto * 2 - 1:+.1f})')
+
+
+def foco(args):
+    """Desfoque de lente pela profundidade: nítido na distância do ponto escolhido, e cada vez mais desfocado longe dela
+    (para frente e para trás), como numa foto de verdade. Sem isso a imagem gerada fica chapada."""
+    import cv2
+    import numpy as np
+    rgb, alfa, info = abrir(args.img)
+    dispositivo = dispositivo_de(args.cpu)
+    t0 = time.time()
+    d = medir_profundidade(rgb, dispositivo)
+    H, W = d.shape
+    if args.ponto:
+        px, py = [int(float(v)) for v in args.ponto.split(',')]
+        px, py = min(max(px, 0), W - 1), min(max(py, 0), H - 1)
+        r = max(4, min(H, W) // 60)
+        d0 = float(np.median(d[max(0, py - r):py + r, max(0, px - r):px + r]))
+    else:
+        # Sem ponto: o foco fica no meio da foto (onde costuma estar o assunto). Com folha ou objeto na frente do
+        # assunto, passe --ponto no olho dele.
+        d0 = float(np.median(d[int(H * 0.38):int(H * 0.62), int(W * 0.38):int(W * 0.62)]))
+    # O círculo de confusão: zero dentro do alcance, crescendo até a abertura.
+    longe = np.clip((np.abs(d - d0) - args.alcance) / max(1e-6, 1 - args.alcance), 0, 1)
+    raio = longe * args.abertura
+    niveis = [0] + [args.abertura * k / 5 for k in range(1, 6)]
+    base = rgb.astype(np.float32)
+    # O fundo desfoca sem "puxar" a cor do que está em foco na frente dele (senão o assunto vaza um halo no fundo):
+    # no desfoque do que está ATRÁS do foco, o que está em foco ou na frente não entra na conta.
+    atras = (d < d0 - args.alcance * 0.5).astype(np.float32)
+    borradas = [base]
+    for sg in niveis[1:]:
+        comum_b = cv2.GaussianBlur(base, (0, 0), sg)
+        peso = cv2.GaussianBlur(atras, (0, 0), sg)
+        so_fundo = cv2.GaussianBlur(base * atras[..., None], (0, 0), sg) / np.maximum(peso[..., None], 1e-3)
+        usa = (atras * np.clip(peso * 4, 0, 1))[..., None]
+        borradas.append(so_fundo * usa + comum_b * (1 - usa))
+    saida = np.zeros_like(base)
+    pos = np.clip(raio / max(1e-6, args.abertura) * 5, 0, 5)
+    for k in range(5):
+        t = np.clip(pos - k, 0, 1)[..., None]
+        dentro = ((pos >= k) & (pos < k + 1))[..., None] if k < 4 else (pos >= k)[..., None]
+        saida += np.where(dentro, borradas[k] * (1 - t) + borradas[k + 1] * t, 0)
+    destino = destino_de(args.img, args.saida, 'foco', args.no_lugar, alfa is not None)
+    salvar(np.clip(saida, 0, 255).astype(np.uint8), alfa, destino, info)
+    print(f'{Path(args.img).name} -> {destino} (foco na distância {d0:.2f}, abertura {args.abertura}, {nome_da_placa(dispositivo)}, {time.time() - t0:.1f} s)')
+
+
 def comparar(args):
     """Antes e depois de um pedaço, ampliado, lado a lado (para conferir de perto antes de usar)."""
     from PIL import Image, ImageDraw, ImageFont
@@ -580,6 +681,7 @@ def main():
         for k, v in AMPLIADORES.items():
             print(f'  {k:7} {v["desc"]}')
         print('Ajustar: só conta (numpy/OpenCV), sem modelo.')
+        print(f'Profundidade e foco: {PROFUNDIDADE} (Depth Anything V2 Small, Apache 2.0).')
         print('Editor: IOPaint (Apache 2.0) com LaMa e Real-ESRGAN; --clique liga o SAM 2.1 (Apache 2.0).')
         print('Não instalado de propósito: restauração de rosto (GFPGAN; CodeFormer é não comercial).')
         return
@@ -625,6 +727,18 @@ def main():
     p.add_argument('--temperatura', type=float, default=0, help='-100 (frio) a 100 (quente)')
     p.add_argument('--nitidez', type=float, default=0, help='0 a 100')
 
+    p = sub.add_parser('profundidade', help='o mapa de profundidade da foto (branco = perto da lente)')
+    p.add_argument('img')
+    p.add_argument('saida', nargs='?', help='PNG do mapa (padrão: ao lado, com -profundidade)')
+    p.add_argument('--planos', type=int, default=0, help='corta a foto em N planos de distância (PNG com transparência cada um)')
+    p.add_argument('--cpu', action='store_true', help='forçar a CPU')
+
+    p = sub.add_parser('foco', help='desfoque de lente pela profundidade (nítido num plano, desfocado longe dele)')
+    comum(p)
+    p.add_argument('--ponto', help='x,y de onde fica o foco, em pixels da foto (padrão: o que está mais perto)')
+    p.add_argument('--abertura', type=float, default=18, help='o desfoque máximo em pixels (padrão 18)')
+    p.add_argument('--alcance', type=float, default=0.08, help='a faixa de distância que fica nítida, de 0 a 1 (padrão 0.08)')
+
     p = sub.add_parser('comparar', help='antes e depois de um pedaço, ampliado, lado a lado')
     p.add_argument('antes')
     p.add_argument('depois')
@@ -645,7 +759,8 @@ def main():
         ap.error('apagar precisa de --caixa x,y,w,h ou --mascara m.png')
     if a.comando != 'editor':
         silenciar()
-    {'apagar': apagar, 'ampliar': ampliar, 'ajustar': ajustar, 'comparar': comparar, 'editor': editor}[a.comando](a)
+    {'apagar': apagar, 'ampliar': ampliar, 'ajustar': ajustar, 'comparar': comparar, 'editor': editor,
+     'profundidade': profundidade, 'foco': foco}[a.comando](a)
 
 
 if __name__ == '__main__':

@@ -91,9 +91,9 @@ Ferramentas em `ferramentas/`: `folha.py <pasta> <saida.jpg> [colunas]` (folha d
 
 - **Calango Condensed** (Black, a fonte da agência desde 11/11/2026): a palavra condensada. Arquivos em `templates/fontes/` (fora do Git; ver o `LEIA.md` de lá). A Anton fica de reserva; peça antiga aprovada que precisa sair igual pede no slide `vars: { 'fonte-condensada': "'Anton', sans-serif", 'peso-condensada': 400 }`.
 - **Calango Signature** (da agência, desde 11/11/2026): a letra de floreio da capa (`titulo.script`). A Great Vibes só nas peças antigas que pedem por `fonteScript`.
-- A **Calango Sans** vem depois, no lugar da Outfit.
+- **Calango Sans** (da agência, desde 11/11/2026): os textos e o cabeçalho, do Light (300) ao Bold (700). A Outfit fica de reserva e nas peças antigas aprovadas (`vars: { 'fonte-sans': "'Outfit', system-ui, sans-serif" }` no slide).
 - **Instrument Serif**: a palavra de destaque em itálico e os números grandes.
-- **Outfit**: textos (300 fino nos títulos dos slides de dentro).
+- **Outfit**: a reserva da Calango Sans.
 - **Inter**: notificações no estilo iOS.
 - **JetBrains Mono**: rótulos, réguas e rodapés.
 
@@ -110,6 +110,17 @@ Regras de texto: as de `docs/estilo-instagram.md` (frase curta, sem travessão, 
 ## Capa animada em loop (`movimento`, desde 08/11/2026)
 
 Regra do Filipe para todo post: a capa ganha um movimento sutil que vai e volta, sem emenda, sem cortar nada e sem esconder texto. No slide: `movimento: { fundo: { escala: -0.03 }, assunto: { escala: 0.035, origem: [x, y] }, titulo: { escala: 0.02 }, selo: { de: [dx, dy] } }` (detalhes em `mover()` do `modelo.js`). Com fundo e assunto em escalas diferentes, a cena precisa ser a placa (o fundo sem o assunto). Vídeo: `node templates/carrossel/ferramentas/animar.mjs <conteudo> 1 8 30 loop`; entrega: `entregar-videos.mjs <conteudo> 1`. Processo e verificação: Fase 5e da skill `carrossel-agenciasetup`.
+
+## Mapas e conferência (desde 11/11/2026)
+
+Pedido do dono: "melhore a forma como você enxerga... crie mapa de margem, mapa de construção, mapa de profundidade, de desfoque, desfoque de movimento, luz, sombra realista". O exportador salva em `_local/carrossel/<conteudo>/mapas/`, uma tira com todos os cards:
+
+- `construcao.jpg` (`&mapa=construcao`): o esqueleto. Cada camada numa cor (cinza o fundo, azul o que está dentro da janela, verde o plano do foco, laranja o que está perto da lente, vermelho o que passa por cima de tudo, amarelo o texto), na ordem em que é empilhada; os terços e o centro; em magenta, as bordas alinhadas entre as peças principais.
+- `margens.jpg` (`&mapa=margens`): as cotas do título e do texto até a janela, o espaço entre as linhas, a fonte e o tamanho de cada texto e o corte da grade do perfil (3:4). Verde está na regra; vermelho, não.
+- `luz.jpg` (`&mapa=luz`): de onde vem a luz (`luzDe` no carrossel: `'cima-esquerda'` por padrão), cada bola de luz com o modo e a opacidade, a luz atrás dos elementos, para onde cai cada sombra (vermelha se cair para o lado da luz) e o que tem contorno, degradê de sombra, mais cor ou está sem cor.
+- `profundidade.jpg` e `desfoque.jpg` (`&mapa=profundidade` e `&mapa=desfoque`): cada elemento num cinza. Na profundidade, mais claro é mais perto da lente; no desfoque, branco é nítido. Com o número e o rastro de movimento.
+
+As medidas saem de `mapas.js` (`window.MEDIR()`: a tinta de cada linha do título, as margens, as caixas e os dados de todos os elementos). A conferência, `node scripts/conferir-arte.mjs <conteudo>`, usa essas medidas e cruza a peça com dois mapas a mais (`&mapa=texto` e `&mapa=elementos`, só o texto e só os elementos em fundo transparente) para dizer quanto de cada texto fica debaixo de um elemento e qual é o contraste no pior trecho. As regras e a ordem de leitura dos mapas estão em `references/direcao-de-arte.md` da skill.
 
 ## Carrossel infinito (`panorama` e `travessia`, desde 11/11/2026)
 
@@ -133,9 +144,14 @@ Os dois ficam no carrossel (fora de `slides`), em coordenadas da **tela larga**:
 - **Luz de contorno** (`contorno: '#ffd24a'` no elemento da travessia ou no `assunto` da capa): um brilho fino e outro largo na borda, para o contraluz.
 - **Texto no alto do slide de dentro**: `alto: true` sobe a frase e deixa o espaço de baixo para um elemento (o quadro embaixo da frase, como no carrossel do Leonardo).
 - **Texto pequeno da capa noutra fonte**: `titulo.posFonte: 'Calango Signature'` e `posCor`. A cursiva branca e grande sobrepondo o pé da headline (`posFrente`, `posEspaco` negativo, no Van Gogh à esquerda com -78) dá a camada a mais, como o "você" sobre o QUEBROU ("vira um charme").
+- **Mesclagem por elemento** (`mistura`): no `panorama`, a nuvem fotografada em fundo branco com `mistura: 'multiply'` funde no card claro (o branco some e fica o volume). Na travessia a mistura vale só entre os elementos da própria camada.
+- **Sombra em degradê por cima do elemento** (`escurece`): `{ y0, y1, forca }` com as alturas na tela (escuro em y0, limpo em y1), para a peça girada que só mostra a ponta (a quina da moldura que entra pelo vão: "uma sombra vindo de baixo neles, escurecendo"); ou `{ de: 'baixo' | 'cima' | 'esquerda' | 'direita', forca, ate }` (a fração da caixa). Só pinta onde o elemento é opaco.
+- **Rastro de movimento** (`rastro: { px: 7, angulo: -8 }`): o desfoque só na direção do voo, para abelha, borboleta e o que mais voa.
+- **De onde vem a luz** (`luzDe` no carrossel): `'cima-esquerda'` (padrão), `'cima'`, `'cima-direita'`, `'esquerda'`, `'direita'`, `'contraluz'`. O mapa de luz e a conferência conferem as sombras por ela.
+- **Nuvens de verdade** (o dono: "estão muito falsas, cinzas e feias, meio aleatórias"): na frente das coisas, `ceu/nuvens/nuvem-real-quente` (recortada com `--volume`), clara (`luz: 1.4`); no card claro, `ceu/nuvens/banco-de-nuvens-branco` com `mistura: 'multiply'`, como um chão de nuvens contínuo na base dos cards. Nenhuma nuvem cinza chapada, e nenhuma nos cards pretos.
 - **Cantos desfocados** ("desfoque nos cantos são bem-vindos"): `cantos: { blur: 7, de: 0.58 }` no slide; o que está dentro da janela desfoca do meio para fora.
 - **Mais cor nos assuntos** ("sinto falta de cor, sutilmente mais saturação nos assuntos"): `sat: 1.1` a `1.15` no personagem, no quadro, nas abelhas e no girassol.
-- **As duas linhas da headline coladas** ("aproxime o CONTRATE do NUNCA"): o espaço entre as letras é o do `vao`, mas a fonte tem folga embaixo; na Calango Condensed, `vao: -25` deixa uns 15 px entre as linhas.
+- **As duas linhas da headline coladas** ("aproxime o CONTRATE do NUNCA"): o espaço entre as letras é o do `vao`, mas a fonte tem folga embaixo; na Calango Condensed, `vao: -25` deixa as linhas quase coladas (uns 4 px medidos entre as letras; o mapa de margens mostra o número).
 - No slide de dentro: `lado: 'esquerda' | 'direita'` (o texto vai para um lado e o elemento grande ocupa o outro) e `semTrilho: true`. Na capa reaproveitada: `poeiraDe: '<outro conteúdo>'` sorteia a poeira como a aprovada. Elemento com `h` estica na altura (para afinar uma pincelada).
 - **O assunto saindo pela moldura**: o personagem na travessia (com `z: 0`) não é cortado pela janela; o corpo passa por cima da moldura preta de baixo e dá profundidade (o Van Gogh).
 - **O texto pequeno na frente do assunto**: `titulo.posFrente: true` põe o texto de baixo ("um designer") por cima do personagem, para o chapéu poder encostar na headline sem esconder nada.

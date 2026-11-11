@@ -62,3 +62,7 @@ admin/src/img/*.webp
 templates/fontes/*.woff2
 templates/fontes/*.otf
 templates/fontes/*.ttf
+
+# O banco de capas: as imagens ficam fora (muitas não são nossas); o índice e o LEIA.md entram
+templates/carrossel/referencias/banco/*.jpg
+templates/carrossel/referencias/banco/entrada/

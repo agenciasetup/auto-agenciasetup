@@ -3,6 +3,8 @@
 // Uso: node scripts/tratar.mjs apagar <img> (--caixa x,y,w,h | --mascara m.png) [saida] [--ignorar x,y,w,h] [--redondo]
 //      node scripts/tratar.mjs ampliar <img> [--escala 2] [--modelo geral|foto|x2] [--ruido 0.2] [saida]
 //      node scripts/tratar.mjs ajustar <img> [--brilho N] [--contraste N] [--saturacao N] [--temperatura N] [--nitidez N] [saida]
+//      node scripts/tratar.mjs profundidade <img> [saida.png] [--planos 3]   (o mapa de profundidade da foto; os planos em PNG)
+//      node scripts/tratar.mjs foco <img> [--ponto x,y] [--abertura 18] [--alcance 0.08] [saida]   (desfoque de lente pela profundidade)
 //      node scripts/tratar.mjs editor [img] [--clique]   (IOPaint em http://127.0.0.1:8080)
 //      node scripts/tratar.mjs --modelos      (lista os modelos e as licenças)
 //      node scripts/tratar.mjs --instalar     (cria o ambiente; os pesos baixam no primeiro uso)

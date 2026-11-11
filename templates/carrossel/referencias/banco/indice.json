@@ -1,0 +1,658 @@
+[
+ {
+  "arquivo": "dono-vangogh-2024-capa.jpg",
+  "origem": "dono",
+  "ensina": "Fundo laranja com textura de pintura (não cor lisa). Headline em duas linhas da mesma largura, com o personagem encostando nela. Quadro atrás do personagem. Abelhas em três distâncias, com rastro. Girassol desfocado no alto, perto da lente. Tudo pertence ao tema: a cena é uma só.",
+  "tags": [
+   "composicao",
+   "cor",
+   "profundidade",
+   "headline",
+   "fundo-pintado"
+  ],
+  "link": "",
+  "nota": "3.372 curtidas (26/04/2024)",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1346,
+  "cor": 130,
+  "luz": 158,
+  "contraste": 206,
+  "cores": [
+   "#f9ab06",
+   "#f79706",
+   "#f4f5f4"
+  ]
+ },
+ {
+  "arquivo": "dono-vangogh-2024-girassol.jpg",
+  "origem": "dono",
+  "ensina": "O elemento da divisa é enorme (a cabeça do girassol com metade da altura do card) e passa para o card seguinte. O texto é pequeno, numa caixa, longe do elemento. O fundo muda de mundo (do laranja para o claro) bem na divisa.",
+  "tags": [
+   "elemento-na-divisa",
+   "escala",
+   "carrossel-infinito"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1346,
+  "cor": 124,
+  "luz": 154,
+  "contraste": 130,
+  "cores": [
+   "#f79306",
+   "#f8aa06",
+   "#f87207"
+  ]
+ },
+ {
+  "arquivo": "dono-vangogh-2024-fim.jpg",
+  "origem": "dono",
+  "ensina": "O fim com a força da capa: título grande em bloco, a palavra final em outra cor, o girassol saindo do quadro por cima do pé do título, nuvens bem desfocadas.",
+  "tags": [
+   "cta",
+   "headline",
+   "elemento-sobre-titulo"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1346,
+  "cor": 89,
+  "luz": 180,
+  "contraste": 174,
+  "cores": [
+   "#f3f2f1",
+   "#d2cfce",
+   "#b0afaf"
+  ]
+ },
+ {
+  "arquivo": "dono-leonardo-capa.jpg",
+  "origem": "dono",
+  "ensina": "Cena escura com uma luz quente pontual atrás do personagem. Personagem cortado pela borda de baixo. Headline serifada em duas cores (branco e laranja). Textos miúdos de textura. Vagalumes de verdade em distâncias diferentes.",
+  "tags": [
+   "escuro",
+   "luz-atras",
+   "vagalumes",
+   "headline"
+  ],
+  "link": "",
+  "nota": "533 curtidas, 142 salvos, nota 12,28",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1346,
+  "cor": 58,
+  "luz": 47,
+  "contraste": 167,
+  "cores": [
+   "#080402",
+   "#2b1607",
+   "#4d2d0d"
+  ]
+ },
+ {
+  "arquivo": "dono-leonardo-quadro.jpg",
+  "origem": "dono",
+  "ensina": "Card escuro: a frase no alto e um quadro em moldura dourada embaixo, com a luz quente atrás dele e uma legenda miúda. O objeto de verdade, com luz, no lugar de enfeite.",
+  "tags": [
+   "escuro",
+   "quadro",
+   "moldura",
+   "luz-atras"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1346,
+  "cor": 52,
+  "luz": 37,
+  "contraste": 162,
+  "cores": [
+   "#040101",
+   "#2e1503",
+   "#4e2c0b"
+  ]
+ },
+ {
+  "arquivo": "dono-leonardo-fim.jpg",
+  "origem": "dono",
+  "ensina": "O fim: o quadro grande com a personagem saindo da moldura por cima do título. Quinas de moldura desfocadas nos cantos, perto da lente.",
+  "tags": [
+   "cta",
+   "quadro",
+   "quina-de-moldura",
+   "profundidade"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1346,
+  "cor": 57,
+  "luz": 58,
+  "contraste": 189,
+  "cores": [
+   "#080301",
+   "#2e1605",
+   "#4f2c0c"
+  ]
+ },
+ {
+  "arquivo": "dono-anaconda-capa.jpg",
+  "origem": "dono",
+  "ensina": "Capa de cinema: o bicho enorme saindo pelo lado, o tronco perto da lente como moldura natural, a luz âmbar atrás do título, vagalumes. O título tem a sua área, com respiro.",
+  "tags": [
+   "cinema",
+   "luz-atras",
+   "moldura-natural",
+   "vagalumes"
+  ],
+  "link": "",
+  "nota": "425 curtidas, 102 salvos, nota 10,10",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1350,
+  "cor": 85,
+  "luz": 54,
+  "contraste": 170,
+  "cores": [
+   "#0d0806",
+   "#2b170b",
+   "#4e2b0e"
+  ]
+ },
+ {
+  "arquivo": "dono-anaconda-meio.jpg",
+  "origem": "dono",
+  "ensina": "Slide de dentro em cena contínua: o mesmo fundo de floresta desfocado passa de um card para o outro. Caixas de vidro para o texto, fotos pequenas com setas, vagalumes em primeiro plano.",
+  "tags": [
+   "cena-continua",
+   "carrossel-infinito",
+   "vidro"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1350,
+  "cor": 39,
+  "luz": 29,
+  "contraste": 105,
+  "cores": [
+   "#0e0603",
+   "#2b1609",
+   "#4b2d12"
+  ]
+ },
+ {
+  "arquivo": "nossa-vangogh-2026-capa.jpg",
+  "origem": "nossa",
+  "ensina": "O gabarito do jeito novo, corrigido pelo dono volta por volta: respiro (margem de cima parecida com a dos lados), headline em bloco na largura do quadro, o personagem no meio saindo pela moldura de baixo, a cursiva branca encostando no pé da headline, luz em sobrepor, cantos desfocados, nuvem branca de verdade perto da lente.",
+  "tags": [
+   "gabarito",
+   "respiro",
+   "headline",
+   "profundidade",
+   "luz"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1350,
+  "cor": 127,
+  "luz": 153,
+  "contraste": 251,
+  "cores": [
+   "#f7b106",
+   "#fbfbf7",
+   "#fac606"
+  ]
+ },
+ {
+  "arquivo": "nossa-vangogh-2026-girassol.jpg",
+  "origem": "nossa",
+  "ensina": "O girassol em contraluz (pétala acesa por dentro, fio de luz na borda), grande, atravessando a divisa, com a luz quente atrás da cabeça e o texto livre dele.",
+  "tags": [
+   "contraluz",
+   "elemento-na-divisa",
+   "gabarito"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1350,
+  "cor": 126,
+  "luz": 150,
+  "contraste": 191,
+  "cores": [
+   "#f7ae07",
+   "#f69707",
+   "#020201"
+  ]
+ },
+ {
+  "arquivo": "nossa-vangogh-2026-busto.jpg",
+  "origem": "nossa",
+  "ensina": "Mundo claro: chão de nuvens de verdade fundido no card (multiply), o busto grande na divisa com a base cortada, uma nuvem branca na frente dele e abelha com cor e rastro de voo.",
+  "tags": [
+   "claro",
+   "nuvens",
+   "elemento-na-divisa",
+   "gabarito"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1350,
+  "cor": 13,
+  "luz": 205,
+  "contraste": 252,
+  "cores": [
+   "#f1f0ec",
+   "#d4d2cd",
+   "#010101"
+  ]
+ },
+ {
+  "arquivo": "nossa-vangogh-2026-quadro.jpg",
+  "origem": "nossa",
+  "ensina": "Card escuro: a frase no alto, o quadro em moldura dourada embaixo com a luz quente atrás, a quina da moldura desfocada entrando pelo vão com a sombra subindo, a abelha mais escura porque está no escuro.",
+  "tags": [
+   "escuro",
+   "quadro",
+   "quina-de-moldura",
+   "gabarito"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1350,
+  "cor": 53,
+  "luz": 48,
+  "contraste": 176,
+  "cores": [
+   "#0f0e0d",
+   "#241c15",
+   "#2e2318"
+  ]
+ },
+ {
+  "arquivo": "nossa-vangogh-2026-fim.jpg",
+  "origem": "nossa",
+  "ensina": "O fim: a palavra final em amarelo e a de apoio em cinza-claro, o girassol em contraluz saindo do quadro desfocado por cima do pé do título.",
+  "tags": [
+   "cta",
+   "headline",
+   "contraluz",
+   "gabarito"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1350,
+  "cor": 97,
+  "luz": 165,
+  "contraste": 243,
+  "cores": [
+   "#f1f0ec",
+   "#000000",
+   "#f9c70b"
+  ]
+ },
+ {
+  "arquivo": "aprovada-cores-tucano.jpg",
+  "origem": "aprovada",
+  "ensina": "Bicho com cor viva contra a selva escura. As folhas da própria cena, desfocadas, na frente da lente. Título gigante com o floreio por cima. O selo aponta a palavra que importa.",
+  "tags": [
+   "bicho",
+   "cor-viva",
+   "profundidade",
+   "floreio"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1350,
+  "cor": 46,
+  "luz": 62,
+  "contraste": 207,
+  "cores": [
+   "#112f2d",
+   "#05090a",
+   "#2e504d"
+  ]
+ },
+ {
+  "arquivo": "aprovada-alpaca.jpg",
+  "origem": "aprovada",
+  "ensina": "Grande angular colada no focinho: o bicho chega perto da lente e ganha atitude. Fundo limpo, cor cheia.",
+  "tags": [
+   "bicho",
+   "grande-angular",
+   "atitude"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1350,
+  "cor": 107,
+  "luz": 120,
+  "contraste": 236,
+  "cores": [
+   "#066bad",
+   "#055490",
+   "#000000"
+  ]
+ },
+ {
+  "arquivo": "aprovada-pinguim.jpg",
+  "origem": "aprovada",
+  "ensina": "Grande angular com perspectiva forte e fundo limpo: a própria foto já tem os planos.",
+  "tags": [
+   "bicho",
+   "grande-angular",
+   "perspectiva"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1350,
+  "cor": 26,
+  "luz": 166,
+  "contraste": 223,
+  "cores": [
+   "#e4e6ea",
+   "#d7dce4",
+   "#080809"
+  ]
+ },
+ {
+  "arquivo": "aprovada-claude-janela.jpg",
+  "origem": "aprovada",
+  "ensina": "A janela do aplicativo desfocada no fundo, atrás do título e da pessoa: profundidade com um objeto do assunto.",
+  "tags": [
+   "filipe",
+   "profundidade",
+   "objeto-no-fundo"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1350,
+  "cor": 52,
+  "luz": 78,
+  "contraste": 240,
+  "cores": [
+   "#100d0e",
+   "#261b17",
+   "#f3f1eb"
+  ]
+ },
+ {
+  "arquivo": "aprovada-arte-na-mao.jpg",
+  "origem": "aprovada",
+  "ensina": "A peça na mão do Filipe, perto da lente: o objeto do post vira o primeiro plano.",
+  "tags": [
+   "filipe",
+   "primeiro-plano"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1350,
+  "cor": 63,
+  "luz": 68,
+  "contraste": 217,
+  "cores": [
+   "#0f0e0c",
+   "#f1eee9",
+   "#d69748"
+  ]
+ },
+ {
+  "arquivo": "aprovada-skill-dedo.jpg",
+  "origem": "aprovada",
+  "ensina": "O gesto aponta o que importa: o dedo no arquivo, o olho segue.",
+  "tags": [
+   "filipe",
+   "gesto",
+   "direcao-do-olhar"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1350,
+  "cor": 125,
+  "luz": 153,
+  "contraste": 234,
+  "cores": [
+   "#fcc61c",
+   "#0c0b0a",
+   "#fbcb2a"
+  ]
+ },
+ {
+  "arquivo": "aprovada-cursos-abelha.jpg",
+  "origem": "aprovada",
+  "ensina": "Fundo preto com o bicho nítido e cheio de detalhe: o contraste faz a cor saltar.",
+  "tags": [
+   "bicho",
+   "preto",
+   "contraste"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1329,
+  "cor": 84,
+  "luz": 65,
+  "contraste": 244,
+  "cores": [
+   "#0d0c0b",
+   "#262626",
+   "#f6f6f6"
+  ]
+ },
+ {
+  "arquivo": "aprovada-identidade-da-vinci.jpg",
+  "origem": "aprovada",
+  "ensina": "O personagem histórico como assunto, em cena escura com luz quente.",
+  "tags": [
+   "personagem",
+   "escuro",
+   "luz-quente"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1080,
+  "altura": 1335,
+  "cor": 58,
+  "luz": 47,
+  "contraste": 165,
+  "cores": [
+   "#080402",
+   "#2b1607",
+   "#4d2d0d"
+  ]
+ },
+ {
+  "arquivo": "fora-girafa-terno.jpg",
+  "origem": "inspiracao",
+  "ensina": "A favorita do dono: bicho hiper-detalhado, vestido, com atitude, em cor cheia tirada do próprio assunto.",
+  "tags": [
+   "bicho",
+   "atitude",
+   "cor-cheia"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 1012,
+  "altura": 1350,
+  "cor": 103,
+  "luz": 101,
+  "contraste": 219,
+  "cores": [
+   "#110c08",
+   "#2d130a",
+   "#532a14"
+  ]
+ },
+ {
+  "arquivo": "fora-cachorro-olho-de-peixe.jpg",
+  "origem": "inspiracao",
+  "ensina": "Olho de peixe visto de cima: o focinho colado na lente, o corpo pequeno atrás. Fundo de uma cor só.",
+  "tags": [
+   "bicho",
+   "grande-angular",
+   "cor-cheia"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 757,
+  "altura": 1350,
+  "cor": 46,
+  "luz": 44,
+  "contraste": 148,
+  "cores": [
+   "#01172b",
+   "#030c17",
+   "#052f4f"
+  ]
+ },
+ {
+  "arquivo": "fora-gato-patas-na-lente.jpg",
+  "origem": "inspiracao",
+  "ensina": "As patas na lente e o céu atrás: o primeiro plano encosta em quem olha.",
+  "tags": [
+   "bicho",
+   "primeiro-plano",
+   "ceu"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 736,
+  "altura": 1307,
+  "cor": 133,
+  "luz": 124,
+  "contraste": 168,
+  "cores": [
+   "#4a95f1",
+   "#6fb4fc",
+   "#910411"
+  ]
+ },
+ {
+  "arquivo": "fora-arara-selva.jpg",
+  "origem": "inspiracao",
+  "ensina": "Bicho de cor viva contra a selva escura, folhas desfocadas na frente da lente e título gigante atrás do assunto.",
+  "tags": [
+   "bicho",
+   "cor-viva",
+   "profundidade",
+   "titulo-atras"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 736,
+  "altura": 920,
+  "cor": 75,
+  "luz": 68,
+  "contraste": 253,
+  "cores": [
+   "#020606",
+   "#fafbfa",
+   "#043012"
+  ]
+ },
+ {
+  "arquivo": "fora-onca-selva.jpg",
+  "origem": "inspiracao",
+  "ensina": "O assunto vivo contra a cena escura, com o título enorme passando por trás dele.",
+  "tags": [
+   "bicho",
+   "contraste",
+   "titulo-atras"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 736,
+  "altura": 920,
+  "cor": 19,
+  "luz": 76,
+  "contraste": 236,
+  "cores": [
+   "#050708",
+   "#f0f1f0",
+   "#2a3231"
+  ]
+ },
+ {
+  "arquivo": "fora-leopardo-vermelho.jpg",
+  "origem": "inspiracao",
+  "ensina": "Uma cor só dominando tudo (vermelho), com o bicho como joia no centro.",
+  "tags": [
+   "cor-cheia",
+   "bicho",
+   "monocromia"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 736,
+  "altura": 920,
+  "cor": 67,
+  "luz": 48,
+  "contraste": 111,
+  "cores": [
+   "#2d0b0a",
+   "#541313",
+   "#b82f28"
+  ]
+ },
+ {
+  "arquivo": "fora-abelha-cristais.jpg",
+  "origem": "inspiracao",
+  "ensina": "Nitidez extrema no assunto e desfoque forte em volta: o foco diz para onde olhar.",
+  "tags": [
+   "nitidez",
+   "foco",
+   "detalhe"
+  ],
+  "link": "",
+  "nota": "",
+  "em": "2026-11-11",
+  "largura": 736,
+  "altura": 981,
+  "cor": 74,
+  "luz": 70,
+  "contraste": 238,
+  "cores": [
+   "#0c0402",
+   "#2f1004",
+   "#6e3008"
+  ]
+ }
+]

@@ -83,6 +83,7 @@ A lista completa, com o que cada um faz, está em `docs/comandos.md`: leia antes
 - `npm run dev`: compila o painel e liga tudo em http://localhost:8787 (painel em `127.0.0.1:8787/admin/`, sem senha, como `DEV_USUARIO`; conector em `/mcp`). O banco local é o de produção: não rode o relógio local.
 - `npm run painel` e `npm run aluno`: só compilam o painel ou o app do aluno. Depois de compilar, religue o servidor.
 - `npm run conferir` e `node scripts/conferir-painel.mjs` (com o site ligado; passe `https://agenciasetup.com.br` para a produção): site, conector e painel inteiro. Apagam o que criam.
+- Criativos: `node scripts/carrossel.mjs <conteudo>` exporta o carrossel e os mapas (construção, margens, luz, profundidade, desfoque) e `node scripts/conferir-arte.mjs <conteudo>` mede a arte (zero erro antes do revisor). O padrão está em `.claude/skills/carrossel-agenciasetup/references/direcao-de-arte.md`.
 - Ensaios sem banco de verdade: `node scripts/conferir-atendente.mjs` (Atendente, Comenta X, tetos do follow-up e despertador), `conferir-comenta.mjs` (venda por versão), `conferir-aprovadas.mjs` (a fila do Executor), `conferir-conciliador.mjs`, `conferir-treino.mjs` (o Treino da Colmeia e o formato dos itens), `conferir-chamados.mjs` (os chamados de suporte), `conferir-sistema.mjs`, `conferir-chefe.mjs`, `conferir-video.mjs`, `conferir-design.mjs`.
 - `npm run migrar` (`--listar` só mostra): aplica as migrations pendentes. Só com ok.
 - `npm run deploy`: compila tudo e publica o Worker. Só com ok.

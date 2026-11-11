@@ -13,7 +13,7 @@ Recortes sem fundo para compor posts (carrossel, frase, capa), organizados por t
 
 ## Como acrescentar
 1. Gere o elemento **sozinho**, nunca a cena inteira, em fundo liso cinza claro (o que é claro, como nuvem e fumaça, em fundo preto), com a luz de cima à esquerda e o elemento inteiro dentro do quadro (borda natural, sem corte). No Magnific, só o modelo que diz "Unlimited".
-2. `node scripts/biblioteca.mjs adicionar <imagem> <tema/pasta> <nome> "<o que é>" --fonte "..." --tags a,b --dica "..."` (com `--luz` para nuvem e fumaça; com `--ja-recortado` se já for PNG sem fundo). O script tira o fundo no computador, corta justo, salva e refaz este índice.
+2. `node scripts/biblioteca.mjs adicionar <imagem> <tema/pasta> <nome> "<o que é>" --fonte "..." --tags a,b --dica "..."` (com `--volume` para nuvem de verdade em fundo preto, que guarda a sombra dela; com `--luz` para fumaça e brilho; com `--ja-recortado` se já for PNG sem fundo ou for para usar com `mistura: 'multiply'`, como o banco de nuvens em fundo branco). O script tira o fundo no computador, corta justo, salva e refaz este índice.
 3. Confira a folha da pasta: recorte com borda reta, fundo sobrando ou pedaço comido não fica.
 
 ## Temas que ainda não têm nada
@@ -24,7 +24,7 @@ Dinheiro (notas, moedas, maço), mosquitos e outros insetos voando, cobras, outr
 - `templates/carrossel/imagens/elementos/`: as letras, a placa e o travessão de posts antigos.
 - `templates/frase/imagens/`: os objetos dos posts de frase.
 
-## O que tem (75 elementos)
+## O que tem (79 elementos)
 
 ### animais/abelhas (3)
 
@@ -99,14 +99,18 @@ Folha: `ceu/nevoa/folha.jpg`
 | `ceu/nevoa/nevoa-de-baixo.png` | Névoa branca suave que sobe de baixo. | 1200 x 498 | nevoa, neblina, branco |  | templates/carrossel/imagens/elementos/ |
 | `ceu/nevoa/nevoa-de-cima.png` | Névoa branca suave que desce de cima. | 1200 x 520 | nevoa, neblina, branco |  | templates/carrossel/imagens/elementos/ |
 
-### ceu/nuvens (2)
+### ceu/nuvens (6)
 
 Folha: `ceu/nuvens/folha.jpg`
 
 | Arquivo | O que é | Tamanho | Tags | Dica | De onde veio |
 | --- | --- | --- | --- | --- | --- |
+| `ceu/nuvens/banco-de-nuvens-branco-2.png` | Banco de nuvens de verdade, largo, fotografado em FUNDO BRANCO (não tem transparência). | 1376 x 768 | nuvem, ceu, real, banco, multiply | Só em card claro, no panorama, com mistura: 'multiply'. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id XmyJdgCBfo |
+| `ceu/nuvens/banco-de-nuvens-branco.png` | Banco de nuvens de verdade, largo, fotografado em FUNDO BRANCO (não tem transparência). | 1376 x 768 | nuvem, ceu, real, banco, multiply | Só em card claro, no panorama, com mistura: 'multiply': o branco some e o volume da nuvem funde no card. Como um chão de nuvens na base dos cards. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id LwXejM6swO |
 | `ceu/nuvens/nuvem-fofa-2.png` | Nuvem branca fofa (cúmulo), com sombra suave; fundo transparente pelo claro. | 854 x 729 | nuvem, ceu, branco, van gogh | Fica bem sobre amarelo, céu ou preto; sobre o branco some. Desfocada quando está longe ou perto da lente. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id WDL1GCJcXe |
 | `ceu/nuvens/nuvem-fofa.png` | Nuvem branca fofa (cúmulo), com sombra suave; fundo transparente pelo claro. | 849 x 664 | nuvem, ceu, branco, van gogh | Fica bem sobre amarelo, céu ou preto; sobre o branco some. Desfocada quando está longe ou perto da lente. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id Dowl0kXpcl |
+| `ceu/nuvens/nuvem-real-quente-2.png` | Nuvem de verdade (cúmulo), com volume: topo claro em luz quente e sombra cinza embaixo; a borda some no ar. | 1231 x 640 | nuvem, ceu, real, volume, quente | Na frente das coisas (perto da lente, desfocada) ou sobre cor e preto. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id JNvm7vtOq4 |
+| `ceu/nuvens/nuvem-real-quente.png` | Nuvem de verdade (cúmulo), com volume: topo claro em luz quente e sombra cinza embaixo; a borda some no ar. | 1179 x 602 | nuvem, ceu, real, volume, quente | Na frente das coisas (perto da lente, desfocada) ou sobre cor e preto. Tem volume: não chapar com luz nem sat 0. | Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id p87UDO3ehw |
 
 ### formas/gotas (14)
 

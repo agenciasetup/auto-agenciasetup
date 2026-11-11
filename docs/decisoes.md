@@ -880,6 +880,19 @@ O dono viu os três vídeos de teste dos cartões aprovados (GSAP, HyperFrames e
 - **Vídeo antigo não muda.** Antes e depois da mudança, 24 quadros de 3 vídeos (Reel 43, aula 1 e um Reel em inglês) saíram idênticos (`_local/testes-video/motor/regressao.mjs`). A primeira versão mudou um quadro do Reel 43 porque a classe nova tinha o mesmo nome da do passo `risca`; por isso a anotação se chama `anota`.
 - **Calango que fala:** a versão simples (3 bocas em pixel trocadas pelo volume da voz) está em `_local/testes-video/calango-fala/`; o MuseTalk espera a opinião do dono.
 
+## Tomadas em 11/11/2026 (direção de arte dos criativos)
+
+O dono refez o carrossel do Van Gogh comigo, volta por volta, e pediu no fim: "quero que você aprenda, atualize nossas skills para criar assim... melhore a forma como você enxerga, instale dependências, crie mapa de margem, mapa de construção, mapa de profundidade, de desfoque, luz, sombra realista".
+
+- **O guia.** `.claude/skills/carrossel-agenciasetup/references/direcao-de-arte.md` reúne o que ele ensinou nas cinco áreas (imagem criativa; profundidade, camadas, tamanho e desfoque; headline, margens e fontes; luz, tratamento e cor; elementos e sombra) e vale mais que os documentos antigos nesses assuntos. O gabarito é o `vangogh-infinito`.
+- **Os mapas saem em toda exportação** (`_local/carrossel/<conteudo>/mapas/`): construção, margens e, no carrossel infinito, luz, profundidade e desfoque. `--sem-mapas` pula.
+- **A conferência é obrigatória antes do revisor** (`node scripts/conferir-arte.mjs <conteudo>`): zero erro. Ela só lê e mede. Regra nova que o dono ensinar e for medível entra nela.
+- **As fontes dos criativos são as da agência**: Calango Condensed (headline), Calango Signature (cursiva) e Calango Sans (textos), em `templates/fontes/`, fora do Git porque o repositório é público. As antigas (Anton, Great Vibes, Outfit, Inter Tight) ficam de reserva e nas peças já aprovadas. O site e o painel não mudaram de fonte: isso é outra decisão.
+- **Banco de capas** em `templates/carrossel/referencias/banco/` (as imagens fora do Git; o índice e o que cada capa ensina, dentro). As medidas de cor do banco calibram a conferência.
+- **Dependência nova, sem pacote novo:** o Depth Anything V2 Small (Apache 2.0) roda no ambiente do `tratar` (`profundidade` e `foco`). O Base e o Large ficaram de fora porque a licença deles não é comercial.
+- **No modelo:** sombra só quando pedida, `mistura`, `escurece`, `rastro`, `contorno`, `cantos`, luz com cor de borda e modo de mesclagem, `posFrente`, `posFonte`, `alto`, `vars` e `luzDe`.
+- Nada foi publicado: o Van Gogh está só no computador, sem a palavra do "Comenta" e fora da fila.
+
 ## Em aberto
 
 - **Follow-up do direct:** no ar desde 08/11/2026 (versão `8267d516`) com a tarefa `direct-followup`. Falta a primeira rodada com o dono olhando e conferir na primeira semana se o "achado pelo nome" erra. Sete rodadas por dia lendo o direct gastam bastante do limite semanal do Claude: se apertar, ficar com 9h, 14h e 20h.

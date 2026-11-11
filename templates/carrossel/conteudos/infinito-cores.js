@@ -47,8 +47,8 @@ window.CARROSSEL = {
       // A capa aprovada (cores-v2), sem mudar nada (a poeira sorteada como a dela). Nada atravessa a capa
       // (`semTravessia`): assim ela fica com a textura do tema dela, igual à aprovada.
       tipo: 'capa', tema: 'preto', poeiraDe: 'cores-v2', semTravessia: true,
-      // A capa aprovada continua na Anton (feita antes da Calango Condensed, 11/11/2026).
-      vars: { 'fonte-condensada': "'Anton', sans-serif", 'peso-condensada': 400 },
+      // A capa aprovada continua na Anton e na Outfit (feita antes das fontes Calango, 11/11/2026).
+      vars: { 'fonte-condensada': "'Anton', sans-serif", 'peso-condensada': 400, 'fonte-sans': "'Outfit', system-ui, sans-serif" },
       fundoFoto: { arq: 'tucano-v2-cena.jpg', x: -60, y: -78, w: 1200 },
       titulo: {
         semSombra: true, preEspaco: 14, preLado: 'esquerda',

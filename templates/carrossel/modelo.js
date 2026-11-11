@@ -11,6 +11,11 @@
   const n = Math.max(1, parseInt(q.get('s') || '1', 10));
   const ETAPA = [1, 3, 5].includes(Number(q.get('etapa'))) ? Number(q.get('etapa')) : 5;
   const SO = ['fundo', 'titulo', 'assunto', 'frente', 'acabamento'].includes(q.get('so')) ? q.get('so') : null;
+  // &mapa=<nome>: os mapas de conferência (11/11/2026, pedido do dono: "crie mapa de margem, mapa de construção, mapa de
+  // profundidade, de desfoque, desfoque de movimento, luz, sombra realista"). profundidade e desfoque pintam cada elemento
+  // num cinza; construcao, margens e luz desenham por cima da peça (templates/carrossel/mapas.js); texto e elementos
+  // deixam só uma parte à vista, em fundo transparente, para a conferência medir o que cobre o quê.
+  const MAPA = ['profundidade', 'desfoque', 'construcao', 'margens', 'luz', 'texto', 'elementos'].includes(q.get('mapa')) ? q.get('mapa') : (q.get('profundidade') === '1' ? 'profundidade' : null);
   // &ate=<camada>: desenha as camadas de baixo até esta (fundo, título, assunto, frente, acabamento), somando. É a capa
   // "por etapas" que o post mostra sendo montada (primeiro o fundo, depois o título, o assunto e os efeitos).
   const ATE = ['fundo', 'titulo', 'assunto', 'frente', 'acabamento'].includes(q.get('ate')) ? q.get('ate') : null;
@@ -188,7 +193,10 @@
   // z 0,9 = 30), no fundo mais devagar (z -1 = 10). A sombra também: quanto mais longe da superfície, mais deslocada,
   // maior e mais fraca; no fundo não há sombra. Dois elementos nítidos no mesmo plano precisam ter tamanhos de verdade
   // parecidos (uma borboleta nítida maior que a outra parece gigante).
-  const PROF = new URLSearchParams(location.search).get('profundidade') === '1';
+  const PROF = MAPA === 'profundidade' || MAPA === 'desfoque';
+  // O cinza de cada elemento no mapa: na profundidade, mais claro é mais perto da lente; no desfoque, branco é nítido e
+  // escuro é muito desfocado.
+  const cinzaDoMapa = (t) => (MAPA === 'desfoque' ? 1 - Math.min(1, (t.blur || 0) / 36) * 0.82 : 0.5 + 0.5 * (t.z || 0));
   function comProfundidade(t) {
     if (t.z === undefined || t.halo) return t;
     const z = Math.max(-1, Math.min(1, Number(t.z) || 0));
@@ -201,7 +209,7 @@
     return { ...t, z, blur, sombra, comZ: true };
   }
   function filtroDaTravessia(t) {
-    if (PROF) { const g = 0.5 + 0.5 * (t.z || 0); return `brightness(0) invert(${g.toFixed(2)})`; }
+    if (PROF) return `brightness(0) invert(${cinzaDoMapa(t).toFixed(2)})`;
     if (ETAPA < 3) return corDe(t).join(' ') || 'none';
     const f = [];
     if (t.blur) f.push(`blur(${t.blur}px)`);
@@ -225,7 +233,7 @@
   function vagalume(v, x, y) {
     const r = v.r || 6;
     const d = r * 10;
-    return `<div class="vagalume${v.cor === 'quente' ? ' quente' : ''}" style="${estilo({ left: x - d / 2, top: y - d / 2, width: d, height: d, filter: v.blur && ETAPA >= 3 ? `blur(${v.blur}px)` : 'none', opacity: v.op ?? 1, mixBlendMode: v.mistura || 'screen' })}"></div>`;
+    return `<div class="vagalume${v.cor === 'quente' ? ' quente' : ''}" data-r="${r}" data-op="${v.op ?? 1}" style="${estilo({ left: x - d / 2, top: y - d / 2, width: d, height: d, filter: v.blur && ETAPA >= 3 ? `blur(${v.blur}px)` : 'none', opacity: v.op ?? 1, mixBlendMode: v.mistura || 'screen' })}"></div>`;
   }
   function telaLarga(partes) {
     const C = window.CARROSSEL || {};
@@ -233,12 +241,37 @@
     const j = String(partes.classe || '').split(' ').includes('sangra') ? 0 : JANELA;
     const dx = (n - 1) * CARD;
     const largura = CARD * ((C.slides || []).length || 1);
-    const panorama = s.semPanorama ? '' : listaDe(C.panorama).map(comProfundidade).map((p) => (p.vagalume ? vagalume(p, p.x - dx - j, p.y - j) : img(p.arq, {
-      left: (p.x || 0) - dx - j, top: (p.y || 0) - j, width: p.w || largura, ...(p.h ? { height: p.h } : {}),
-      transform: `rotate(${p.rot || 0}deg)${p.espelho ? ' scaleX(-1)' : ''}`,
-      filter: PROF ? `brightness(0) invert(${(0.5 + 0.5 * (p.z || 0)).toFixed(2)})` : [p.blur && ETAPA >= 3 ? `blur(${p.blur}px)` : '', ...corDe(p)].filter(Boolean).join(' ') || 'none',
-      opacity: PROF ? 1 : p.op ?? 1,
-    }, 'panorama'))).join('');
+    // Um elemento da tela larga (panorama ou travessia). Além da imagem:
+    //   `mistura`: o modo de mesclagem. No panorama, a nuvem fotografada em fundo branco com 'multiply' funde no card
+    //     claro (o branco some e fica só o volume); na travessia a mistura vale só entre os elementos da própria camada.
+    //   `escurece`: a sombra em degradê por cima do próprio elemento, só onde ele é opaco ({ de: 'baixo' | 'cima' |
+    //     'esquerda' | 'direita' ou graus, forca, ate }): o dono, sobre as quinas da moldura nos cards pretos, "uma
+    //     sombra vindo de baixo neles, escurecendo, ficaria melhor". A direção é a da tela, mesmo com o elemento girado.
+    //   `rastro`: o desfoque de movimento do que voa ({ px, angulo }, o ângulo em graus na direção do voo).
+    // Cada um leva os dados (data-*) que os mapas e a conferência leem.
+    const rastros = new Set();
+    const DIRECAO = { baixo: 0, esquerda: 90, cima: 180, direita: 270 };
+    const dados = (t, camada) => ` data-arq="${String(t.arq || '').split('/').pop().replace(/\.\w+$/, '')}" data-pasta="${String(t.arq || '').split('/').slice(-3, -1).join('/')}" data-camada="${camada}" data-z="${t.z ?? ''}" data-blur="${t.blur || 0}"${t.sombra && typeof t.sombra === 'object' ? ` data-sombra="${t.sombra.x},${t.sombra.y},${t.sombra.blur},${t.sombra.op}"` : ''}${t.sat !== undefined ? ` data-sat="${t.sat}"` : ''}${t.luz !== undefined ? ` data-luz="${t.luz}"` : ''}${t.rastro ? ` data-rastro="${t.rastro.px ?? 10},${t.rastro.angulo || 0}"` : ''}${t.fundo || (camada === 'panorama' && (t.w || largura) >= 2000) ? ' data-fundo="1"' : ''}${t.contorno ? ' data-contorno="1"' : ''}${t.escurece ? ' data-escurece="1"' : ''}${t.mistura ? ` data-mistura="${t.mistura}"` : ''}${(t.blur || 0) >= 16 || t.mistura ? ' data-suave="1"' : ''}`;
+    const elemento = (t, left, top, classe, camada, filtro) => {
+      const giro = `rotate(${t.rot || 0}deg)${t.espelho ? ' scaleX(-1)' : ''}`;
+      const caixa = { left, top, width: t.w || largura, ...(t.h ? { height: t.h } : {}) };
+      const resto = { opacity: PROF ? 1 : t.op ?? 1, ...(t.mistura && !PROF ? { mixBlendMode: t.mistura } : {}) };
+      if (PROF || ETAPA < 3 || (!t.escurece && !t.rastro)) return `<img class="${classe}" src="imagens/${t.arq}" alt=""${dados(t, camada)} style="${estilo({ ...caixa, transform: giro, filter: filtro, ...resto })}">`;
+      const e = t.escurece && { de: 'baixo', forca: 0.85, ate: 0.8, ...(t.escurece === true ? {} : t.escurece) };
+      const alvo = e ? (typeof e.de === 'number' ? e.de : DIRECAO[e.de] ?? 0) : 0;
+      const local = t.espelho ? (t.rot || 0) - alvo : alvo - (t.rot || 0);
+      // Com `y0` e `y1` (alturas na tela: escuro em y0, limpo em y1), o degradê é medido no slide e não na caixa da peça:
+      // serve para a peça girada que só mostra a ponta (a quina da moldura). Quem acerta é ajustarEscurece(), depois que
+      // a imagem carrega e a altura dela é conhecida.
+      const naTela = e && e.y0 !== undefined ? ` data-y0="${e.y0}" data-y1="${e.y1 ?? 0}" data-forca="${e.forca}" data-rot="${t.rot || 0}" data-espelho="${t.espelho ? 1 : 0}"` : '';
+      const dentro = `<img src="imagens/${t.arq}" alt="" style="display:block;width:100%${t.h ? ';height:100%' : ''}">${e ? `<div class="escurece"${naTela} style="background:linear-gradient(${local}deg, rgba(0,0,0,${e.forca}) 0%, rgba(0,0,0,0) ${Math.round(e.ate * 100)}%);-webkit-mask-image:url('imagens/${t.arq}');mask-image:url('imagens/${t.arq}')"></div>` : ''}`;
+      if (!t.rastro) return `<div class="${classe} grupo"${dados(t, camada)} style="${estilo({ ...caixa, transform: giro, filter: filtro, ...resto })}">${dentro}</div>`;
+      const r = { px: 10, angulo: 0, ...t.rastro };
+      rastros.add(r.px);
+      return `<div class="${classe} grupo"${dados(t, camada)} style="${estilo({ ...caixa, transform: `rotate(${r.angulo}deg)`, filter: `url(#rastro-${r.px})`, ...resto })}"><div style="position:relative;transform:rotate(${(t.rot || 0) - r.angulo}deg)${t.espelho ? ' scaleX(-1)' : ''};filter:${filtro}">${dentro}</div></div>`;
+    };
+    const panorama = s.semPanorama ? '' : listaDe(C.panorama).map(comProfundidade).map((p) => (p.vagalume ? vagalume(p, p.x - dx - j, p.y - j) : elemento(p, (p.x || 0) - dx - j, (p.y || 0) - j, 'panorama', 'panorama',
+      PROF ? `brightness(0) invert(${cinzaDoMapa(p).toFixed(2)})` : [p.blur && ETAPA >= 3 ? `blur(${p.blur}px)` : '', ...corDe(p)].filter(Boolean).join(' ') || 'none'))).join('');
     const todas = s.semTravessia ? [] : listaDe(C.travessia);
     // Luz por cima (11/11/2026, a camada 4 da capa do Van Gogh): { halo: true, x, y (o centro), d (o diâmetro), cor, op }.
     // Vai numa camada própria em modo tela, que clareia o que está embaixo (o assunto, o título, o fundo).
@@ -248,23 +281,19 @@
     // ('screen', 'overlay', 'color-dodge', 'soft-light'; o 'overlay' e o 'soft-light' deixam o preto e o branco como
     // estão, o efeito do blend-if do Photoshop) e `blur` o desfoque. Uma camada por modo, presa na janela (a luz não vaza
     // para a moldura preta).
-    const bola = (t) => `<div class="halo-luz" style="${estilo({ left: t.x - dx - j - (t.d || 900) / 2, top: t.y - j - (t.d || 900) / 2, width: t.d || 900, height: t.d || 900, opacity: t.op ?? 0.5, filter: t.blur && ETAPA >= 3 ? `blur(${t.blur}px)` : 'none', background: t.borda ? `radial-gradient(circle, ${t.cor || '#fff4b0'} 0%, ${t.borda} 42%, transparent 70%)` : `radial-gradient(circle, ${t.cor || '#fff1c2'} 0%, transparent 68%)` })}"></div>`;
+    const bola = (t) => `<div class="halo-luz" data-modo="${t.mistura || 'screen'}" data-op="${t.op ?? 0.5}" style="${estilo({ left: t.x - dx - j - (t.d || 900) / 2, top: t.y - j - (t.d || 900) / 2, width: t.d || 900, height: t.d || 900, opacity: t.op ?? 0.5, filter: t.blur && ETAPA >= 3 ? `blur(${t.blur}px)` : 'none', background: t.borda ? `radial-gradient(circle, ${t.cor || '#fff4b0'} 0%, ${t.borda} 42%, transparent 70%)` : `radial-gradient(circle, ${t.cor || '#fff1c2'} 0%, transparent 68%)` })}"></div>`;
     const modos = [...new Set(todas.filter((t) => t.halo).map((t) => t.mistura || 'screen'))];
     const halos = modos.map((m) => `<div class="camada c-luz" style="mix-blend-mode:${m}">${todas.filter((t) => t.halo && (t.mistura || 'screen') === m).map(bola).join('')}</div>`).join('');
     const pecas = todas.filter((t) => !t.halo).map(comProfundidade);
     // No mapa de profundidade, cada elemento leva o número da distância escrito em cima.
-    const marca = (t) => (PROF && !t.vagalume ? `<div class="rotulo-z" style="${estilo({ left: t.x - dx + (t.w || 0) / 2 - 60, top: Math.max(8, Math.min(1300, t.y + (t.w || 0) * 0.3)) })}">z ${t.z ?? 0}${t.blur ? ` · desfoque ${t.blur}` : ''}</div>` : '');
-    const travessa = (t) => (t.vagalume ? (PROF ? '' : vagalume(t, t.x - dx, t.y)) : img(t.arq, {
-      left: t.x - dx, top: t.y, width: t.w, ...(t.h ? { height: t.h } : {}),
-      transform: `rotate(${t.rot || 0}deg)${t.espelho ? ' scaleX(-1)' : ''}`,
-      filter: filtroDaTravessia(t), opacity: PROF ? 1 : t.op ?? 1,
-    }, 'travessa') + marca(t));
-    return {
-      panorama,
-      travessia: pecas.filter((t) => !t.acima).map(travessa).join(''),
-      acima: pecas.filter((t) => t.acima).map(travessa).join(''),
-      luz: halos,
-    };
+    const rotulo = (t) => (MAPA === 'desfoque' ? `${t.blur ? `desfoque ${t.blur}` : 'nítido'}${t.rastro ? ` · rastro ${t.rastro.px ?? 10}` : ''}` : `z ${t.z ?? 0}${t.blur ? ` · desfoque ${t.blur}` : ''}${t.sombra ? ' · sombra' : ''}`);
+    const marca = (t) => (PROF && !t.vagalume ? `<div class="rotulo-z" style="${estilo({ left: t.x - dx + (t.w || 0) / 2 - 60, top: Math.max(8, Math.min(1300, t.y + (t.w || 0) * 0.3)) })}">${rotulo(t)}</div>` : '');
+    const travessa = (t) => (t.vagalume ? (PROF ? '' : vagalume(t, t.x - dx, t.y)) : elemento(t, t.x - dx, t.y, 'travessa', t.acima ? 'acima' : 'travessia', filtroDaTravessia(t)) + marca(t));
+    const travessia = pecas.filter((t) => !t.acima).map(travessa).join('');
+    const acima = pecas.filter((t) => t.acima).map(travessa).join('');
+    // Os filtros do rastro (o desfoque só num eixo; o elemento gira para o eixo cair na direção do voo).
+    const defs = rastros.size ? `<svg width="0" height="0" style="position:absolute"><defs>${[...rastros].map((px) => `<filter id="rastro-${px}" x="-80%" y="-80%" width="260%" height="260%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="${px} 0"/></filter>`).join('')}</defs></svg>` : '';
+    return { panorama, travessia, acima, luz: halos, defs };
   }
 
   // Monta o slide: dentro da janela (0, 1, título de trás, 2) e por cima (3, 4). O carrossel infinito põe o panorama na
@@ -272,13 +301,13 @@
   function montar(tema, partes) {
     // partes.classe: classe a mais no slide (ex.: 'sangra', a capa até a borda, sem a moldura preta; 05/11/2026).
     const larga = telaLarga(partes);
-    const infinito = (larga.travessia || larga.acima || larga.luz ? ' larga' : '') + (PROF ? ' profundidade' : '');
+    const infinito = (larga.travessia || larga.acima || larga.luz ? ' larga' : '') + (PROF ? ' profundidade' : '') + (MAPA ? ` mapa-${MAPA}` : '');
     // `vars` no slide: troca as cores do tema só nele (ex.: { acento: '#5c1d00' }, o destaque escuro sobre o laranja
     // pintado, onde o laranja do tema some).
     const sv = ((window.CARROSSEL || {}).slides || [])[n - 1] || {};
     const vars = sv.vars ? ` style="${Object.entries(sv.vars).map(([k, v]) => `--${k}:${v}`).join(';')}"` : '';
     return `<div class="slide tema-${tema} etapa-${ETAPA}${infinito}${partes.classe ? ` ${partes.classe}` : ''}${SO ? ` so so-${SO}` : ''}${ATE ? ` ate ate-${ATE}` : ''}"${vars}>
-      <div class="janela">
+      ${larga.defs || ''}<div class="janela">
         <div class="camada c0">${partes.c0 || ''}${larga.panorama}</div>
         <div class="camada c1">${partes.c1 || ''}</div>
         <div class="camada c-titulo">${partes.atras || ''}</div>
@@ -598,6 +627,22 @@
     menu: (b) => `<div class="menu-contexto" style="${estilo({ left: b.x, top: b.y, transform: `rotate(${b.rot || 0}deg)` })}">${b.itens.map((t, k) => `<div class="${k === b.ativo ? 'ativo' : ''}">${t}</div>`).join('')}</div>`,
   };
 
+  // A sombra em degradê medida na tela (`escurece: { y0, y1 }`): acha o centro da peça e escreve o degradê com as
+  // paradas em px, na direção que, depois do giro da peça, fica na vertical do slide.
+  function ajustarEscurece() {
+    document.querySelectorAll('.escurece[data-y0]').forEach((el) => {
+      const w = el.offsetWidth, h = el.offsetHeight, g = el.closest('.grupo');
+      if (!w || !h || !g) return;
+      const r = g.getBoundingClientRect(), cy = r.top + r.height / 2;
+      const rot = Number(el.dataset.rot) || 0, y0 = Number(el.dataset.y0), y1 = Number(el.dataset.y1), sobe = y1 < y0;
+      const alvo = sobe ? 0 : 180, a = el.dataset.espelho === '1' ? rot - alvo : alvo - rot, rad = (a * Math.PI) / 180;
+      const L = Math.abs(w * Math.sin(rad)) + Math.abs(h * Math.cos(rad));
+      const p = (y) => Math.round(L / 2 + (sobe ? cy - y : y - cy));
+      el.style.background = `linear-gradient(${a}deg, rgba(0,0,0,${el.dataset.forca}) ${p(y0)}px, rgba(0,0,0,0) ${p(y1)}px)`;
+    });
+  }
+  window.addEventListener('load', ajustarEscurece);
+
   // ---------------------------------------------------------------- alinhamento depois das fontes
   // Texto de apoio nunca fica solto: alinha à borda da palavra grande (data-ancora), e o selo põe a ponta do cursor
   // no elemento que aponta (data-aponta, `ponto` = fração da largura e da altura dele).
@@ -671,6 +716,9 @@
       });
     }
     tirarPoeiraDoTexto();
+    ajustarEscurece();
+    // As medidas e os mapas (templates/carrossel/mapas.js): window.MEDIR() devolve as caixas de tudo; com &mapa=, desenha.
+    if (window.MAPAS) window.MAPAS.depois({ mapa: MAPA, n, janela: JANELA, carrossel: window.CARROSSEL });
     window.PRONTO = true;
   }
 
@@ -883,7 +931,7 @@
     document.title = `${C.nome} · ${n}/${C.slides.length} · ${tema}`;
     window.SLIDES = C.slides.length;
     window.CAPAS = C.capas || [];
-    if (SO) { document.documentElement.style.background = 'transparent'; document.body.style.background = 'transparent'; }
+    if (SO || MAPA === 'texto' || MAPA === 'elementos') { document.documentElement.style.background = 'transparent'; document.body.style.background = 'transparent'; }
     document.fonts.ready.then(alinhar);
   }
   // Card animado: redesenha no momento t (0 a 1) sem recarregar a página (fontes e imagens já estão na memória).

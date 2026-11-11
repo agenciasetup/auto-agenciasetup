@@ -80,7 +80,7 @@ Leia `templates/frase/LEIA.md`.
 **O que é da agência e vai em todos** (pedido do Filipe em 29/10/2026: "um pouquinho que tiver da agência já salva"):
 - o fundo preto em volta e a **janela de cantos redondos**, com o cabeçalho "— @agenciasetup | **Calango** ×", igual aos carrosséis;
 - **letra grande**, enchendo a janela ("não precisa ser pequeninha");
-- **duas fontes misturadas:** a frase em sans pesada (Inter Tight 800, minúsculas) e o rótulo ou a palavra de destaque em serifa itálica laranja (Instrument Serif), como o "Calango," dos carrosséis;
+- **duas fontes misturadas:** a frase em sans pesada (Calango Sans Bold, a fonte da agência desde 11/11/2026, em minúsculas; a Inter Tight fica de reserva) e o rótulo ou a palavra de destaque em serifa itálica laranja (Instrument Serif), como o "Calango," dos carrosséis;
 - na série, o trilho embaixo com o ponto laranja mostrando em que slide a pessoa está.
 
 O creme (estilo bege de perfil de fora) foi reprovado: "fugiu MUITO do estilo da agência". Sem logo grande, sem o rosto do Filipe e sem o calango desenhado na arte: o calango vive no cabeçalho, na legenda ("Calango,") e no #boracalango.

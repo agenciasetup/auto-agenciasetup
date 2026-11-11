@@ -12,7 +12,7 @@ html, body { width: 1080px; height: 1350px; background: #0b0b0c; overflow: hidde
 .post { position: relative; width: 1080px; height: 1350px; overflow: hidden; background: #0b0b0c; -webkit-font-smoothing: antialiased; }
 .janela {
   position: absolute; inset: 40px; border-radius: 46px; overflow: hidden; isolation: isolate;
-  background: var(--fundo); color: var(--tinta); font-family: 'Inter Tight', system-ui, sans-serif;
+  background: var(--fundo); color: var(--tinta); font-family: 'Calango Sans', 'Inter Tight', system-ui, sans-serif;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 40px 120px rgba(0, 0, 0, 0.6);
 }
 
@@ -72,9 +72,9 @@ html, body { width: 1080px; height: 1350px; background: #0b0b0c; overflow: hidde
 .alinha-centro .rotulo { align-self: center; }
 .destaque { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; font-size: 1.12em; letter-spacing: -0.015em; color: var(--acento); }
 .asterisco { color: var(--acento); margin-right: 0.02em; }
-.apoio { font: 400 30px/1.4 'Outfit', sans-serif; color: var(--fraca); white-space: pre-line; max-width: 760px; }
+.apoio { font: 400 30px/1.4 'Calango Sans', 'Outfit', sans-serif; color: var(--fraca); white-space: pre-line; max-width: 760px; }
 /* O card de oferta (o último de todo post, regra do dono em 29/10/2026): a chamada para comentar, num botão laranja. */
-.cta { align-self: flex-start; display: inline-flex; align-items: center; gap: 0.32em; margin-top: 14px; padding: 0.5em 0.9em 0.52em; border-radius: 999px; background: var(--acento); color: #170900; font: 500 40px/1 'Outfit', sans-serif; letter-spacing: -0.01em; box-shadow: 0 18px 40px -18px var(--acento); }
+.cta { align-self: flex-start; display: inline-flex; align-items: center; gap: 0.32em; margin-top: 14px; padding: 0.5em 0.9em 0.52em; border-radius: 999px; background: var(--acento); color: #170900; font: 500 40px/1 'Calango Sans', 'Outfit', sans-serif; letter-spacing: -0.01em; box-shadow: 0 18px 40px -18px var(--acento); }
 .cta b { font-weight: 700; letter-spacing: 0.02em; }
 .alinha-centro .cta { align-self: center; }
 
@@ -83,7 +83,7 @@ html, body { width: 1080px; height: 1350px; background: #0b0b0c; overflow: hidde
 .rabisco svg { width: 100%; height: auto; display: block; overflow: visible; }
 
 /* ---------------------------------------------------------------- 3 acabamento */
-.cabecalho { position: absolute; left: 50px; right: 50px; top: 34px; height: 42px; display: flex; align-items: center; justify-content: center; font: 300 31px 'Outfit', sans-serif; color: var(--tinta); }
+.cabecalho { position: absolute; left: 50px; right: 50px; top: 34px; height: 42px; display: flex; align-items: center; justify-content: center; font: 300 31px 'Calango Sans', 'Outfit', sans-serif; color: var(--tinta); }
 .cabecalho b { font-weight: 700; }
 .cabecalho .min, .cabecalho .fechar { position: absolute; top: 50%; transform: translateY(-50%); }
 .cabecalho .min { left: 0; width: 28px; height: 3px; border-radius: 2px; background: var(--tinta); }

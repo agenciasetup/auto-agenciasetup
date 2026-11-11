@@ -15,13 +15,16 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
   --janela: 40px;
   position: relative; width: 1080px; height: 1350px; overflow: hidden;
   background: var(--margem); color: var(--tinta);
-  font-family: 'Outfit', system-ui, sans-serif; -webkit-font-smoothing: antialiased;
+  font-family: var(--fonte-sans); -webkit-font-smoothing: antialiased;
 }
 
 /* ---------------------------------------------------------------- temas */
 /* A headline condensada é a Calango Condensed Black, a fonte da agência (templates/fontes/, 11/11/2026); a Anton fica de
    reserva. Uma peça antiga aprovada que precisa sair igual troca só no slide: vars: { 'fonte-condensada': "'Anton', sans-serif", 'peso-condensada': 400 }. */
-:root { --fonte-condensada: 'Calango Condensed', 'Anton', sans-serif; --peso-condensada: 900; }
+:root { --fonte-condensada: 'Calango Condensed', 'Anton', sans-serif; --peso-condensada: 900; --fonte-sans: 'Calango Sans', 'Outfit', system-ui, sans-serif; }
+/* A sans dos textos é a Calango Sans (a Outfit fica de reserva). O slide herda a variável: a peça antiga aprovada que
+   precisa sair igual pede vars: { 'fonte-sans': "'Outfit', system-ui, sans-serif" }. */
+.slide { font-family: var(--fonte-sans); }
 
 .tema-amarelo {
   --margem: #0b0b0c;
@@ -96,6 +99,20 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 .slide.profundidade :is(.janela, .c3, .c4, .c5) { filter: grayscale(1) brightness(0.55) contrast(0.35); }
 .slide.profundidade :is(.c-luz, .poeira, .meio-tom, .grao) { display: none; }
 .rotulo-z { position: absolute; z-index: 40; font: 600 22px/1 'JetBrains Mono', monospace; color: #ff3b6b; background: rgba(0, 0, 0, 0.7); padding: 6px 9px; border-radius: 8px; white-space: nowrap; }
+/* Elemento em grupo (com `escurece` ou `rastro`): a imagem e, por cima, a sombra em degradê recortada no próprio
+   elemento (a máscara é a imagem dele). */
+.grupo img { max-width: none; }
+.escurece { position: absolute; inset: 0; pointer-events: none; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+/* Mapas de conferência (&mapa=). `texto` e `elementos` deixam só uma parte à vista, em fundo transparente: a conferência
+   (scripts/conferir-arte.mjs) cruza as duas para saber quanto de cada texto fica debaixo ou em cima de um elemento. Os
+   elementos suaves (nuvem, névoa, o que tem desfoque de 16 para cima) e o fundo não contam. */
+.slide.mapa-texto, .slide.mapa-elementos { background: transparent !important; }
+.slide.mapa-texto *, .slide.mapa-elementos * { visibility: hidden !important; }
+.slide.mapa-texto :is(.titulo-capa .progressivo, .titulo-capa .progressivo *, .pre-titulo, .pre-titulo *, .pos-titulo, .pos-titulo *, .t-miolo, .t-miolo *, .texto-miolo, .texto-miolo *, .rotulo-miolo, .palavra-chamada, .palavra-chamada *, .pre-chamada) { visibility: visible !important; }
+.slide.mapa-elementos :is(.travessa:not([data-suave]), .travessa:not([data-suave]) *, .assunto, .assunto *, .panorama:not([data-fundo]):not([data-suave]), .panorama:not([data-fundo]):not([data-suave]) *) { visibility: visible !important; }
+/* Os mapas desenhados por cima da peça (construção, margens, luz): templates/carrossel/mapas.js. */
+.mapa-camada { position: absolute; inset: 0; z-index: 60; pointer-events: none; }
+.slide:is(.mapa-construcao, .mapa-margens, .mapa-luz) :is(.poeira, .meio-tom, .grao) { display: none; }
 .so-frente .c-luz { display: block; }
 .ate-fundo .c-luz, .ate-titulo .c-luz, .ate-assunto .c-luz { display: none; }
 .panorama, .travessa { position: absolute; display: block; max-width: none; transform-origin: center; }

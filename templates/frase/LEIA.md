@@ -16,8 +16,8 @@ Sai em `_local/frase/<nome>/` (`01.jpg` ... e `previa.jpg` quando tem mais de um
 Pedido do Filipe em 29/10/2026 ("um pouquinho que tiver da agência já salva"):
 
 - o fundo preto em volta e a janela de cantos redondos (40 px de margem, raio de 46 px), igual aos carrosséis;
-- o cabeçalho "— @agenciasetup | **Calango** ×" em Outfit (no inglês, `marca: { perfil: '@setupagency_eng', nome: 'Setup Agency' }` no conteúdo);
-- duas fontes: a frase em Inter Tight 800, em minúsculas, e o rótulo e a palavra de destaque em Instrument Serif itálica laranja;
+- o cabeçalho "— @agenciasetup | **Calango** ×" em Calango Sans (a fonte da agência desde 11/11/2026; a Outfit fica de reserva) (no inglês, `marca: { perfil: '@setupagency_eng', nome: 'Setup Agency' }` no conteúdo);
+- duas fontes: a frase em Calango Sans Bold (a Inter Tight fica de reserva), em minúsculas, e o rótulo e a palavra de destaque em Instrument Serif itálica laranja;
 - letra grande, enchendo a janela;
 - na série, o trilho embaixo com o ponto laranja no slide atual;
 - a textura na final: ruído de filme, meio-tom de pontos pequenos e poeirinhas fora do miolo (valores em `modelo.css`, poeira em `poeira()`, no `modelo.js`).
@@ -46,7 +46,7 @@ window.FRASE = {
 
 - `\n` quebra a linha: a quebra é escolha de quem escreve. A frase enche a largura da janela (816 px) pela linha mais comprida, até o `tamanho`.
 - `[palavra]` vai em serifa itálica laranja. O `*` no começo vira o asterisco laranja.
-- `apoio`: uma linha menor, em Outfit, embaixo da frase (para a lista salvável e o card de oferta).
+- `apoio`: uma linha menor, em Calango Sans, embaixo da frase (para a lista salvável e o card de oferta).
 - `cta`: o botão laranja do card de oferta, `{ texto: 'Comenta', palavra: 'POSTS' }`.
 - `imagem`: a foto do espaço vazio, atrás da frase, em coordenadas da janela. **Em camadas** (o café): `{ arq: '<nome>-luz.jpg', recorte: '<nome>-xicara.png', caixa, x: 92, y, w }`, a luz no modo tela e a xícara recortada por cima, saídas do `camadas.py` (o recorte redondo esfumado foi reprovado). Com `moldura: 'notebook'`, a tela entra num notebook (o mockup do curso, `imagens/curso-tela.jpg`, que sai de `node templates/frase/mockup-curso.mjs`). Pedido base e posições: `references/imagens.md` da skill.
 - `comenta` (no conteúdo, fora dos slides): o Comenta X da peça, que o `entregar.mjs` manda junto. Modelo em `conteudos/max-20x.js`.
