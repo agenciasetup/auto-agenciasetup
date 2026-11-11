@@ -20,6 +20,7 @@ Esta skill junta tudo o que o Filipe aprovou e tudo o que ele corrigiu. Cada cor
 | Capas da agência que servem de gabarito | `templates/carrossel/referencias/capas/` (`gabarito-*` e `aprovada-*` primeiro) |
 | Folha das opções de foto e foto como cena | `templates/carrossel/ferramentas/folha.py` e `cena.py` |
 | O revisor (a lista e o agente) | `references/revisor-de-capa.md` e o agente `revisor-de-capa` |
+| O que o Filipe fazia e o sistema não faz (carrossel infinito, elemento que atravessa a divisa, sombra, profundidade por dentro) e os gabaritos antigos | `references/o-que-eu-fazia.md`; as folhas em `_local/design-arquivo/folhas/` (`node scripts/design-arquivo.mjs`) |
 | Guia de estilo (linguagem, fórmulas, tokens) | `docs/estilo-instagram.md`; no conector, `ver_estilo` |
 | O que funcionou e o que está quente | conector Agência Setup: `ver_desempenho`, `listar_posts`, `ver_em_alta` |
 | Esta skill | `.claude/skills/carrossel-agenciasetup/`; no conector, `ver_skill`; no painel, em Claude > Skills |
@@ -96,6 +97,7 @@ Leia `references/profundidade.md` (o padrão atual; vale mais que os outros) e `
 - [ ] O título é a frase inteira, com a pontuação ("CLAUDE?").
 - [ ] O assunto no centro; fora do centro só com o elemento da tese equilibrando o outro lado.
 - [ ] Os gabaritos (`gabarito-alpaca`, `gabarito-pinguim` e as 5 `aprovada-*`, em `templates/carrossel/referencias/capas/`) olhados antes de decidir.
+- [ ] Os gabaritos antigos de `references/o-que-eu-fazia.md` olhados também (o jeito dele de 2022 a 2025: cena contínua, elemento que atravessa a divisa, sombra realista, profundidade nos slides de dentro). O que o modelo ainda não faz, a ficha diz.
 
 ### Fase 4. A imagem
 
