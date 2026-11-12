@@ -44,7 +44,8 @@ export function paginaLegalEn(qual, marca) {
   const nome = (marca && marca.nome) || 'Agência Setup';
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(titulo)} · ${esc(nome)}</title><link rel="icon" href="/img/favicon.png" type="image/png"><meta name="theme-color" content="#09090a">
-<style>body{margin:0;background:#09090a;color:#e4e4e7;font:16px/1.65 Inter,-apple-system,Segoe UI,Arial,sans-serif}main{max-width:720px;margin:0 auto;padding:32px 20px 64px}a{color:#ffad1f}h1{font-size:30px;line-height:1.15;margin:18px 0 8px;color:#fff}h2{font-size:18px;margin:28px 0 6px;color:#fff}p,li{color:#c9c9d1}.topo{display:flex;align-items:center;gap:10px;font-weight:700;color:#fff;text-decoration:none}.mudo{color:#71717a;font-size:14px}</style>
+<link rel="stylesheet" href="/estatico/tipos.css?v=1">
+<style>body{margin:0;background:#09090a;color:#e4e4e7;font:16px/1.65 'as-texto',-apple-system,Segoe UI,Arial,sans-serif}main{max-width:720px;margin:0 auto;padding:32px 20px 64px}a{color:#ffad1f}h1{font-size:30px;line-height:1.15;margin:18px 0 8px;color:#fff}h2{font-size:18px;margin:28px 0 6px;color:#fff}p,li{color:#c9c9d1}.topo{display:flex;align-items:center;gap:10px;font-weight:700;color:#fff;text-decoration:none}.mudo{color:#71717a;font-size:14px}</style>
 </head><body><main>
 <a class="topo" href="/"><img src="/img/logo-setup-128.png" alt="" width="28" height="28">${esc(nome)}</a>
 <h1>${esc(titulo)}</h1><p class="mudo">Last updated: October 30, 2026</p>

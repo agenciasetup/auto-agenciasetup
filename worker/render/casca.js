@@ -3,7 +3,8 @@
 import { esc, jsonScript } from '../nucleo/util.js';
 import { MARCA, icone, sprite } from './icones.js';
 
-const FONTES = 'https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Inter+Tight:wght@600;700&family=Instrument+Serif:ital@1&display=swap';
+// As fontes da agência (public/estatico/tipos.css, servidas pela porta /_f/ do Worker). Nada do Google.
+const FONTES = '/estatico/tipos.css?v=1';
 
 // Seções do site: o que aparece no menu do computador e nas abas do celular.
 const NAV = [
@@ -44,10 +45,8 @@ ${imagem ? `<meta property="og:image" content="${esc(imagem)}">` : ''}
 <meta name="color-scheme" content="dark">
 <link rel="icon" href="/img/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/img/logo-setup-128.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="${FONTES}">
-<link rel="stylesheet" href="/estatico/site.css?v=9">
+<link rel="stylesheet" href="/estatico/site.css?v=10">
 <script>document.documentElement.classList.add('js');setTimeout(function(){if(!document.documentElement.classList.contains('revelar-ok'))document.documentElement.classList.remove('js')},2500)</script>
 ${ad ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${esc(ad)}" crossorigin="anonymous"></script>` : ''}
 ${ldjson ? `<script type="application/ld+json">${jsonScript(ldjson)}</script>` : ''}

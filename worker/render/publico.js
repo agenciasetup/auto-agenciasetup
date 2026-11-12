@@ -3,7 +3,8 @@
 import qrcode from 'qrcode-generator';
 import { esc } from '../nucleo/util.js';
 
-const FONTES = 'https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=Instrument+Serif:ital@0;1&display=swap';
+// As fontes da agência (public/estatico/tipos.css, pela porta /_f/ do Worker; vale no curso. também). Nada do Google.
+const FONTES = '/estatico/tipos.css?v=1';
 const LOGO = '<img src="/aluno/logo.png" alt="" width="28" height="28">';
 const MES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 const dataLonga = (iso) => { const d = new Date(new Date(iso).getTime() - 3 * 3600_000); return `${d.getUTCDate()} de ${MES[d.getUTCMonth()]} de ${d.getUTCFullYear()}`; };
@@ -21,12 +22,12 @@ function casca({ titulo, descricao, url, imagem, corpo, tema = 'escuro', css = '
 <title>${esc(titulo)}</title><meta name="description" content="${esc(descricao)}"><meta name="theme-color" content="${tema === 'claro' ? '#f4f1ea' : '#09090a'}">
 <meta property="og:type" content="website"><meta property="og:title" content="${esc(titulo)}"><meta property="og:description" content="${esc(descricao)}"><meta property="og:url" content="${esc(url)}">${imagem ? `<meta property="og:image" content="${esc(imagem)}">` : ''}
 <meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/aluno/icone.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="${fontes}">
+<link rel="stylesheet" href="${fontes}">
 <style>
-*{box-sizing:border-box}html,body{margin:0}body{font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#09090a;color:#f5f5f7}
+*{box-sizing:border-box}html,body{margin:0}body{font-family:'as-texto',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#09090a;color:#f5f5f7}
 a{color:inherit}.logo{display:inline-flex;align-items:center;gap:9px;font-weight:750;letter-spacing:-.02em;text-decoration:none}.logo img{width:28px;height:28px;object-fit:contain}
-.bt{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:999px;border:0;background:#18181b;color:#f5f5f7;font:600 14.5px Inter,sans-serif;text-decoration:none;cursor:pointer;box-shadow:0 0 0 1px rgba(255,255,255,.1)}
-.bt-marca{background:linear-gradient(135deg,#ffb000,#ff6a00);color:#170900;box-shadow:none}.serifa{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400}
+.bt{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:999px;border:0;background:#18181b;color:#f5f5f7;font:600 14.5px 'as-texto',sans-serif;text-decoration:none;cursor:pointer;box-shadow:0 0 0 1px rgba(255,255,255,.1)}
+.bt-marca{background:linear-gradient(135deg,#ffb000,#ff6a00);color:#170900;box-shadow:none}.serifa{font-family:'as-destaque',serif;font-style:italic;font-weight:400}
 ${css}
 </style></head><body class="${tema}">${corpo}</body></html>`;
 }
@@ -35,7 +36,7 @@ ${css}
 // Padrão Setup: preto com o brilho laranja e grão (ou papel claro), nome em letra cursiva, curso em destaque,
 // selo redondo, assinatura e QR para conferir. Tudo medido pela largura da folha (cqw): a tela e o PDF saem iguais.
 const GRAO = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E\")";
-const FONTES_CERT = 'https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=Instrument+Serif:ital@0;1&family=Mrs+Saint+Delafield&display=swap';
+const FONTES_CERT = FONTES; // a assinatura (as-assinatura) também está em tipos.css
 const CSS_CERT = `
 .pagina{min-height:100dvh;display:grid;place-items:center;gap:22px;padding:28px 16px 40px;background:radial-gradient(60% 40% at 50% 0%,rgba(255,122,0,.12),transparent 70%),#09090a}
 .folha,.story{--c2:color-mix(in srgb,var(--c) 70%,#ffd000);--c3:color-mix(in srgb,var(--c) 80%,#ff2a00);--deg:linear-gradient(120deg,var(--c2),var(--c) 50%,var(--c3));position:relative;overflow:hidden;isolation:isolate;container-type:inline-size;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -62,14 +63,14 @@ const CSS_CERT = `
 .f-titulo::before{content:'';width:4cqw;height:.22cqw;border-radius:9px;background:var(--deg)}
 .m-claro .f-titulo{color:color-mix(in srgb,var(--c) 75%,#000)}
 .f-abre{margin:0;font-size:1.75cqw;opacity:.68}
-.f-nome{margin:.2cqw 0 .6cqw;font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;font-size:8.4cqw;line-height:1;letter-spacing:-.01em;max-width:100%}
+.f-nome{margin:.2cqw 0 .6cqw;font-family:'as-destaque',serif;font-style:italic;font-weight:400;font-size:8.4cqw;line-height:1;letter-spacing:-.01em;max-width:100%}
 .f-nome.longo{font-size:6.6cqw}.f-nome.muito{font-size:5.2cqw}
 .f-antes{margin:1cqw 0 0;font-size:1.75cqw;opacity:.68}
 .f-curso{margin:.3cqw 0 0;font-size:3.9cqw;line-height:1.05;font-weight:800;letter-spacing:-.04em;background:var(--deg);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.2cqw;max-width:72cqw}
 .f-det{margin:1.3cqw 0 0;font-size:1.5cqw;opacity:.62;font-variant-numeric:tabular-nums}
 .f-pe{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:3cqw}
 .f-ass{display:grid;justify-items:start;gap:.35cqw}
-.f-firma{font-family:'Mrs Saint Delafield',cursive;font-size:4.6cqw;line-height:.8;margin:0 0 -.6cqw .4cqw;white-space:nowrap}
+.f-firma{font-family:'as-assinatura',cursive;font-size:4.6cqw;line-height:.8;margin:0 0 -.6cqw .4cqw;white-space:nowrap}
 .f-firma-img{height:5.4cqw;width:auto;max-width:24cqw;object-fit:contain;margin-bottom:-.4cqw}
 .m-escuro .f-firma-img{filter:invert(1) brightness(1.4)}
 .f-linha{width:24cqw;height:1px;background:currentColor;opacity:.3;margin:.2cqw 0 .5cqw}
@@ -77,7 +78,7 @@ const CSS_CERT = `
 .f-data{margin-top:.6cqw;font-size:1.2cqw;opacity:.6}
 .f-selo{width:12cqw;height:12cqw;justify-self:center}.f-selo svg{width:100%;height:100%;display:block}
 .f-conf{justify-self:end;display:flex;align-items:flex-end;gap:1.4cqw;text-align:right;font-size:1.1cqw;line-height:1.45;opacity:.9}
-.f-conf span{opacity:.65}.f-conf code{display:block;font:750 1.35cqw/1.3 Inter,sans-serif;letter-spacing:.12em;opacity:1;color:inherit}
+.f-conf span{opacity:.65}.f-conf code{display:block;font:750 1.35cqw/1.3 'as-texto',sans-serif;letter-spacing:.12em;opacity:1;color:inherit}
 .f-qr{width:8cqw;height:8cqw;padding:.6cqw;border-radius:.9cqw;background:#fff;flex:none}.f-qr svg{width:100%;height:100%;display:block}
 .m-claro .f-qr{box-shadow:0 0 0 1px rgba(0,0,0,.08)}
 .acoes{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
@@ -105,7 +106,7 @@ function selo(ano, cor, base) {
   const texto = `AGÊNCIA SETUP · CERTIFICADO DE CONCLUSÃO · ${ano} · `;
   return `<svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:color-mix(in srgb,${cor} 70%,#ffd000)"/><stop offset=".5" style="stop-color:${cor}"/><stop offset="1" style="stop-color:color-mix(in srgb,${cor} 80%,#ff2a00)"/></linearGradient><path id="${id}p" d="M60,60 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0"/></defs>
 <circle cx="60" cy="60" r="57" fill="none" stroke="url(#${id}g)" stroke-width="2"/><circle cx="60" cy="60" r="35" fill="url(#${id}g)" opacity=".14"/><circle cx="60" cy="60" r="35" fill="none" stroke="url(#${id}g)" stroke-width="1.2"/>
-<text font-family="Inter,sans-serif" font-size="7" font-weight="700" fill="currentColor" opacity=".8"><textPath href="#${id}p" startOffset="0" textLength="286" lengthAdjust="spacing">${esc(texto)}</textPath></text>
+<text font-family="'as-texto',sans-serif" font-size="7" font-weight="700" fill="currentColor" opacity=".8"><textPath href="#${id}p" startOffset="0" textLength="286" lengthAdjust="spacing">${esc(texto)}</textPath></text>
 <image href="${base}/aluno/logo.png" x="40" y="40" width="40" height="40"/></svg>`;
 }
 

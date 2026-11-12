@@ -4,6 +4,9 @@
    Tokens primeiro; depois base, componentes e páginas. Sem dependência externa.
    ========================================================================== */
 
+/* As fontes da agência (as-texto, as-titulo, as-destaque) vêm de /estatico/tipos.css, que a casca liga antes deste
+   arquivo. Nenhuma fonte do Google: o site inteiro é da família da agência; só o código usa a mono do sistema. */
+
 :root {
   color-scheme: dark;
 
@@ -54,8 +57,8 @@
   --sombra-alta: 0 30px 80px -24px rgba(0, 0, 0, 0.85), 0 0 0 1px var(--linha);
 
   /* Tipografia */
-  --fonte: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
-  --serifa: 'Instrument Serif', 'New York', Georgia, serif;
+  --fonte: 'as-texto', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  --serifa: 'as-destaque', 'New York', Georgia, serif;
   --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
 
   /* Movimento */
@@ -748,9 +751,9 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.55); -webkit-backdrop-filter: blu
 .texto pre.tem-copiar { padding-top: 48px; }
 
 /* --------------------------------------------------------------- toque da landing moderna (out/2026, a pedido do dono)
-   Títulos numa grotesca (Inter Tight) com degradê prateado e o destaque em serifa com degradê quente; grade no herói;
+   Títulos na sans da agência, no Bold (as-titulo; era a Inter Tight), com degradê prateado e o destaque em serifa com degradê quente; grade no herói;
    leque de posts feitos pelo Claude e faixa de ferramentas logo abaixo; rolagem suave (Lenis, em site.js). */
-:root { --display: 'Inter Tight', var(--fonte); --prata: linear-gradient(180deg, #ffffff 0%, #ececf0 45%, #8f8f98 100%); --quente: linear-gradient(100deg, #ffd66b 0%, #ffad1f 45%, #ff6a1a 100%); }
+:root { --display: 'as-titulo', var(--fonte); --prata: linear-gradient(180deg, #ffffff 0%, #ececf0 45%, #8f8f98 100%); --quente: linear-gradient(100deg, #ffd66b 0%, #ffad1f 45%, #ff6a1a 100%); }
 html.lenis, html.lenis body { height: auto; }
 .t-display, .t-titulo { font-family: var(--display); font-weight: 600; background: var(--prata); -webkit-background-clip: text; background-clip: text; color: transparent; padding-top: .04em; }
 .t-display { letter-spacing: -0.05em; }

@@ -6,7 +6,8 @@ import { parcelasPossiveis } from '../lib/vendas.js';
 import { PAISES } from '../lib/paises.js';
 import { aceiteDaOferta } from '../lib/licencas.js';
 
-const FONTES = 'https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Instrument+Serif:ital@1&display=swap';
+// As fontes da agência (public/estatico/tipos.css, servidas pela porta /_f/ do Worker). Nada do Google.
+const FONTES = '/estatico/tipos.css?v=1';
 const LOGO = '<img src="/img/logo-setup-128.png" alt="" width="30" height="30">';
 // Curso com marca (tema "leitura", ex.: Dúvidas da Fé): creme claro, azul e ouro da capa, a capa do livro no resumo e o botão
 // de pagar verde (estatico/checkout-leitura.css).
@@ -46,8 +47,8 @@ function pagina({ titulo, corpo, scripts = '', turnstile = false, rastrear = nul
   const leitura = !!marca;
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">${PRE}<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="icon" href="${leitura ? `/img/marcas/${esc(marca.curso.slug)}-192.png` : '/img/favicon.png'}" type="image/png">
 <title>${esc(titulo)}</title><meta name="robots" content="noindex"><meta name="theme-color" content="${leitura ? '#FBF7EF' : '#09090a'}">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="${leitura ? FONTES_LEITURA : FONTES}">
-<link rel="stylesheet" href="/estatico/checkout.css?v=5">${leitura ? '<link rel="stylesheet" href="/estatico/checkout-leitura.css?v=2">' : ''}${turnstile ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : ''}${rastreio(rastrear)}
+${leitura ? `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="${FONTES_LEITURA}">` : `<link rel="stylesheet" href="${FONTES}">`}
+<link rel="stylesheet" href="/estatico/checkout.css?v=6">${leitura ? '<link rel="stylesheet" href="/estatico/checkout-leitura.css?v=2">' : ''}${turnstile ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : ''}${rastreio(rastrear)}
 </head><body${leitura ? ' class="tema-leitura"' : ''}>
 <header class="gutter"><div class="ck-topo">${leitura ? `<span class="logo">${CRUZ}${esc(marca.nome)}</span>` : `<a class="logo" href="/">${LOGO}Agência Setup</a>`}<span class="seguro">${ic('escudo')}Pagamento seguro</span></div></header>
 <main class="gutter">${corpo}</main>${scripts}

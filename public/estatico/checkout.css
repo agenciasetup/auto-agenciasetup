@@ -8,8 +8,8 @@
   --degrade: linear-gradient(135deg, #ffb000 0%, #ff7a00 55%, #ff5a00 100%);
   --verde: #30d158; --vermelho: #ff453a; --amarelo: #ffd60a;
   --raio: 18px; --raio-l: 24px;
-  --fonte: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --serifa: 'Instrument Serif', Georgia, serif;
+  --fonte: 'as-texto', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --serifa: 'as-destaque', Georgia, serif;
   --mono: ui-monospace, 'SF Mono', Menlo, monospace;
   --suave: cubic-bezier(.22,1,.36,1);
 }

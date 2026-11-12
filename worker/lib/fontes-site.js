@@ -5,7 +5,11 @@
 // para desenhar a página), é para dar trabalho e deixar o que vaza recortado e sem nome.
 
 // Só estes arquivos existem. Nome novo entra aqui e no gerar.py.
-const ARQUIVOS = new Set(['r4t9w.woff2', 'm1v7c.woff2', 'h6p3z.woff2', 'b2n8x.woff2', 'q5j2d.woff2']);
+const ARQUIVOS = new Set([
+  'r4t9w.woff2', 'm1v7c.woff2', 'h6p3z.woff2', 'b2n8x.woff2', 'q5j2d.woff2', // sans 400 a 700 e a serifada itálica (11/11)
+  'k3w8n.woff2', 'e7y2p.woff2', 't9c4f.woff2', 'u2g6s.woff2', 'z8d1k.woff2', // sans Light e os itálicos (12/11)
+  'a5r7h.woff2', 'n4x6b.woff2', 'w1m3q.woff2', 'p7f5v.woff2', // serifada reta, bold, bold itálica e a assinatura (12/11)
+]);
 
 // Domínios nossos: os dois sites e os subdomínios (curso., duvidasdafe.). No computador, também o localhost.
 function ehNosso(endereco, local) {

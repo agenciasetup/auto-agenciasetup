@@ -1,5 +1,5 @@
 /* Página de venda do curso (/cursos/<slug>): celular primeiro. Landing moderna e limpa (referências do dono, out/2026):
-   fundo escuro com grade sutil e brilhos, títulos numa grotesca (Inter Tight) em degradê prateado com o destaque em
+   fundo escuro com grade sutil e brilhos, títulos na sans da agência no Bold (as-titulo; era a Inter Tight) em degradê prateado com o destaque em
    serifa itálica num degradê quente, cartões de vidro arredondados, leque de estilos no topo, parede curva de posts,
    rolagem suave (Lenis) e animações discretas (GSAP, em venda.js). Sem JS, tudo aparece no lugar. */
 :root {
@@ -12,11 +12,11 @@
   --verde: #22d466; --sobre-verde: #03230f;
   --quente: linear-gradient(100deg, #ffd66b 0%, #ffad1f 45%, #ff6a1a 100%);
   --prata: linear-gradient(180deg, #ffffff 0%, #ececf0 45%, #8f8f98 100%);
-  --display: 'Inter Tight', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --fonte: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --serifa: 'Instrument Serif', Georgia, serif;
+  --display: 'as-titulo', 'as-texto', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --fonte: 'as-texto', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --serifa: 'as-destaque', Georgia, serif;
   --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
-  --ios: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --ios: -apple-system, BlinkMacSystemFont, 'as-texto', 'Segoe UI', system-ui, sans-serif;
   --suave: cubic-bezier(.22,1,.36,1);
   --margem: max(22px, env(safe-area-inset-left, 0px));
 }
@@ -430,6 +430,13 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
+/* ---------------------------------------------------------------- celular */
+/* A letra da agência é um pouco mais larga: no celular o botão principal encolhe junto com a tela, para o texto
+   ("Quero meus posts no automático") continuar numa linha só, de 360 px para cima. */
+@media (max-width: 639px) {
+  .v-bt:not(.v-bt-p) { font-size: clamp(15px, 4.2vw, 16.5px); padding: 0 clamp(14px, 4.5vw, 28px); }
+}
+
 /* ---------------------------------------------------------------- telas maiores */
 @media (min-width: 640px) {
   .v-cards { grid-template-columns: 1fr 1fr; }
@@ -450,6 +457,9 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
   .v-sec { padding: 128px 0; }
   .v-heroi { padding: 126px 0 0; }
   .v-heroi-grade { grid-template-columns: 1.12fr .88fr; align-items: center; gap: 56px; }
+  /* A letra da agência é um pouco mais larga: com menos folga dos lados, os dois botões continuam na mesma linha. */
+  .v-botoes .v-bt { padding: 0 23px; }
+  .v-botoes .v-bt-vitalicio { padding: 0 20px; }
   .v-titulo { font-size: clamp(3rem, 3.9vw, 4.2rem); }
   .v-heroi-video .v-notif { right: -22px; top: -30px; width: 310px; }
   .v-leque { --w: 250px; --sep: 210px; height: 400px; margin-top: 56px; }

@@ -5,7 +5,8 @@
 import { esc, jsonScript } from '../nucleo/util.js';
 import { rastreio } from './checkout.js';
 
-const FONTES = 'https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Instrument+Serif:ital@1&display=swap';
+// As fontes da agência (public/estatico/tipos.css, servidas pela porta /_f/ do Worker). Nada do Google.
+const FONTES = '/estatico/tipos.css?v=1';
 const LOGO = '<img src="/img/logo-setup-128.png" alt="" width="30" height="30">';
 const I = {
   ok: '<path d="M20 6 9 17l-5-5"/>',
@@ -21,8 +22,8 @@ const SITE = 'https://agenciasetup.com.br';
 function pagina({ titulo, corpo, scripts = '', turnstile = false, rastrear = null, marca = null }) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="icon" href="/img/favicon.png" type="image/png">
 <title>${esc(titulo)}</title><meta name="robots" content="noindex"><meta name="theme-color" content="#09090a">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="${FONTES}">
-<link rel="stylesheet" href="/estatico/checkout.css?v=5">${turnstile ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : ''}${rastreio(rastrear)}
+<link rel="stylesheet" href="${FONTES}">
+<link rel="stylesheet" href="/estatico/checkout.css?v=6">${turnstile ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : ''}${rastreio(rastrear)}
 </head><body>
 <header class="gutter"><div class="ck-topo"><a class="logo" href="/">${LOGO}${esc((marca && marca.nome) || 'Agência Setup')}</a><span class="seguro">${ic('escudo')}Secure checkout</span></div></header>
 <main class="gutter">${corpo}</main>${scripts}

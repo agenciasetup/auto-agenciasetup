@@ -1,0 +1,33 @@
+/* As fontes da agência para todas as páginas da Agência Setup (site, página de venda, certificado, site em inglês).
+   Recortadas e com nome neutro (_local/fontes-site/gerar.py); saem só pela porta /_f/ do Worker
+   (worker/lib/fontes-site.js), que confere se o pedido vem de uma página nossa. O navegador só baixa o arquivo de um
+   peso ou estilo quando a página usa esse peso ou estilo.
+
+   as-texto       a sans, do Light (300) ao Bold (700). Não existe Black: 800 e 900 caem no Bold.
+                  Cada arquivo cobre uma faixa de peso, para os pesos do meio (550, 620, 650, 750) caírem no arquivo
+                  mais perto sem o navegador inventar negrito.
+   as-titulo      a mesma sans, sempre no peso mais pesado (Bold), para os títulos (era a Inter Tight).
+   as-destaque    a serifada (reta, itálica, bold e bold itálico).
+   as-assinatura  a letra de assinatura (o nome assinado no certificado). */
+
+@font-face { font-family: 'as-texto'; src: url('/_f/k3w8n.woff2') format('woff2'); font-weight: 1 349; font-style: normal; font-display: swap; }
+@font-face { font-family: 'as-texto'; src: url('/_f/r4t9w.woff2') format('woff2'); font-weight: 350 449; font-style: normal; font-display: swap; }
+@font-face { font-family: 'as-texto'; src: url('/_f/m1v7c.woff2') format('woff2'); font-weight: 450 549; font-style: normal; font-display: swap; }
+@font-face { font-family: 'as-texto'; src: url('/_f/h6p3z.woff2') format('woff2'); font-weight: 550 639; font-style: normal; font-display: swap; }
+@font-face { font-family: 'as-texto'; src: url('/_f/b2n8x.woff2') format('woff2'); font-weight: 640 1000; font-style: normal; font-display: swap; }
+@font-face { font-family: 'as-texto'; src: url('/_f/e7y2p.woff2') format('woff2'); font-weight: 1 449; font-style: italic; font-display: swap; }
+@font-face { font-family: 'as-texto'; src: url('/_f/t9c4f.woff2') format('woff2'); font-weight: 450 549; font-style: italic; font-display: swap; }
+@font-face { font-family: 'as-texto'; src: url('/_f/u2g6s.woff2') format('woff2'); font-weight: 550 639; font-style: italic; font-display: swap; }
+@font-face { font-family: 'as-texto'; src: url('/_f/z8d1k.woff2') format('woff2'); font-weight: 640 1000; font-style: italic; font-display: swap; }
+
+@font-face { font-family: 'as-titulo'; src: url('/_f/b2n8x.woff2') format('woff2'); font-weight: 1 1000; font-style: normal; font-display: swap }
+@font-face { font-family: 'as-titulo'; src: url('/_f/z8d1k.woff2') format('woff2'); font-weight: 1 1000; font-style: italic; font-display: swap }
+
+/* A serifada sai uns 20% mais larga que a Instrument Serif: o size-adjust encolhe só ela. 90% e não 83% para a letra
+   não ficar miúda ao lado da sans no mesmo título. */
+@font-face { font-family: 'as-destaque'; src: url('/_f/a5r7h.woff2') format('woff2'); font-weight: 1 549; font-style: normal; font-display: swap; size-adjust: 90%; }
+@font-face { font-family: 'as-destaque'; src: url('/_f/n4x6b.woff2') format('woff2'); font-weight: 550 1000; font-style: normal; font-display: swap; size-adjust: 90%; }
+@font-face { font-family: 'as-destaque'; src: url('/_f/q5j2d.woff2') format('woff2'); font-weight: 1 549; font-style: italic; font-display: swap; size-adjust: 90%; }
+@font-face { font-family: 'as-destaque'; src: url('/_f/w1m3q.woff2') format('woff2'); font-weight: 550 1000; font-style: italic; font-display: swap; size-adjust: 90%; }
+
+@font-face { font-family: 'as-assinatura'; src: url('/_f/p7f5v.woff2') format('woff2'); font-weight: 1 1000; font-style: normal; font-display: swap; }

@@ -10,8 +10,10 @@ import { rastreio } from './checkout.js';
 import { usd } from './checkout-en.js';
 import { emIngles, topoERodapeEn } from './venda-en.js';
 
-const FONTES = 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@500&display=swap';
-const V = 9; // versão do CSS e do JS da página (troque ao mudar public/estatico/venda.*)
+// Do Google só a mono (números e rótulos de código): títulos, texto e serifada são da família da agência
+// (public/estatico/tipos.css, pela porta /_f/ do Worker). A família não tem mono.
+const FONTES = 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap';
+const V = 10; // versão do CSS e do JS da página (troque ao mudar public/estatico/venda.*)
 const I = {
   ok: '<path d="M20 6 9 17l-5-5"/>',
   nao: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
@@ -487,6 +489,7 @@ ${video && video.poster ? `<link rel="preload" as="image" href="${esc(video.post
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="${FONTES}">
+<link rel="stylesheet" href="/estatico/tipos.css?v=1">
 <link rel="stylesheet" href="/estatico/venda.css?v=${V}">
 <script>document.documentElement.classList.add('js')</script>
 <script type="application/ld+json">${jsonScript(ld)}</script>

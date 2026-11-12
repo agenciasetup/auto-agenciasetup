@@ -50,9 +50,10 @@ export function paginaRecursoEn({ r, oferta, url }) {
 <title>${esc(titulo)}</title><meta name="description" content="${esc(descricao)}">
 <link rel="canonical" href="${esc(url)}"><link rel="icon" href="/img/favicon.png" type="image/png"><meta name="theme-color" content="#09090a">
 <meta property="og:type" content="website"><meta property="og:title" content="${esc(r.titulo)}"><meta property="og:description" content="${esc(descricao)}"><meta property="og:url" content="${esc(url)}">${capa ? `<meta property="og:image" content="${esc(urlSegura(capa))}">` : ''}<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/estatico/tipos.css?v=1">
 <style>
 :root{--fundo:#09090a;--cartao:#141416;--linha:#26262b;--texto:#e4e4e7;--fraco:#a1a1aa;--mudo:#71717a;--marca:#ffad1f}
-*{box-sizing:border-box}body{margin:0;background:var(--fundo);color:var(--texto);font:16px/1.65 Inter,-apple-system,Segoe UI,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--fundo);color:var(--texto);font:16px/1.65 'as-texto',-apple-system,Segoe UI,Arial,sans-serif}
 main{max-width:760px;margin:0 auto;padding:20px 16px 72px}a{color:var(--marca)}
 .topo{display:flex;align-items:center;gap:10px;font-weight:700;color:#fff;text-decoration:none}
 .cabeca{display:grid;gap:24px;margin-top:24px;align-items:start}
@@ -72,7 +73,7 @@ section{margin-top:36px}h2{font-size:20px;color:#fff;margin:0 0 10px}
 .texto code{background:var(--cartao);border:1px solid var(--linha);border-radius:6px;padding:1px 6px;font-size:.92em}
 .texto pre{position:relative;background:var(--cartao);border:1px solid var(--linha);border-radius:12px;padding:44px 16px 16px;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
 .texto pre code{background:none;border:0;padding:0;font-size:14px;line-height:1.6}
-.copiar{position:absolute;top:8px;right:8px;font:600 13px Inter,-apple-system,Segoe UI,Arial,sans-serif;color:#fff;background:#232327;border:1px solid var(--linha);border-radius:8px;padding:6px 10px;cursor:pointer}
+.copiar{position:absolute;top:8px;right:8px;font:600 13px 'as-texto',-apple-system,Segoe UI,Arial,sans-serif;color:#fff;background:#232327;border:1px solid var(--linha);border-radius:8px;padding:6px 10px;cursor:pointer}
 .texto blockquote{margin:12px 0;padding:4px 14px;border-left:3px solid var(--marca);color:var(--fraco)}
 .galeria{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.galeria img{width:100%;border-radius:12px;border:1px solid var(--linha)}
 .video{position:relative;aspect-ratio:16/9}.video iframe,.video video{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:12px}
