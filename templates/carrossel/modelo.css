@@ -21,7 +21,9 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 /* ---------------------------------------------------------------- temas */
 /* A headline condensada é a Calango Condensed Black, a fonte da agência (templates/fontes/, 11/11/2026); a Anton fica de
    reserva. Uma peça antiga aprovada que precisa sair igual troca só no slide: vars: { 'fonte-condensada': "'Anton', sans-serif", 'peso-condensada': 400 }. */
-:root { --fonte-condensada: 'Calango Condensed', 'Anton', sans-serif; --peso-condensada: 900; --fonte-sans: 'Calango Sans', 'Outfit', system-ui, sans-serif; }
+:root { --fonte-condensada: 'Calango Condensed', 'Anton', sans-serif; --peso-condensada: 900; --fonte-sans: 'Calango Sans', 'Outfit', system-ui, sans-serif; --fonte-serifa: 'Calango Serif', 'Instrument Serif', serif; }
+/* A serifada dos destaques (a palavra em itálico do título, o vocativo, o preço) é a Calango Serif desde 11/11/2026, no
+   lugar da Instrument Serif. Peça antiga que precisa sair igual: vars: { 'fonte-serifa': "'Instrument Serif', serif" }. */
 /* A sans dos textos é a Calango Sans (a Outfit fica de reserva). O slide herda a variável: a peça antiga aprovada que
    precisa sair igual pede vars: { 'fonte-sans': "'Outfit', system-ui, sans-serif" }. */
 .slide { font-family: var(--fonte-sans); }
@@ -116,6 +118,16 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 .so-frente .c-luz { display: block; }
 .ate-fundo .c-luz, .ate-titulo .c-luz, .ate-assunto .c-luz { display: none; }
 .panorama, .travessa { position: absolute; display: block; max-width: none; transform-origin: center; }
+/* Vidro da tela larga: o aviso perto da lente, fora de foco, que desfoca o que está atrás (modelo.js, `vidro`). A borda
+   some no desfoque (a máscara). A classe de fora é `placa-fora-de-foco`: a `.vidro` já existe (o cartão de vidro dos
+   blocos) e punha uma borda nítida em volta. */
+.vidro-fundo { position: absolute; inset: 0; -webkit-mask-composite: source-in; mask-composite: intersect; }
+.vidro-dentro { position: absolute; inset: 0; display: flex; align-items: center; }
+/* A assinatura da capa (`assinatura` no slide): miúda, no meio, embaixo, na Calango Signature, quase apagada. */
+.assinatura-capa { position: absolute; left: 0; right: 0; text-align: center; font-family: 'Calango Signature', cursive; font-weight: 400; line-height: 1; color: var(--tinta); white-space: nowrap; }
+/* Vinheta do slide (`vinheta: { forca, de, centro }`, 11/11/2026, o dono: "podia ter uma vinheta... meio que sumindo no
+   fundo"): escurece o fundo e o panorama para as bordas da janela. Fica atrás do título e do que está por cima. */
+.vinheta { position: absolute; inset: 0; pointer-events: none; }
 /* Vagalume: o núcleo quase branco, o verde-amarelo em volta e o brilho que some até a borda (o raio do núcleo é 1/10 do
    quadrado). A mistura `screen` faz a luz iluminar o que está atrás. */
 .vagalume { position: absolute; border-radius: 50%; pointer-events: none;
@@ -152,6 +164,8 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
   color: transparent; -webkit-text-stroke: 2px var(--tinta-fraca); opacity: 0.22; filter: blur(1.5px); white-space: nowrap;
 }
 .rabisco { position: absolute; overflow: visible; filter: blur(1.4px); opacity: 0.5; }
+/* Anotação à mão (`anotacoes` no slide): o recado na Calango Ink, pequeno, quase escondido. */
+.anotacao { position: absolute; font-family: 'Calango Ink', 'Calango Signature', cursive; font-weight: 400; line-height: 1.12; white-space: nowrap; pointer-events: none; transform-origin: left center; }
 .rabisco path { fill: none; stroke: var(--tinta); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ---------------------------------------------------------------- títulos */
@@ -171,7 +185,7 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
   filter: drop-shadow(0 6px 24px rgba(0, 0, 0, 0.25));
   padding: 0.12em 0.3em 0.3em 0.12em; /* espaço para o floreio não cortar */
 }
-.serifa { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; letter-spacing: -0.01em; }
+.serifa { font-family: var(--fonte-serifa); font-style: italic; font-weight: 400; letter-spacing: -0.01em; }
 .fina { font-weight: 300; }
 .marca { /* marca-texto */
   color: #fff; padding: 0 0.18em; margin: 0 -0.05em; -webkit-box-decoration-break: clone; box-decoration-break: clone;
@@ -333,7 +347,7 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 /* `alto`: o texto no alto e o espaço de baixo para um elemento (o quadro embaixo da frase, como no carrossel do Leonardo). */
 .miolo.alto { justify-content: flex-start; padding-top: 110px; }
 .rotulo-miolo { font-family: 'JetBrains Mono', monospace; font-size: 20px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--tinta-fraca); margin-bottom: 28px; }
-.rotulo-miolo.vocativo { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 64px; letter-spacing: 0; text-transform: none; color: var(--acento); margin-bottom: 18px; }
+.rotulo-miolo.vocativo { font-family: var(--fonte-serifa); font-style: italic; font-size: 64px; letter-spacing: 0; text-transform: none; color: var(--acento); margin-bottom: 18px; }
 .t-miolo { font-weight: 300; font-size: 68px; line-height: 1.08; letter-spacing: -0.025em; }
 .t-miolo .serifa { font-size: 1.14em; color: var(--acento); white-space: nowrap; } /* o destaque nunca quebra ("5 camadas" junto) */
 .texto-miolo { margin-top: 26px; max-width: 640px; font-size: 31px; line-height: 1.38; font-weight: 300; color: var(--tinta-fraca); }
@@ -366,10 +380,10 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 
 .numeros { display: flex; align-items: flex-start; justify-content: center; gap: 40px; }
 .num { width: 300px; display: flex; flex-direction: column; align-items: center; }
-.num b { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 200px; line-height: 0.86; letter-spacing: -0.02em; color: var(--acento); }
+.num b { font-family: var(--fonte-serifa); font-weight: 400; font-size: 200px; line-height: 0.86; letter-spacing: -0.02em; color: var(--acento); }
 .num.fraco b { color: var(--tinta-fraca); }
 .num span { margin-top: 18px; font-size: 26px; line-height: 1.3; color: var(--tinta-fraca); }
-.versus { align-self: center; margin-top: -60px; font-family: 'Instrument Serif', serif; font-style: italic; font-size: 56px; color: var(--tinta-fraca); }
+.versus { align-self: center; margin-top: -60px; font-family: var(--fonte-serifa); font-style: italic; font-size: 56px; color: var(--tinta-fraca); }
 .pe-prova { margin-top: 44px; font-family: 'JetBrains Mono', monospace; font-size: 19px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tinta-fraca); }
 
 .lista { padding: 6px 32px; }
@@ -448,7 +462,7 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 .oferta-corpo li::before { content: ''; position: absolute; left: 4px; top: 0.66em; width: 10px; height: 10px; border-radius: 50%; background: var(--acento); }
 .oferta-preco { margin-top: 18px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
 .oferta-preco s { font-size: 22px; color: var(--tinta-fraca); }
-.oferta-preco b { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 64px; line-height: 0.9; color: var(--acento); }
+.oferta-preco b { font-family: var(--fonte-serifa); font-weight: 400; font-size: 64px; line-height: 0.9; color: var(--acento); }
 .oferta-preco span { font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--tinta-fraca); }
 /* Card de curso do combo (prova `curso`, 09/11/2026): a capa larga, a etiqueta do Comenta X e o corpo embaixo. */
 .curso { padding: 18px; }
@@ -456,7 +470,7 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 .curso-capa img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .curso-capa-texto { position: absolute; inset: 0; display: grid; place-items: center; padding: 0 40px; text-align: center; font-family: var(--fonte-condensada); font-weight: var(--peso-condensada); text-transform: uppercase; font-size: 72px; line-height: 0.95; color: #fff;
   background: radial-gradient(80% 90% at 50% 40%, #2a1a06 0%, #0d0d0f 70%); }
-.curso-capa-texto em { display: block; font-family: 'Instrument Serif', serif; font-style: italic; text-transform: none; font-size: 1.15em; line-height: 1; color: #ffb000; }
+.curso-capa-texto em { display: block; font-family: var(--fonte-serifa); font-style: italic; text-transform: none; font-size: 1.15em; line-height: 1; color: #ffb000; }
 .curso-tag { position: absolute; left: 18px; top: 18px; padding: 9px 18px; border-radius: 99px; font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #fff;
   background: linear-gradient(140deg, #ffb000, #ff6a00); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35); }
 .curso-corpo { padding: 22px 14px 10px; }
@@ -465,7 +479,7 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 .curso-numeros span { padding: 8px 16px; border-radius: 99px; font-size: 21px; color: var(--tinta); background: var(--cartao-borda); }
 .curso-preco { margin-top: 18px; display: flex; align-items: baseline; gap: 16px; }
 .curso-preco s { font-size: 26px; color: var(--tinta-fraca); }
-.curso-preco b { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 46px; line-height: 1; color: var(--acento); }
+.curso-preco b { font-family: var(--fonte-serifa); font-weight: 400; font-size: 46px; line-height: 1; color: var(--acento); }
 /* Checklist. */
 .checklist { padding: 10px 34px; }
 .item-check { display: flex; gap: 22px; align-items: center; padding: 22px 0; font-size: 29px; line-height: 1.3; }
@@ -507,8 +521,8 @@ html, body { width: 1080px; height: 1350px; background: #000; overflow: hidden; 
 .agulha { position: absolute; top: -34px; bottom: 6px; width: 2px; margin-left: -1px; background: var(--acento); }
 .agulha::before { content: ''; position: absolute; top: 0; left: -8px; width: 18px; height: 14px; border-radius: 3px; background: var(--acento); }
 .lt-relogio { margin-top: 44px; display: flex; align-items: baseline; justify-content: center; gap: 30px; }
-.lt-relogio s { font-family: 'Instrument Serif', serif; font-size: 66px; color: var(--tinta-fraca); text-decoration-thickness: 4px; }
-.lt-relogio b { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; font-size: 120px; line-height: 0.9; color: var(--acento); }
+.lt-relogio s { font-family: var(--fonte-serifa); font-size: 66px; color: var(--tinta-fraca); text-decoration-thickness: 4px; }
+.lt-relogio b { font-family: var(--fonte-serifa); font-style: italic; font-weight: 400; font-size: 120px; line-height: 0.9; color: var(--acento); }
 /* Menu de contexto (clique direito), no estilo do computador. */
 .menu-contexto { position: absolute; width: 285px; padding: 10px; border-radius: 18px; font-family: 'Inter', system-ui, sans-serif; font-size: 27px; color: #1a1a1a;
   background: rgba(250, 250, 248, 0.97); box-shadow: 0 30px 60px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.08); }

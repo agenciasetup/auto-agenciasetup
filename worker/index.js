@@ -14,6 +14,7 @@ export { Despertador } from './despertador.js';
 import { ofertaAtiva, webhookMeta } from './lib/gatilhos.js';
 import { sinalPorCodigo } from './lib/escritorio.js';
 import { webhookResend } from './lib/emails.js';
+import { fonteDoSite } from './lib/fontes-site.js';
 import { casca } from './render/casca.js';
 import * as P from './render/paginas.js';
 import { apiCheckout, linkCurto } from './lib/api/checkout.js';
@@ -497,6 +498,8 @@ export default {
     // www e endereços antigos vão para o domínio principal.
     if (url.hostname === 'www.agenciasetup.com.br') return Response.redirect(`https://agenciasetup.com.br${url.pathname}${url.search}`, 301);
     if (url.hostname === 'www.agenciasetup.com') return Response.redirect(`https://agenciasetup.com${url.pathname}${url.search}`, 301);
+    // As fontes do site: antes de tudo (vale nos dois domínios), e só por esta porta (lib/fontes-site.js).
+    if (url.pathname.startsWith('/_f/')) return await fonteDoSite(request, env, url);
     try {
       // Chave do Asaas guardada pelo painel (cifrada): carrega antes das rotas que cobram, recebem aviso ou configuram.
       if (/^\/(api\/(checkout|asaas|stripe|aluno|admin)(\/|$)|checkout\/|cursos\/)/.test(url.pathname)) await prepararAsaas(env);

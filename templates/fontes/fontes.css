@@ -22,3 +22,12 @@
 @font-face { font-family: 'Calango Sans'; src: url('CalangoSans-SemiBoldItalic.woff2') format('woff2'); font-weight: 600; font-style: italic; font-display: block; }
 @font-face { font-family: 'Calango Sans'; src: url('CalangoSans-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: block; }
 @font-face { font-family: 'Calango Sans'; src: url('CalangoSans-BoldItalic.woff2') format('woff2'); font-weight: 700; font-style: italic; font-display: block; }
+/* Calango Serif (11/11/2026, "use também o Calango Serif no lugar das serifadas que você tem usado. Pode explorar
+   qualquer estilo dessas fontes"): a serifada dos destaques, no lugar da Instrument Serif. Regular e Bold, com os itálicos. */
+@font-face { font-family: 'Calango Serif'; src: url('CalangoSerif-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: 'Calango Serif'; src: url('CalangoSerif-Italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: block; }
+@font-face { font-family: 'Calango Serif'; src: url('CalangoSerif-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: 'Calango Serif'; src: url('CalangoSerif-BoldItalic.woff2') format('woff2'); font-weight: 700; font-style: italic; font-display: block; }
+/* Calango Ink (11/11/2026): a letra de rabisco, para as anotações à mão escondidas na arte ("como se alguém tivesse
+   escrito ali"; `anotacoes` no modelo de carrossel). */
+@font-face { font-family: 'Calango Ink'; src: url('CalangoInk-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: block; }

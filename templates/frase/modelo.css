@@ -7,6 +7,8 @@
    Regras de uso em LEIA.md e na skill frase-agenciasetup. */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+/* A serifada do rótulo e do destaque é a Calango Serif desde 11/11/2026 (antes, Instrument Serif). */
+:root { --fonte-serifa: 'Calango Serif', 'Instrument Serif', serif; }
 html, body { width: 1080px; height: 1350px; background: #0b0b0c; overflow: hidden; }
 
 .post { position: relative; width: 1080px; height: 1350px; overflow: hidden; background: #0b0b0c; -webkit-font-smoothing: antialiased; }
@@ -68,9 +70,9 @@ html, body { width: 1080px; height: 1350px; background: #0b0b0c; overflow: hidde
 .frase { display: inline-block; align-self: flex-start; white-space: pre; font-weight: 800; line-height: 0.95; letter-spacing: -0.045em; word-spacing: 0.1em; }
 .alinha-centro .frase { align-self: center; }
 /* O rótulo ("em Claude:") e a palavra de destaque vão na serifa itálica laranja, como o "Calango," dos carrosséis. */
-.rotulo { align-self: flex-start; font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; line-height: 1; letter-spacing: -0.01em; white-space: pre; color: var(--acento); }
+.rotulo { align-self: flex-start; font-family: var(--fonte-serifa); font-style: italic; font-weight: 400; line-height: 1; letter-spacing: -0.01em; white-space: pre; color: var(--acento); }
 .alinha-centro .rotulo { align-self: center; }
-.destaque { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; font-size: 1.12em; letter-spacing: -0.015em; color: var(--acento); }
+.destaque { font-family: var(--fonte-serifa); font-style: italic; font-weight: 400; font-size: 1.12em; letter-spacing: -0.015em; color: var(--acento); }
 .asterisco { color: var(--acento); margin-right: 0.02em; }
 .apoio { font: 400 30px/1.4 'Calango Sans', 'Outfit', sans-serif; color: var(--fraca); white-space: pre-line; max-width: 760px; }
 /* O card de oferta (o último de todo post, regra do dono em 29/10/2026): a chamada para comentar, num botão laranja. */

@@ -13,6 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { env, exige, raiz } from './env.mjs';
+import { exigirKitLimpo } from './kit-limpo.mjs';
 
 exige('SUPABASE_URL', 'SUPABASE_SECRET_KEY');
 const CURSO = join(raiz, 'Curso');
@@ -178,9 +179,14 @@ if (so) {
 
 // Arquivos do kit (bucket privado). Pastas viram .zip.
 if (!semKit) {
+  // Trava: nada da família Calango (nem fonte nenhuma) vai para o curso. Derruba o envio antes de montar o pacote.
+  exigirKitLimpo(KIT);
+  if (existsSync(join(CURSO, 'kit-codex'))) exigirKitLimpo(join(CURSO, 'kit-codex'));
   const kitTmp = join(tmp, 'Posts-Automaticos-Kit');
   rmSync(kitTmp, { recursive: true, force: true });
-  cpSync(KIT, kitTmp, { recursive: true, filter: (s) => !/[\\/](_testes|_CONVENCOES\.md)$/.test(s) && !/[\\/]_testes[\\/]/.test(s) });
+  // Fora do pacote também: os modelos baixados pelas ferramentas (99 MB cada) e o node_modules, que cada pessoa instala.
+  const foraDoPacote = (s) => /[\\/](modelos|node_modules)([\\/]|$)/.test(s);
+  cpSync(KIT, kitTmp, { recursive: true, filter: (s) => !/[\\/](_testes|_CONVENCOES\.md)$/.test(s) && !/[\\/]_testes[\\/]/.test(s) && !foraDoPacote(s) });
   zipar(kitTmp, join(tmp, 'Posts-Automaticos-Kit.zip'));
   const usados = [['Posts-Automaticos-Kit.zip', null]];
   // O kit do Codex (gerado de Curso/kit). A pasta tem o mesmo nome, porque as receitas falam em Posts-Automaticos-Kit.
@@ -188,7 +194,7 @@ if (!semKit) {
   if (existsSync(KIT_CODEX)) {
     const codexTmp = join(tmp, 'codex', 'Posts-Automaticos-Kit');
     rmSync(join(tmp, 'codex'), { recursive: true, force: true });
-    cpSync(KIT_CODEX, codexTmp, { recursive: true, filter: (s) => !/[\\/](_testes|_CONVENCOES\.md|TESTAR-NO-CODEX\.md)$/.test(s) && !/[\\/]_testes[\\/]/.test(s) });
+    cpSync(KIT_CODEX, codexTmp, { recursive: true, filter: (s) => !/[\\/](_testes|_CONVENCOES\.md|TESTAR-NO-CODEX\.md)$/.test(s) && !/[\\/]_testes[\\/]/.test(s) && !foraDoPacote(s) });
     zipar(codexTmp, join(tmp, 'Posts-Automaticos-Kit-Codex.zip'));
     usados.push(['Posts-Automaticos-Kit-Codex.zip', null]);
   }

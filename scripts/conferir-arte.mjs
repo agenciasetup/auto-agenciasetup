@@ -186,10 +186,12 @@ for (let n = 1; n <= total; n++) {
     if (e.escala && e.escala > 1.18 && !e.suave && e.blur < 6) diz('aviso', n, `${e.arq} aparece ${e.escala.toFixed(2)} vez o tamanho do arquivo: vai ficar mole (node scripts/tratar.mjs ampliar)`);
   }
   const porPasta = {};
-  for (const e of vis.filter((x) => x.z !== null && Math.abs(x.z) <= 0.05 && !x.suave && x.pasta)) (porPasta[e.pasta] ||= []).push(e);
+  // Compara só coisa da mesma espécie: a pasta e a primeira palavra do arquivo (abelha com abelha, peça com peça). Na
+  // mesma pasta moram coisas de tamanhos de verdade diferentes (o braço inteiro do robô e uma engrenagem solta).
+  for (const e of vis.filter((x) => x.z !== null && Math.abs(x.z) <= 0.05 && !x.suave && x.pasta)) (porPasta[`${e.pasta}/${String(e.arq).split('-')[0]}`] ||= []).push(e);
   for (const [pasta, lista] of Object.entries(porPasta)) {
     const ls = lista.map((e) => e.largura).sort((a, b) => a - b);
-    if (ls.length > 1 && ls[ls.length - 1] / ls[0] > 1.6) diz('aviso', n, `dois elementos de ${pasta} nítidos no mesmo plano com ${Math.round(ls[0])} e ${Math.round(ls[ls.length - 1])} px: um vai parecer gigante`);
+    if (ls.length > 1 && ls[ls.length - 1] / ls[0] > 1.6) diz('aviso', n, `dois elementos de ${pasta}-* nítidos no mesmo plano com ${Math.round(ls[0])} e ${Math.round(ls[ls.length - 1])} px: um vai parecer gigante`);
   }
   // 6. Luz ou cor vazando na moldura preta: longe de qualquer elemento que atravessa, a moldura é preta.
   if (m.janela.x >= 20) {

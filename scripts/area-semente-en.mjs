@@ -16,6 +16,7 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { env, exige, raiz } from './env.mjs';
+import { exigirKitLimpo } from './kit-limpo.mjs';
 
 exige('SUPABASE_URL', 'SUPABASE_SECRET_KEY');
 const CURSO = join(raiz, 'Curso');
@@ -192,6 +193,8 @@ if (!soKit) {
 
 // Arquivos do kit (bucket privado "curso"). Pastas viram .zip. Arquivo de aula que ainda não existe fica sem aula.
 if (!semKit) {
+  // Trava: nada da família Calango (nem fonte nenhuma) vai para o curso. Derruba o envio antes de montar o pacote.
+  exigirKitLimpo(KIT);
   const kitTmp = join(tmp, 'Posts-on-Autopilot-Kit');
   rmSync(kitTmp, { recursive: true, force: true });
   cpSync(KIT, kitTmp, { recursive: true, filter: (s) => !/[\\/]_testes$/.test(s) && !/[\\/]_testes[\\/]/.test(s) });

@@ -66,3 +66,7 @@ templates/fontes/*.ttf
 # O banco de capas: as imagens ficam fora (muitas não são nossas); o índice e o LEIA.md entram
 templates/carrossel/referencias/banco/*.jpg
 templates/carrossel/referencias/banco/entrada/
+
+# As fontes do site público (recortadas e com nome neutro, geradas por _local/fontes-site/gerar.py): fora do Git, como
+# as de templates/fontes. Quem entrega é a rota /_f/ do Worker (worker/lib/fontes-site.js), com conferência do pedido.
+/public/_f/

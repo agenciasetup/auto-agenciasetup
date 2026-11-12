@@ -78,7 +78,9 @@
       const d = el.dataset, c = caixa(el), im = el.tagName === 'IMG' ? el : el.querySelector('img');
       const [sx, sy, sb, so] = (d.sombra || '').split(',').map(Number);
       const [rp, ra] = (d.rastro || '').split(',').map(Number);
-      const larg = Number(d.w) || (im ? im.getBoundingClientRect().width : c.w);
+      // A largura de verdade da imagem (offsetWidth não muda com o giro). A caixa na tela de um elemento girado é maior
+      // que ele, e acusava "vai ficar mole" numa mão girada 40 graus que estava menor que o arquivo.
+      const larg = Number(d.w) || (im ? (im.offsetWidth || im.getBoundingClientRect().width) : c.w);
       return {
         arq: d.arq || (im ? im.getAttribute('src').split('/').pop().replace(/\.\w+$/, '') : ''), pasta: d.pasta || '', camada: d.camada || camada,
         z: d.z === '' || d.z === undefined ? null : Number(d.z), blur: Number(d.blur || 0), sat: d.sat === undefined ? null : Number(d.sat), luz: d.luz === undefined ? null : Number(d.luz),

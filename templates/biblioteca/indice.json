@@ -1407,6 +1407,573 @@
    "dica": "Só em card claro, no panorama, com mistura: 'multiply'.",
    "adicionado": "2026-11-11",
    "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/xadrez/cavalo-dourado-contraluz.png",
+   "pasta": "objetos/xadrez",
+   "descricao": "Cavalo de xadrez de ouro polido, em três quartos para a esquerda, em contraluz: fio de luz dourada na crina e nas bordas.",
+   "largura": 522,
+   "altura": 944,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id jUddwWzLD0",
+   "tags": [
+    "xadrez",
+    "cavalo",
+    "ouro",
+    "estrategia",
+    "contraluz"
+   ],
+   "dica": "A estratégia, quem pensa diferente (a peça que anda diferente). Assunto de capa em cena escura, com luz quente atrás.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "objetos/xadrez/cavalo-dourado.png",
+   "pasta": "objetos/xadrez",
+   "descricao": "Cavalo de xadrez de ouro, em três quartos para a esquerda, luz de estúdio com reflexos.",
+   "largura": 475,
+   "altura": 951,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id lJooOcrgv9",
+   "tags": [
+    "xadrez",
+    "cavalo",
+    "ouro",
+    "estrategia"
+   ],
+   "dica": "Reserva do cavalo em contraluz; mais nítido, menos brilho.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "objetos/robos/mao-de-robo-branca-descendo.png",
+   "pasta": "objetos/robos",
+   "descricao": "Mão e antebraço de robô branco descendo do alto à direita, dedos abertos para pegar algo embaixo, com fio de luz dourada.",
+   "largura": 767,
+   "altura": 1015,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id mEiiu66hJQ",
+   "tags": [
+    "robo",
+    "mao",
+    "ia",
+    "branco"
+   ],
+   "dica": "A IA vindo pegar. O braço sai pelo canto de cima à direita: o corte reto fica fora do slide.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "objetos/robos/mao-de-robo-branca-descendo-2.png",
+   "pasta": "objetos/robos",
+   "descricao": "Mão e antebraço de robô branco com juntas à mostra, descendo do alto à direita, dedos abertos.",
+   "largura": 826,
+   "altura": 987,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id P3CCRaD42C",
+   "tags": [
+    "robo",
+    "mao",
+    "ia",
+    "branco"
+   ],
+   "dica": "Variação da mão de robô, mais mecânica.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "objetos/xadrez/peao-preto-fio-de-luz.png",
+   "pasta": "objetos/xadrez",
+   "descricao": "Peão de xadrez preto fosco, com um fio de luz dourada na borda esquerda.",
+   "largura": 409,
+   "altura": 729,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id w4mm9fe7EI",
+   "tags": [
+    "xadrez",
+    "peao",
+    "preto",
+    "igual"
+   ],
+   "dica": "Todo mundo igual: em fila, ou desfocado perto da lente.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "objetos/xadrez/cavalo-dourado-contraluz-grande.png",
+   "pasta": "objetos/xadrez",
+   "descricao": "O cavalo de ouro em contraluz, ampliado em dobro (1044 px).",
+   "largura": 1044,
+   "altura": 1888,
+   "fonte": "cavalo-dourado-contraluz ampliado 2x (Real-ESRGAN) em 11/11/2026",
+   "tags": [
+    "xadrez",
+    "cavalo",
+    "ouro",
+    "grande"
+   ],
+   "dica": "Assunto de capa.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/robos/mao-de-robo-branca-descendo-grande.png",
+   "pasta": "objetos/robos",
+   "descricao": "A mão de robô branca descendo, ampliada em dobro (1534 px).",
+   "largura": 1534,
+   "altura": 2030,
+   "fonte": "mao-de-robo-branca-descendo ampliada 2x (Real-ESRGAN) em 11/11/2026",
+   "tags": [
+    "robo",
+    "mao",
+    "ia",
+    "grande"
+   ],
+   "dica": "Atravessa a divisa vindo do alto à direita.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/robos/mao-de-robo-apontando-criacao.png",
+   "pasta": "objetos/robos",
+   "descricao": "Mão e antebraço de robô branco descendo do alto à direita, o indicador estendido para baixo à esquerda, na pose da mão de Deus na Criação de Adão; fio de luz dourada.",
+   "largura": 787,
+   "altura": 921,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id ksMMZ5616B",
+   "tags": [
+    "robo",
+    "mao",
+    "ia",
+    "branco",
+    "criacao-de-adao",
+    "apontando"
+   ],
+   "dica": "A IA na releitura da Criação de Adão: vem de cima, pode passar um pouco por cima da headline; a ponta do dedo quase encosta na da mão humana. O braço sai pelo alto: o corte reto fica fora do slide.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "personagens/maos/mao-humana-criacao-de-adao.png",
+   "pasta": "personagens/maos",
+   "descricao": "Mão e antebraço humanos subindo de baixo à esquerda, pulso solto e indicador estendido para o alto à direita, na pose da mão de Adão na Criação de Adão; luz quente de contorno.",
+   "largura": 781,
+   "altura": 855,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id iGHHtGl3uK",
+   "tags": [
+    "mao",
+    "humano",
+    "pele",
+    "criacao-de-adao",
+    "braco"
+   ],
+   "dica": "O humano na releitura da Criação de Adão: vem de baixo, o braço sai pela borda de baixo (o corte reto fica fora do slide).",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "personagens/maos/mao-humana-apontando.png",
+   "pasta": "personagens/maos",
+   "descricao": "Mão e antebraço humanos subindo de baixo à esquerda, o indicador bem estendido apontando para o alto à direita; luz quente de contorno.",
+   "largura": 791,
+   "altura": 871,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id KLVVZxekqp",
+   "tags": [
+    "mao",
+    "humano",
+    "pele",
+    "apontando",
+    "braco"
+   ],
+   "dica": "Variação mais firme (aponta de verdade). O braço sai pela borda de baixo.",
+   "adicionado": "2026-11-11",
+   "como": "recorte --modelo hr-matting"
+  },
+  {
+   "arquivo": "arte/quadros/quadro-renascentista-designer-no-computador.png",
+   "pasta": "arte/quadros",
+   "descricao": "Moldura dourada barroca com uma pintura no estilo renascentista: um homem de roupa da época sentado à mesa, trabalhando num computador com um programa de edição de imagem aberto (um retrato na tela); cortina vermelha e janela em arco com paisagem.",
+   "largura": 701,
+   "altura": 866,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id ov44LTl829; recorte pelo fundo liso (scripts/recortar-fundo-liso.mjs)",
+   "tags": [
+    "quadro",
+    "moldura",
+    "dourado",
+    "renascenca",
+    "pintura",
+    "designer",
+    "computador",
+    "humano"
+   ],
+   "dica": "O humano que cria, em pintura clássica. No meio da capa, atrás das mãos (a de robô vindo de cima e a humana vindo de baixo), sutilmente desfocado. O recorte por modelo corta só o homem: recorte pelo fundo.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "arte/quadros/quadro-renascentista-designer-no-computador-2.png",
+   "pasta": "arte/quadros",
+   "descricao": "Moldura dourada barroca com uma pintura no estilo renascentista: um homem de barba, de gibão preto, de perfil à mesa, com o teclado e o monitor de lado; cortina vermelha e janela em arco.",
+   "largura": 746,
+   "altura": 938,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id cpssF6n0eP; recorte pelo fundo liso",
+   "tags": [
+    "quadro",
+    "moldura",
+    "dourado",
+    "renascenca",
+    "pintura",
+    "designer",
+    "computador",
+    "humano"
+   ],
+   "dica": "Variação com o homem maior e o monitor de lado. Para os cards de dentro ou a chamada.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/robos/peca-dedo-de-robo.png",
+   "pasta": "objetos/robos",
+   "descricao": "Segmento de dedo de robô branco com junta escura, solto, inclinado; fio de luz dourada.",
+   "largura": 544,
+   "altura": 757,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id lJoocWIgv9 (folha de 4 peças, separada e ampliada 2x)",
+   "tags": [
+    "robo",
+    "peca",
+    "dedo",
+    "ia",
+    "voando"
+   ],
+   "dica": "Peça de robô voando nos cards (a IA). Sutil: pequena e nítida, ou grande e desfocada perto da lente.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/robos/peca-engrenagem-latao.png",
+   "pasta": "objetos/robos",
+   "descricao": "Engrenagem pequena de latão, em três quartos.",
+   "largura": 472,
+   "altura": 458,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id lJoocWIgv9 (folha de 4 peças, separada e ampliada 2x)",
+   "tags": [
+    "robo",
+    "peca",
+    "engrenagem",
+    "latao",
+    "ia",
+    "voando",
+    "igual"
+   ],
+   "dica": "Peça voando nos cards. Várias iguais em fila dizem 'todo mundo igual'.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/robos/peca-casca-branca.png",
+   "pasta": "objetos/robos",
+   "descricao": "Fragmento curvo de casca branca de robô, com filete dourado.",
+   "largura": 398,
+   "altura": 734,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id lJoocWIgv9 (folha de 4 peças, separada e ampliada 2x)",
+   "tags": [
+    "robo",
+    "peca",
+    "casca",
+    "branco",
+    "ia",
+    "voando"
+   ],
+   "dica": "Peça voando; some no card branco, use nos pretos.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/robos/peca-parafuso-aco.png",
+   "pasta": "objetos/robos",
+   "descricao": "Parafuso sextavado de aço, pequeno, inclinado.",
+   "largura": 344,
+   "altura": 404,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id lJoocWIgv9 (folha de 4 peças, separada e ampliada 2x)",
+   "tags": [
+    "robo",
+    "peca",
+    "parafuso",
+    "aco",
+    "ia",
+    "voando"
+   ],
+   "dica": "Peça voando nos cards, pequena.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "plantas/folhas/folha-louro-contraluz.png",
+   "pasta": "plantas/folhas",
+   "descricao": "Folha de louro verde-viva em contraluz, com as nervuras à mostra e a borda acesa.",
+   "largura": 482,
+   "altura": 743,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id KLVVZzrkqp (folha de 4, separada e ampliada 2x)",
+   "tags": [
+    "folha",
+    "louro",
+    "verde",
+    "contraluz",
+    "humano",
+    "voando"
+   ],
+   "dica": "Folha de planta voando nos cards: o humano, o vivo. Em contraluz, a luz atravessa.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "plantas/folhas/ramo-oliveira-contraluz.png",
+   "pasta": "plantas/folhas",
+   "descricao": "Raminho de oliveira com quatro folhas, em contraluz.",
+   "largura": 510,
+   "altura": 570,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id KLVVZzrkqp (folha de 4, separada e ampliada 2x)",
+   "tags": [
+    "folha",
+    "oliveira",
+    "ramo",
+    "verde",
+    "contraluz",
+    "humano",
+    "voando"
+   ],
+   "dica": "Voando ou atravessando a divisa; combina com a pintura renascentista.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "plantas/folhas/folha-redonda-contraluz.png",
+   "pasta": "plantas/folhas",
+   "descricao": "Folha verde-clara arredondada, de frente, em contraluz.",
+   "largura": 437,
+   "altura": 526,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id KLVVZzrkqp (folha de 4, separada e ampliada 2x)",
+   "tags": [
+    "folha",
+    "verde",
+    "contraluz",
+    "humano",
+    "voando"
+   ],
+   "dica": "Voando; a diferente no meio das peças iguais.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "plantas/folhas/folha-curvada-contraluz.png",
+   "pasta": "plantas/folhas",
+   "descricao": "Folha verde curvada, com a ponta virada, em contraluz.",
+   "largura": 374,
+   "altura": 439,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id KLVVZzrkqp (folha de 4, separada e ampliada 2x)",
+   "tags": [
+    "folha",
+    "verde",
+    "contraluz",
+    "humano",
+    "voando"
+   ],
+   "dica": "Voando, perto da lente (grande e desfocada) ou pequena ao fundo.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/janelas/janela-claude-pensando.png",
+   "pasta": "objetos/janelas",
+   "descricao": "Pílula clara no jeito do Claude, com a faísca laranja: 'Claude está pensando…'.",
+   "largura": 910,
+   "altura": 148,
+   "fonte": "Feita em código em 11/11/2026 (_local/janelas/janelas-claude.mjs), Calango Sans",
+   "tags": [
+    "claude",
+    "janela",
+    "popup",
+    "interface",
+    "ia",
+    "voando"
+   ],
+   "dica": "Elemento do Claude voando nos cards (a IA). Sutil: pequeno e inclinado; perto da lente, grande e desfocado. Sem sombra (está no ar).",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/janelas/janela-claude-post-pronto.png",
+   "pasta": "objetos/janelas",
+   "descricao": "Aviso claro no jeito do Claude: 'O post de hoje está pronto pra você revisar.'",
+   "largura": 1120,
+   "altura": 364,
+   "fonte": "Feita em código em 11/11/2026 (_local/janelas/janelas-claude.mjs), Calango Sans",
+   "tags": [
+    "claude",
+    "janela",
+    "popup",
+    "aviso",
+    "interface",
+    "ia",
+    "voando"
+   ],
+   "dica": "Elemento do Claude voando; combina com o card da oferta (o Claude cria, você revisa).",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/janelas/janela-claude-pedido.png",
+   "pasta": "objetos/janelas",
+   "descricao": "Caixa de pedido escura no jeito do Claude: 'Crie o post de hoje no meu estilo', com o botão laranja de enviar.",
+   "largura": 1400,
+   "altura": 208,
+   "fonte": "Feita em código em 11/11/2026 (_local/janelas/janelas-claude.mjs), Calango Sans",
+   "tags": [
+    "claude",
+    "janela",
+    "popup",
+    "pedido",
+    "interface",
+    "ia",
+    "voando"
+   ],
+   "dica": "Elemento do Claude voando; em card claro, a caixa escura aparece melhor.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/janelas/vidro-claude-icone-escuro.png",
+   "pasta": "objetos/janelas",
+   "descricao": "Azulejo de vidro com a faísca laranja do Claude, para card escuro (vidro claro, borda de luz).",
+   "largura": 440,
+   "altura": 440,
+   "fonte": "Feito em código em 11/11/2026 (_local/janelas/vidro-claude.mjs)",
+   "tags": [
+    "claude",
+    "vidro",
+    "interface",
+    "ia",
+    "composicao",
+    "desfocado"
+   ],
+   "dica": "Só elemento de composição (pedido do dono): grande e BEM desfocado (blur 14 a 22), no canto do card, cortado pela borda. No panorama, para ficar dentro da janela. Nunca nítido, nunca pequeno, um por card.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/janelas/vidro-claude-painel-escuro.png",
+   "pasta": "objetos/janelas",
+   "descricao": "Painel de vidro com a faísca do Claude e duas barras (sem texto), para card escuro.",
+   "largura": 820,
+   "altura": 300,
+   "fonte": "Feito em código em 11/11/2026 (_local/janelas/vidro-claude.mjs)",
+   "tags": [
+    "claude",
+    "vidro",
+    "interface",
+    "ia",
+    "composicao",
+    "desfocado"
+   ],
+   "dica": "Como o azulejo de vidro: grande, bem desfocado, no canto, dentro da janela (panorama).",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/janelas/vidro-claude-icone-claro.png",
+   "pasta": "objetos/janelas",
+   "descricao": "Azulejo de vidro com a faísca laranja do Claude, para card claro (vidro leitoso com borda).",
+   "largura": 440,
+   "altura": 440,
+   "fonte": "Feito em código em 11/11/2026 (_local/janelas/vidro-claude.mjs)",
+   "tags": [
+    "claude",
+    "vidro",
+    "interface",
+    "ia",
+    "composicao",
+    "desfocado"
+   ],
+   "dica": "A versão para card branco. Grande, bem desfocado, no canto, dentro da janela (panorama).",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/janelas/vidro-claude-painel-claro.png",
+   "pasta": "objetos/janelas",
+   "descricao": "Painel de vidro com a faísca do Claude e duas barras (sem texto), para card claro.",
+   "largura": 820,
+   "altura": 300,
+   "fonte": "Feito em código em 11/11/2026 (_local/janelas/vidro-claude.mjs)",
+   "tags": [
+    "claude",
+    "vidro",
+    "interface",
+    "ia",
+    "composicao",
+    "desfocado"
+   ],
+   "dica": "A versão para card branco. Grande, bem desfocado, no canto, dentro da janela (panorama).",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "arte/quadros/quadro-renascentista-designer-deitado.png",
+   "pasta": "arte/quadros",
+   "descricao": "Moldura dourada barroca DEITADA (horizontal) com uma pintura no estilo renascentista: um homem de roupa da época à mesa, à esquerda, e no meio o computador com um programa de edição de imagem aberto (um retrato na tela); cortina vermelha e arcos com paisagem.",
+   "largura": 1104,
+   "altura": 751,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id nVxxigFYQD; recorte pelo fundo liso (scripts/recortar-fundo-liso.mjs)",
+   "tags": [
+    "quadro",
+    "moldura",
+    "dourado",
+    "renascenca",
+    "pintura",
+    "designer",
+    "computador",
+    "humano",
+    "horizontal"
+   ],
+   "dica": "Quadro deitado da largura da headline, colado embaixo dela, com o conjunto centralizado na capa (pedido do dono). É fundo: desfocado e mais escuro; o assunto fica na frente.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "arte/quadros/quadro-renascentista-designer-deitado-2.png",
+   "pasta": "arte/quadros",
+   "descricao": "Moldura dourada barroca deitada com a pintura renascentista do homem ao computador, variação com o homem maior e a torre do computador à mostra.",
+   "largura": 958,
+   "altura": 684,
+   "fonte": "Magnific 11/11/2026, Nano Banana 2.1 (ilimitado), id UPttraJwny; recorte pelo fundo liso",
+   "tags": [
+    "quadro",
+    "moldura",
+    "dourado",
+    "renascenca",
+    "pintura",
+    "designer",
+    "computador",
+    "humano",
+    "horizontal"
+   ],
+   "dica": "Reserva do quadro deitado.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
+  },
+  {
+   "arquivo": "objetos/robos/mao-de-robo-apontando-criacao-longa.png",
+   "pasta": "objetos/robos",
+   "descricao": "A mão de robô apontando (pose da Criação de Adão) com o braço esticado até bem além do corte, para sair pela borda do card vizinho.",
+   "largura": 1307,
+   "altura": 1441,
+   "fonte": "mao-de-robo-apontando-criacao esticada em leque a partir do vértice (115, 678) com scripts/esticar-recorte.mjs em 11/11/2026",
+   "tags": [
+    "robo",
+    "mao",
+    "ia",
+    "branco",
+    "criacao-de-adao",
+    "apontando",
+    "braco-longo"
+   ],
+   "dica": "Use esta quando o braço atravessa a divisa: o corte reto do recorte não pode aparecer em card nenhum (o dono: 'o restante do braço morreu ali. Precisa chegar até o final'). A ponta do indicador fica em (0,0015; 0,939) da imagem.",
+   "adicionado": "2026-11-11",
+   "como": "já vinha recortado"
   }
  ]
 }

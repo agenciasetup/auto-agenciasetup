@@ -6,6 +6,24 @@ O gabarito é o `templates/carrossel/conteudos/vangogh-infinito.js` (o resultado
 
 **Regra de tudo:** o Claude clona o jeito do dono. Não "reinventa" nem "melhora". O que está aqui é o padrão dele, medido.
 
+## 0. Os erros que eu não posso repetir (leia sempre, antes de tudo)
+
+No fim de 11/11/2026, depois de corrigir o carrossel "A IA vai tirar seu emprego" em mais de dez voltas, o dono mandou: "reaprender com todos os erros que cometeu aqui". Esta lista é o resumo; o detalhe está nas seções 8 e 9 e no `licoes.md`.
+
+1. **O pior erro: a escolha da imagem.** (A raposa de gravata e depois o xadrez, as duas reprovadas: "Capa sem sentido!".) A solução dele, e ela é obrigatória antes de gerar qualquer coisa:
+   - **Busque no perfil da agência um conteúdo parecido que deu bom.** O Desempenho (`ver_desempenho`, `listar_posts` com `busca`), a leitura do Olheiro (`design_leitura`), o banco de capas (`templates/carrossel/referencias/banco/`) e o arquivo (`node scripts/design-arquivo.mjs`, e `--post <código>` para um post que ele citou). Abra as lâminas, não só o título.
+   - **Busque no Pinterest referências bonitas que se aproximem do nosso estilo** (pelo Chrome com a conta da agência): de 3 a 6, guardadas em `_local/carrossel/<nome>/referencias/`.
+   - A ficha da capa cita as referências (as do perfil e as de fora) e diz o que tira de cada uma: a ideia, a luz, a composição. Nunca copiar; nunca gerar a imagem sem ter olhado referência.
+2. **Headline e CTA sempre bonitas:** com degradê (do amarelo ao laranja na palavra de destaque) e com o desfoque nas pontas. A chamada leva o mesmo acabamento da capa.
+3. **Elementos: excesso é ruim, pouco é ruim.** Precisa ser assertivo: cada elemento tem um motivo e um lugar. **A maioria desfocada**: eles não são o foco, são complemento. Um por divisa é a medida que funcionou.
+4. **Elemento desfocado desfoca o fundo junto**, principalmente aviso, popup e coisas do gênero (`{ vidro: true }`): o objeto, as bordas e o que está atrás, tudo fora de foco.
+5. **Anotação à mão quase não aparece.** Opacidade baixa (o padrão do modelo é 26%), desfoque leve, mesclada. É detalhe.
+6. **Conceito com sentido:** imagem bela e conhecida relida com os símbolos do tema, não metáfora que precisa de explicação.
+7. **Composição:** o que é comprido entra pelo canto; o título e o elemento de fundo formam um bloco (mesma largura, colados, no meio); o que atravessa a divisa chega até o fim, sem corte reto no card vizinho.
+8. **Profundidade e luz:** desfocado de fundo é escuro, o claro vai para a frente; luz com fonte (poucos pontos de luz, nunca brilho dourado geral); vinheta no card e no elemento de fundo.
+9. **Acabamento que ele sente falta quando some:** a régua ao lado da moldura, o cursor "calango", a assinatura quase apagada embaixo, o degradê e o desfoque nas pontas do título.
+10. **Antes de mostrar:** a última linha de cada título (palavra sozinha, artigo solto), fatia fina de elemento na borda de um card, régua por cima de braço, cisco de poeira em cima de elemento desfocado.
+
 ## 1. Imagens criativas
 
 **Comece pelo banco de capas.** `templates/carrossel/referencias/banco/` (o `LEIA.md` diz o que cada capa ensina; a `folha.jpg` mostra todas). Escolha de 1 a 3 como direção e diga quais na ficha. Nunca copie: é a direção, não o modelo. Capa nova que o dono mandar entra com `node scripts/banco-capas.mjs adicionar` (ou ele joga em `banco/entrada/`). Post de referência da própria conta: `node scripts/design-arquivo.mjs --post <código>`.
@@ -110,3 +128,34 @@ O que mudou no fluxo da skill:
 ## 7. O que ele já reprovou (não repetir)
 
 Amarelo liso no lugar do laranja medido. Headline colada no alto. Linhas da headline com larguras diferentes. Assunto no canto com o quadro ao lado. Girassol pequeno na divisa. Sombra em abelha, girassol e busto. Pincelada de tinta nos cards pretos. Nuvem cinza, chapada ou solta. Abelha sem cor. Abelha clara no escuro. Luz vazando na moldura. Luz em modo tela desbotando o preto. Fim de carrossel fraco, com texto pequeno e elemento pequeno no canto. Elementos demais. Dois exemplares nítidos da mesma coisa em tamanhos diferentes. Elemento sem contexto. Recorte com borda reta à vista. As frases dele, com a data, estão em `licoes.md`.
+
+Da peça "A IA vai tirar seu EMPREGO?" (11/11/2026, quatro voltas): capa de metáfora que precisa de explicação (o xadrez). Braço entrando pelo meio da borda. Raminho, engrenagem e parafuso espalhados ("excesso de poluição"); a mesma peça repetida em fila. Elemento de interface com texto para ler voando no card. Desfocado claro no fundo. Brilho dourado sem fonte atrás de tudo. Braço que acaba no corte reto dentro do card vizinho. Vidro que não desfoca o que está atrás. Quadro pequeno desalinhado da headline.
+
+## 8. O que a capa do "IA vai tirar seu emprego" ensinou (11/11/2026, à noite)
+
+O gabarito é `conteudos/ia-emprego.js` (a capa que ele chamou de "perfeito!"). As palavras dele estão no `licoes.md`.
+
+- **Capa com sentido.** Antes de inventar metáfora, procure uma imagem bela que todo mundo reconhece e que já diz a tese (uma obra clássica, uma cena famosa) e releia com os símbolos diretos do tema. Ali: a Criação de Adão, com a mão de robô (a IA) e a mão de gente, e um quadro renascentista de um homem ao computador.
+- **Bloco de título e fundo.** O título e o elemento que fica atrás do assunto formam um bloco só: a mesma largura (`bloco`), colados um no outro, e o conjunto no meio do card (o `y` do título desce; o respiro de cima continua existindo, maior). Quadro pequeno solto embaixo de uma headline larga dá estranhamento.
+- **O assunto entra pelos cantos.** Braço, galho e tudo que é comprido entra na diagonal, por um canto, nunca pelo meio da borda. Dois assuntos vêm de cantos opostos.
+- **Pode cobrir.** O que está por cima pode passar sobre o texto e sobre coisa importante "desde que dê pra entender", até cortar a última letra. Não desvie o assunto do título a qualquer custo.
+- **Fundo escuro, frente clara.** O que está desfocado no fundo fica mais escuro; o que é claro e desfocado vai para a frente, por cima.
+- **Luz com fonte.** Em cena escura, o fundo é preto e a luz vem de poucos pontos: no máximo dois ou três vagalumes de verdade, bem feitos, como na capa do Leonardo (`banco/dono-leonardo-capa.jpg`). Um colado na lente, num canto, escuro, com a luz grande e quente (é ela que ilumina o canto); outro pequeno e nítido perto do elemento de fundo, com o rastro do voo. Mais que isso é "excesso de vagalume, meio mal feito". Halo e névoa dourada atrás de tudo "não tem sentido".
+- **Vinheta.** O fundo some para as bordas (`vinheta` no slide) e o elemento de fundo também (`escurece: { de: 'bordas' }`): "meio que sumindo no fundo". O título e o assunto ficam acesos.
+- **Um elemento por divisa.** "Mais imagens nos cards" quer dizer um elemento bonito por divisa, grande e bem desfocado perto da lente, ligado ao tema (ali: vidro do Claude nos cards da IA, folha de louro nos do humano). Miudeza espalhada e peça repetida são poluição. Na dúvida, tira.
+- **Aviso fora de foco.** Interface entra como um aviso perto da lente, inteiro fora de foco (`{ vidro: true, titulo, texto }`): "é desfocado, não efeito vidro. Ele desfoca o objeto, as bordas e o fundo, tudo igual". Nada de borda nítida. Ponha a ponta dele por cima de uma caixa, para o desfoque do fundo aparecer.
+- **O acabamento da capa escura** (o que ele sentiu falta, olhando a do Leonardo): o desfoque nas pontas do título (`foco: { esq: 4, dir: 4 }`), a régua ao lado da moldura (`reguasAtras: true`, e não `semRegua`), o degradê na palavra amarela (`cor2: 'linear-gradient(90deg, #ffd000, #ffb000 45%, #ff7a00)'`) e uma luz vindo de cima, do canto, com fonte (o vagalume colado na lente; a luz dele por dentro da janela, no `panorama`, para não vazar na moldura, mais um `halo` em tela).
+- **Até o fim.** O que atravessa a divisa não mostra o corte reto do recorte em card nenhum: olhe o card vizinho na `larga.jpg`.
+- **A serifada é a Calango Serif** (mais larga que a antiga: confira as quebras de linha).
+- **A chamada com o acabamento da capa.** "Diagrame a CTA melhor: efeito degradê no texto, desfoque nas bordas. Alinhe ele ao centro, ajuste a imagem": o bloco (comenta, a palavra e a frase do preço) junto e no meio, a palavra em degradê com o desfoque nas pontas, a régua atrás do que sai pela borda, e a cena embaixo, fechando a ideia da capa (lá as mãos quase se encostam, aqui se encostam).
+- **O cursor e a assinatura.** A capa leva o cursor com o nome "calango" (`selo`), num lugar que não cubra palavra do título, e pode levar embaixo, no meio, a `assinatura` na Calango Signature a 15% ("Feito no Claude, por Calango"), "só pra não ficar vazio".
+
+## 9. Os rabiscos (anotações à mão, desde 11/11/2026)
+
+O dono mostrou cinco posts dele (o Halloween do Designer, o do portfólio, o "conteúdo massa vs conteúdo paia", o "arrume seu perfil" e o da sombra projetada) e disse: "esses posts têm uns rabiscos escritos bem escondidinho? Levemente desfocados, só pra dar um charme e rabisco na arte, como se alguém tivesse escrito ali. Uma comunicação mais informal, um comentário, anotação, sabe? Eu acho isso bonito! Você pode fazer de várias formas, em vários posts."
+
+- **A letra é a Calango Ink** (`anotacoes: [{ texto, x, y, rot, tam, cor, op, blur, mistura, seta }]` no slide).
+- **É detalhe.** "Sempre desfoque sutilmente só pra ficar mais mesclado, bem pouco. Mescle com efeito tela, multiplicar ou algum. Sempre com opacidade menor, pois é detalhe!" O padrão do modelo já é esse: 0,8 px de desfoque, 26% de opacidade (ele pediu menos ainda depois de ver: "precisa quase não aparecer"), tela no card escuro e multiplicar no claro. Pequeno (34 a 38 px), um pouco torto (2 a 4 graus).
+- **A voz é de amigo no WhatsApp.** Exemplos dele: "anota essa mano! kkk", "sacou??", "presta atenção calango!", "mosca pra tu ver kkk", "se vacilar é vapooo!", "truuuucooo", "assina aí, vai", "olha o direct mano". O recado comenta o card: não repete o título, não traz dado novo, não tem travessão.
+- **Onde.** Num vazio do card, perto do que ele comenta (ao lado do assunto, embaixo da caixa, perto do preço), nunca em cima de texto. Um por card, e não em todo card: em um carrossel de 8, uns 4 ou 5.
+- Pode vir com uma setinha à mão (`seta`) apontando para o que comenta.

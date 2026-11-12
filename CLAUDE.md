@@ -59,6 +59,7 @@ Usar IA para otimizar o trabalho. Posts com IA, sem cara de IA. Tarefas que traz
 8. **Credenciais das redes só cifradas** (`conexoes.credenciais`, AES-GCM com `CRIPTO_CHAVE`). Nunca voltam para o painel nem para o Claude.
 9. **`AMBIENTE` e `DEV_USUARIO` existem só no `.dev.vars`.** Nunca em produção: são o login sem senha do computador.
 10. **Painel e Claude passam pelas mesmas ações** (`worker/lib/acoes.js`). Ação nova entra ali, com a permissão (`permissoes.js`) e a auditoria; o painel e o MCP só chamam.
+11. **As fontes da família Calango são exclusividade da agência** (Condensed, Signature, Sans, Serif, Ink; ordem do dono em 11/11/2026). Nunca vão para o curso, kit de aluno, zip, exemplo ou qualquer material de terceiros, nem como citação. O kit do curso não leva arquivo de fonte nenhum. `node scripts/kit-limpo.mjs` confere, e os scripts que sobem o kit (`area-semente.mjs`, `area-semente-en.mjs`) param se acharem.
 
 ## Pastas
 

@@ -143,13 +143,28 @@
     xis: 'M4 4l40 40M44 4L4 44',
   };
   const rabiscos = (lista = []) => lista.map(([nomeR, x, y, esc, rot]) => `<svg class="rabisco" style="left:${x}px;top:${y}px;width:180px;height:100px;transform:scale(${esc || 1}) rotate(${rot || 0}deg)" viewBox="0 0 180 100"><path d="${RABISCOS[nomeR]}"/></svg>`).join('');
+  // Anotações à mão (11/11/2026, o dono, mostrando cinco posts dele: "esses posts têm uns rabiscos escritos bem
+  // escondidinho? Levemente desfocados, só pra dar um charme e rabisco na arte, como se alguém tivesse escrito ali. Uma
+  // comunicação mais informal, um comentário, anotação... Use a fonte Calango Ink. Sempre desfoque sutilmente, bem
+  // pouco. Mescle com efeito tela, multiplicar ou algum. Sempre com opacidade menor, pois é detalhe!").
+  // `anotacoes: [{ texto, x, y, rot, tam, larg, cor, op, blur, mistura, alinha, seta }]` no slide, em coordenadas da
+  // página. O texto quebra onde houver quebra de linha. Padrão: 34 px, 0,8 px de desfoque, 26% de opacidade ("precisa quase não aparecer"), tela no
+  // card escuro e
+  // multiplicar no claro. `seta`: uma setinha à mão no fim ('direita', 'esquerda', 'cima', 'baixo').
+  const SETAS = { direita: 0, baixo: 90, esquerda: 180, cima: 270 };
+  const anotacoes = (s) => (s.anotacoes || []).map((a) => {
+    const escuro = s.tema === 'preto';
+    const cor = a.cor || (escuro ? '#f3ead8' : '#3a2c1c');
+    const seta = a.seta !== undefined ? `<svg viewBox="0 0 120 60" width="${Math.round((a.tam || 34) * 2.1)}" style="display:block;margin:${a.setaMargem || '6px 0 0 18px'};transform:rotate(${(typeof a.seta === 'number' ? a.seta : SETAS[a.seta] ?? 0)}deg);overflow:visible"><path d="M6 40c26-22 58-26 96-14M84 12l20 14-22 12" fill="none" stroke="${cor}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>` : '';
+    return `<div class="anotacao" style="left:${a.x - JANELA}px;top:${a.y - JANELA}px;${a.larg ? `width:${a.larg}px;` : ''}font-size:${a.tam || 34}px;color:${cor};opacity:${a.op ?? 0.26};filter:blur(${a.blur ?? 0.8}px);mix-blend-mode:${a.mistura || (escuro ? 'screen' : 'multiply')};text-align:${a.alinha || 'left'};transform:rotate(${a.rot || 0}deg)">${String(a.texto).split('\n').join('<br>')}${seta}</div>`;
+  }).join('');
   const camada0 = (s) => `<div class="fundo" style="--luz-x:${s.luzX || '55%'};--luz-y:${s.luzY || '35%'}"></div>${s.halo ? `<div class="brilho-assunto" style="${estilo(s.halo)}"></div>` : ''}`;
   // `fundoBlocos`: blocos atrás do título e da pessoa (a janela do Claude, os slides soltos). Bloco com `mescla`
   // (ex.: 'screen') vai para a camada 0, junto do fundo: cada camada isola a mistura, e na 1 ele não teria com o que
   // se misturar.
   const blocoFundo = (b) => BLOCOS[b.tipo]({ ...b, x: b.x - JANELA, y: b.y - JANELA });
   const blocosMescla = (s) => (s.fundoBlocos || []).filter((b) => b.mescla).map(blocoFundo).join('');
-  const camada1 = (s) => `${s.vazada ? `<div class="vazada" style="${estilo(s.vazada.pos)}">${s.vazada.texto}</div>` : ''}${miudos(s.miudos)}${rabiscos(s.rabiscos)}${(s.fundoBlocos || []).filter((b) => !b.mescla).map(blocoFundo).join('')}`;
+  const camada1 = (s) => `${s.vazada ? `<div class="vazada" style="${estilo(s.vazada.pos)}">${s.vazada.texto}</div>` : ''}${miudos(s.miudos)}${rabiscos(s.rabiscos)}${anotacoes(s)}${(s.fundoBlocos || []).filter((b) => !b.mescla).map(blocoFundo).join('')}`;
 
   // Assunto recortado de foto (camada 2): sombra projetada no fundo, halo quente e, se pedir, desfoque progressivo no que
   // está mais perto da câmera (`foco`: nítido até `de`, cresce até `max` px em `ate`, na direção `angulo`).
@@ -251,7 +266,7 @@
     // Cada um leva os dados (data-*) que os mapas e a conferência leem.
     const rastros = new Set();
     const DIRECAO = { baixo: 0, esquerda: 90, cima: 180, direita: 270 };
-    const dados = (t, camada) => ` data-arq="${String(t.arq || '').split('/').pop().replace(/\.\w+$/, '')}" data-pasta="${String(t.arq || '').split('/').slice(-3, -1).join('/')}" data-camada="${camada}" data-z="${t.z ?? ''}" data-blur="${t.blur || 0}"${t.sombra && typeof t.sombra === 'object' ? ` data-sombra="${t.sombra.x},${t.sombra.y},${t.sombra.blur},${t.sombra.op}"` : ''}${t.sat !== undefined ? ` data-sat="${t.sat}"` : ''}${t.luz !== undefined ? ` data-luz="${t.luz}"` : ''}${t.rastro ? ` data-rastro="${t.rastro.px ?? 10},${t.rastro.angulo || 0}"` : ''}${t.fundo || (camada === 'panorama' && (t.w || largura) >= 2000) ? ' data-fundo="1"' : ''}${t.contorno ? ' data-contorno="1"' : ''}${t.escurece ? ' data-escurece="1"' : ''}${t.mistura ? ` data-mistura="${t.mistura}"` : ''}${(t.blur || 0) >= 16 || t.mistura ? ' data-suave="1"' : ''}`;
+    const dados = (t, camada) => ` data-arq="${String(t.arq || '').split('/').pop().replace(/\.\w+$/, '')}" data-pasta="${String(t.arq || '').split('/').slice(-3, -1).join('/')}" data-camada="${camada}" data-z="${t.z ?? ''}" data-blur="${t.blur || 0}"${t.sombra && typeof t.sombra === 'object' ? ` data-sombra="${t.sombra.x},${t.sombra.y},${t.sombra.blur},${t.sombra.op}"` : ''}${t.sat !== undefined ? ` data-sat="${t.sat}"` : ''}${t.luz !== undefined ? ` data-luz="${t.luz}"` : ''}${t.rastro ? ` data-rastro="${t.rastro.px ?? 10},${t.rastro.angulo || 0}"` : ''}${t.fundo || (camada === 'panorama' && (t.w || largura) >= 2000) ? ' data-fundo="1"' : ''}${t.contorno ? ' data-contorno="1"' : ''}${t.escurece ? ' data-escurece="1"' : ''}${t.mistura ? ` data-mistura="${t.mistura}"` : ''}${(t.blur || 0) >= 16 || t.mistura ? ' data-suave="1"' : ''}${t.anima ? ` data-anima='${JSON.stringify(t.anima)}'` : ''}`;
     const elemento = (t, left, top, classe, camada, filtro) => {
       const giro = `rotate(${t.rot || 0}deg)${t.espelho ? ' scaleX(-1)' : ''}`;
       const caixa = { left, top, width: t.w || largura, ...(t.h ? { height: t.h } : {}) };
@@ -264,11 +279,46 @@
       // serve para a peça girada que só mostra a ponta (a quina da moldura). Quem acerta é ajustarEscurece(), depois que
       // a imagem carrega e a altura dela é conhecida.
       const naTela = e && e.y0 !== undefined ? ` data-y0="${e.y0}" data-y1="${e.y1 ?? 0}" data-forca="${e.forca}" data-rot="${t.rot || 0}" data-espelho="${t.espelho ? 1 : 0}"` : '';
-      const dentro = `<img src="imagens/${t.arq}" alt="" style="display:block;width:100%${t.h ? ';height:100%' : ''}">${e ? `<div class="escurece"${naTela} style="background:linear-gradient(${local}deg, rgba(0,0,0,${e.forca}) 0%, rgba(0,0,0,0) ${Math.round(e.ate * 100)}%);-webkit-mask-image:url('imagens/${t.arq}');mask-image:url('imagens/${t.arq}')"></div>` : ''}`;
+      // `de: 'bordas'`: a vinheta no próprio elemento (o dono, 11/11/2026: "vinheta no quadro também... meio que sumindo
+      // no fundo"): limpo no `centro` (padrão '50% 45%') até a fração `ate`, e escurecendo até as bordas.
+      const degrade = e && e.de === 'bordas'
+        ? `radial-gradient(ellipse farthest-corner at ${e.centro || '50% 45%'}, rgba(0,0,0,0) ${Math.round((e.ate ?? 0.35) * 100)}%, rgba(0,0,0,${e.forca}) 100%)`
+        : e ? `linear-gradient(${local}deg, rgba(0,0,0,${e.forca}) 0%, rgba(0,0,0,0) ${Math.round(e.ate * 100)}%)` : '';
+      const dentro = `<img src="imagens/${t.arq}" alt="" style="display:block;width:100%${t.h ? ';height:100%' : ''}">${e ? `<div class="escurece"${naTela} style="background:${degrade};-webkit-mask-image:url('imagens/${t.arq}');mask-image:url('imagens/${t.arq}')"></div>` : ''}`;
       if (!t.rastro) return `<div class="${classe} grupo"${dados(t, camada)} style="${estilo({ ...caixa, transform: giro, filter: filtro, ...resto })}">${dentro}</div>`;
       const r = { px: 10, angulo: 0, ...t.rastro };
       rastros.add(r.px);
       return `<div class="${classe} grupo"${dados(t, camada)} style="${estilo({ ...caixa, transform: `rotate(${r.angulo}deg)`, filter: `url(#rastro-${r.px})`, ...resto })}"><div style="position:relative;transform:rotate(${(t.rot || 0) - r.angulo}deg)${t.espelho ? ' scaleX(-1)' : ''};filter:${filtro}">${dentro}</div></div>`;
+    };
+    // Vidro (11/11/2026, o dono: "os elementos de Claude flutuando podiam ser efeitos de vidro e bem desfocados. É só
+    // elemento de composição"; "os efeitos desfocados devem desfocar o fundo junto"; e a referência dele, o aviso "Venda
+    // aprovada" do post DXuCSZDHAfz): um aviso de vidro perto da lente, feito em código. Desfoca de verdade o que está
+    // atrás dele (backdrop-filter), tem a borda mole (ele mesmo está fora de foco) e, dentro, o ícone (a faísca do
+    // Claude num azulejo claro) e até duas linhas de texto, também fora de foco: dá para adivinhar, não é para ler.
+    // { vidro: true, x, y, w, h, rot, raio, desfoque (o do fundo, 18), borda (a moleza da borda, 9), dentro (o desfoque
+    //   do conteúdo, 5), icone (false tira), titulo, texto, tom: 'escuro' (sobre card escuro) ou 'claro', op, acima }.
+    // Um por divisa. O desfoque do fundo só aparece onde há o que desfocar: ponha a ponta dele por cima de uma caixa ou
+    // de uma borda (pode cobrir o fim de um texto, desde que dê para entender).
+    const TOM_DO_VIDRO = {
+      escuro: 'linear-gradient(140deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.16) 55%, rgba(255,255,255,.22) 100%)',
+      claro: 'linear-gradient(140deg, rgba(255,255,255,.62) 0%, rgba(226,216,204,.42) 55%, rgba(255,255,255,.5) 100%)',
+    };
+    const vidro = (t, left, top, camada) => {
+      const w = t.w || 420, h = t.h || w, raio = t.raio ?? Math.round(Math.min(w, h) * 0.3), mole = t.borda ?? 26, desf = t.desfoque ?? 16;
+      const base = `left:${left}px;top:${top}px;width:${w}px;height:${h}px;transform:rotate(${t.rot || 0}deg);border-radius:${raio}px`;
+      const dadosV = ` data-arq="vidro" data-pasta="vidro" data-camada="${camada}" data-z="${t.z ?? ''}" data-blur="${desf}" data-suave="1"`;
+      if (PROF) return `<div class="travessa"${dadosV} style="${base};background:rgb(${Array(3).fill(Math.round(255 * cinzaDoMapa({ ...t, blur: desf }))).join(',')})"></div>`;
+      if (ETAPA < 3) return '';
+      const some = (g) => `linear-gradient(${g}deg, transparent 0, rgba(0,0,0,.5) ${Math.round(mole * 0.55)}px, #000 ${mole}px, #000 calc(100% - ${mole}px), rgba(0,0,0,.5) calc(100% - ${Math.round(mole * 0.55)}px), transparent 100%)`;
+      const mascara = `${some(90)}, ${some(180)}`;
+      const fundo = `blur(${desf}px) brightness(${t.brilho ?? (t.tom === 'claro' ? 1.0 : 1.18)}) saturate(1.3)`;
+      const temTexto = !!(t.titulo || t.texto);
+      const lado = Math.round(h * (temTexto ? 0.56 : 0.6));
+      const raios = Array.from({ length: 12 }, (_, k) => `<rect x="46.5" y="5" width="7" height="${k % 2 ? 30 : 39}" rx="3.5" transform="rotate(${k * 30} 50 50)"/>`).join('');
+      const icone = t.icone === false ? '' : `<div style="flex:none;width:${lado}px;height:${lado}px;border-radius:${Math.round(lado * 0.26)}px;background:linear-gradient(150deg,#fbf6ee,#efe4d4);display:grid;place-items:center"><svg viewBox="0 0 100 100" width="${Math.round(lado * 0.68)}" height="${Math.round(lado * 0.68)}" fill="#d97757">${raios}</svg></div>`;
+      const tinta = t.tom === 'claro' ? '#26211b' : '#ffffff';
+      const linhas = temTexto ? `<div style="min-width:0;display:flex;flex-direction:column;gap:${Math.round(h * 0.05)}px;color:${tinta};white-space:nowrap">${t.titulo ? `<b style="font-weight:700;font-size:${Math.round(h * 0.22)}px;line-height:1">${t.titulo}</b>` : ''}${t.texto ? `<span style="font-weight:400;font-size:${Math.round(h * 0.17)}px;line-height:1;opacity:.86">${t.texto}</span>` : ''}</div>` : '';
+      return `<div class="travessa placa-fora-de-foco"${dadosV} style="${base};opacity:${t.op ?? 1}"><div class="vidro-fundo" style="border-radius:${raio}px;background:${TOM_DO_VIDRO[t.tom] || TOM_DO_VIDRO.escuro};-webkit-backdrop-filter:${fundo};backdrop-filter:${fundo};-webkit-mask-image:${mascara};mask-image:${mascara}"></div><div class="vidro-dentro" style="gap:${Math.round(h * 0.16)}px;padding:0 ${Math.round(h * (temTexto ? 0.2 : 0))}px;justify-content:${temTexto ? 'flex-start' : 'center'};filter:blur(${t.dentro ?? 6}px)">${icone}${linhas}</div></div>`;
     };
     const panorama = s.semPanorama ? '' : listaDe(C.panorama).map(comProfundidade).map((p) => (p.vagalume ? vagalume(p, p.x - dx - j, p.y - j) : elemento(p, (p.x || 0) - dx - j, (p.y || 0) - j, 'panorama', 'panorama',
       PROF ? `brightness(0) invert(${cinzaDoMapa(p).toFixed(2)})` : [p.blur && ETAPA >= 3 ? `blur(${p.blur}px)` : '', ...corDe(p)].filter(Boolean).join(' ') || 'none'))).join('');
@@ -284,11 +334,11 @@
     const bola = (t) => `<div class="halo-luz" data-modo="${t.mistura || 'screen'}" data-op="${t.op ?? 0.5}" style="${estilo({ left: t.x - dx - j - (t.d || 900) / 2, top: t.y - j - (t.d || 900) / 2, width: t.d || 900, height: t.d || 900, opacity: t.op ?? 0.5, filter: t.blur && ETAPA >= 3 ? `blur(${t.blur}px)` : 'none', background: t.borda ? `radial-gradient(circle, ${t.cor || '#fff4b0'} 0%, ${t.borda} 42%, transparent 70%)` : `radial-gradient(circle, ${t.cor || '#fff1c2'} 0%, transparent 68%)` })}"></div>`;
     const modos = [...new Set(todas.filter((t) => t.halo).map((t) => t.mistura || 'screen'))];
     const halos = modos.map((m) => `<div class="camada c-luz" style="mix-blend-mode:${m}">${todas.filter((t) => t.halo && (t.mistura || 'screen') === m).map(bola).join('')}</div>`).join('');
-    const pecas = todas.filter((t) => !t.halo).map(comProfundidade);
+    const pecas = todas.filter((t) => !t.halo).map((t) => (t.vidro ? t : comProfundidade(t)));
     // No mapa de profundidade, cada elemento leva o número da distância escrito em cima.
     const rotulo = (t) => (MAPA === 'desfoque' ? `${t.blur ? `desfoque ${t.blur}` : 'nítido'}${t.rastro ? ` · rastro ${t.rastro.px ?? 10}` : ''}` : `z ${t.z ?? 0}${t.blur ? ` · desfoque ${t.blur}` : ''}${t.sombra ? ' · sombra' : ''}`);
     const marca = (t) => (PROF && !t.vagalume ? `<div class="rotulo-z" style="${estilo({ left: t.x - dx + (t.w || 0) / 2 - 60, top: Math.max(8, Math.min(1300, t.y + (t.w || 0) * 0.3)) })}">${rotulo(t)}</div>` : '');
-    const travessa = (t) => (t.vagalume ? (PROF ? '' : vagalume(t, t.x - dx, t.y)) : elemento(t, t.x - dx, t.y, 'travessa', t.acima ? 'acima' : 'travessia', filtroDaTravessia(t)) + marca(t));
+    const travessa = (t) => (t.vagalume ? (PROF ? '' : vagalume(t, t.x - dx, t.y)) : (t.vidro ? vidro(t, t.x - dx, t.y, t.acima ? 'acima' : 'travessia') : elemento(t, t.x - dx, t.y, 'travessa', t.acima ? 'acima' : 'travessia', filtroDaTravessia(t))) + marca(t));
     const travessia = pecas.filter((t) => !t.acima).map(travessa).join('');
     const acima = pecas.filter((t) => t.acima).map(travessa).join('');
     // Os filtros do rastro (o desfoque só num eixo; o elemento gira para o eixo cair na direção do voo).
@@ -310,6 +360,7 @@
       ${larga.defs || ''}<div class="janela">
         <div class="camada c0">${partes.c0 || ''}${larga.panorama}</div>
         <div class="camada c1">${partes.c1 || ''}</div>
+        ${sv.vinheta && ETAPA >= 3 && !MAPA ? `<div class="vinheta" style="background:radial-gradient(ellipse farthest-corner at ${sv.vinheta.centro || '50% 50%'}, rgba(0,0,0,0) ${Math.round((sv.vinheta.de ?? 0.4) * 100)}%, rgba(0,0,0,${sv.vinheta.forca ?? 0.7}) 100%)"></div>` : ''}
         <div class="camada c-titulo">${partes.atras || ''}</div>
         <div class="camada c2">${partes.c2 || ''}</div>
         ${sv.cantos && ETAPA >= 3 ? `<div class="cantos" style="--cantos-blur:${sv.cantos.blur ?? 7}px;--cantos-de:${Math.round((sv.cantos.de ?? 0.58) * 100)}%"></div>` : ''}
@@ -533,7 +584,10 @@
           <div class="pre-titulo" ${ancora(t.preLado || 'direita', 'acima', t.preEspaco ?? 6)}>${t.pre}</div>
           ${t.pos && !t.posFrente ? posTitulo : ''}`,
         c2: `${s.assunto ? assuntoFoto(s.assunto) : ''}${folhas((s.nevoa || []).map((f) => ({ ...f, x: f.x - JANELA, y: f.y - JANELA })))}`,
-        c3: `${folhas(s.folhas)}${bokeh(s.bokeh)}${n ? notificacao(n, '', `top:${n.y}px;${n.w ? `width:${n.w}px;` : ''}${n.x != null ? `left:${n.x}px;transform:none;` : ''}`) : ''}${(s.blocos || []).map((b) => BLOCOS[b.tipo](b)).join('')}`,
+        c3: `${folhas(s.folhas)}${bokeh(s.bokeh)}${n ? notificacao(n, '', `top:${n.y}px;${n.w ? `width:${n.w}px;` : ''}${n.x != null ? `left:${n.x}px;transform:none;` : ''}`) : ''}${(s.blocos || []).map((b) => BLOCOS[b.tipo](b)).join('')}${s.assinatura ? `<div class="assinatura-capa" style="top:${s.assinatura.y ?? 1226}px;font-size:${s.assinatura.tam ?? 44}px;opacity:${s.assinatura.op ?? 0.15}">${s.assinatura.texto}</div>` : ''}`,
+        // s.assinatura: a linha miúda embaixo, no meio, na Calango Signature, quase apagada (o dono, 11/11/2026: "embaixo,
+        // com a fonte Calango Signature, pode escrever com opacidade 15%, Feito no Claude, por Calango. Pequeno, no meio,
+        // só pra não ficar vazio"). { texto, y, tam, op }.
         // s.semRegua: capa sem a régua (para recortar a capa de perto como prova de outro slide, ex.: as etapas).
         c4: `${cromo()}${topo(ctx.marca)}${s.reguasAtras || s.semRegua ? '' : reguas()}${s.selo ? selo(s.selo) : ''}${t.posFrente ? posTitulo : ''}`,
         // s.frente: o que fica entre a lente e tudo o mais (a folha desfocada da própria foto, por cima da régua e do
@@ -779,6 +833,16 @@
         derivar([el], o);
       });
     }
+    // O que está na tela larga (panorama e travessia) também se mexe na capa animada, cada elemento no seu ritmo, em
+    // volta do próprio centro: `anima: { escala, giro, voltas, fase, deriva: [dx, dy], faseDeriva }` no elemento. Só no
+    // que NÃO cruza a divisa com o card 2 (o vídeo é só da capa: o que cruza tem de ficar parado para a emenda casar).
+    document.querySelectorAll('[data-anima]').forEach((el) => {
+      let o = null;
+      try { o = JSON.parse(el.dataset.anima); } catch { return; }
+      if (o.escala) el.style.scale = String(1 + o.escala * onda(o));
+      if (o.giro) el.style.rotate = `${(o.giro * Math.sin(2 * Math.PI * ((o.voltas || 1) * T + (o.fase || 0)))).toFixed(3)}deg`;
+      derivar([el], o);
+    });
     if (m.luz) {
       // O fundo escurece e clareia em volta do aprovado (brilho 1 ± `brilho`), e uma vinheta a mais aperta os cantos
       // quando ele escurece. Só no fundo: o assunto continua aceso, e a diferença dá a profundidade.

@@ -93,6 +93,8 @@ Realistic premium product photography, sharp focus. No text, no letters, no word
 - Objeto com chama e parte escura (fósforo queimando, 9/11/2026): saiu limpo de primeira, com fumaça de verdade. O recorte perde a parte carbonizada (escuro sobre preto), mas a camada de luz no modo tela devolve a chama, a fumaça e a cabeça queimada, e o recorte segura a madeira clara: juntos ficam sem borda. Use `fumaca: 0.8` para a fumaça subir e sumir antes do cabeçalho. O `recortar.mjs` padrão estourou a memória nessa foto; `--modelo hr-matting` resolveu.
 - A fila do modo ilimitado do Magnific pode levar uns 4 minutos por imagem. Peça 2 opções, não 3, e cancele na fila as que não vai usar.
 - O `perto` não vence o `y`: se o objeto não cabe entre o `y` e o texto, ele cobre o rótulo. Diminua o `w` (ou o `tamanho` da frase) até sobrar o espaço, e confira ampliando a junta do objeto com o rótulo.
+- Fio ou barbante que sai pela borda da foto (etiqueta de preço com a lupa, 11/11/2026): o recorte termina num corte reto, que parece amador. Esfume a ponta no alfa do `-xicara.png` (uns 12% da largura, a partir da borda) antes de montar.
+- O projeto "Agência Setup · Posts de frase" do Magnific não existe mais (11/11/2026): gere no projeto "Agencia Setup" ou no que estiver aberto e ache pelo `creations_search` no histórico. Se outra sessão estiver usando o mesmo Chrome, abra uma aba sua e não mexa na dela.
 
 ## A textura (etapa 5)
 
