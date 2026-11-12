@@ -16,6 +16,8 @@ import { paisPorCodigo } from './paises.js';
 import { pedidoCriado, pedidoPago } from './recuperacao.js';
 import { avisarDepois, avisarPedido } from './push.js';
 import { aceiteDaOferta, hashDoAceite } from './licencas.js';
+import { arquivoDe, marcaDoArquivo, telaDoArquivo } from './entrega-arquivo.js';
+import { emailArquivoAguarde, emailArquivoPronto } from './emails.js';
 
 const OFERTA = 'id,slug,produto_id,nome,preco_centavos,preco_de_centavos,parcelas_max,juros_mes,pix_desconto_pct,pix_minutos,metodos,garantia_dias,checkout,limite_vendas,valida_ate,ativa,moeda';
 
@@ -261,7 +263,7 @@ async function conferirAceite(env, oferta, dados) {
 // A prova do aceite (tabela aceites): o pedido, o nome, o CPF (ou CNPJ), o e-mail, a data e a hora, o IP, o navegador,
 // a versão, a frase marcada e o hash dela junto com a licença e o termo (lib/licencas.js). Falhou, o pedido não segue:
 // não há venda sem a prova.
-async function gravarAceite(env, { pedido, aceite, nome, documento, email, ip, navegador, teste, momento = 'compra' }) {
+export async function gravarAceite(env, { pedido, aceite, nome, documento, email, ip, navegador, teste, momento = 'compra' }) {
   await db.insert(env, 'aceites', {
     pedido_id: pedido, momento, licenca: aceite.l.chave, versao: aceite.versao, texto: aceite.texto, hash: await hashDoAceite(aceite.texto, aceite.l),
     nome: String(nome || '').slice(0, 160), documento: documento || null, email: email || null, ip: ip ? String(ip).slice(0, 64) : null,
@@ -409,6 +411,7 @@ export async function situacaoPedido(env, id) {
   return {
     ...resto, email, oferta: oferta ? oferta.slug : null, curso_url: marca ? marca.url : cursoUrl(env), idioma: (marca && marca.idioma) || 'pt',
     externa: await externaDoObrigado(env, oferta, itens), // entrega fora da nossa área: o obrigado diz onde o acesso chega
+    arquivo: arquivoDe(oferta), // arquivo com licença (a Família Calango): o obrigado diz que a cópia chega por e-mail
     ...(leitura ? { leitura: true, pdf: p.status === 'pago' && marca.pdf_arquivo_id ? `${marca.url}/checkout/pdf?pedido=${p.id}` : null } : {}),
   };
 }
@@ -517,6 +520,17 @@ export function entregaDe(oferta) {
 export async function entregarAcesso(env, pedidoId, { reenviar = false } = {}) {
   const p = await db.um(env, 'pedidos', { id: `eq.${pedidoId}` }, 'id,numero,status,aluno_id,itens,presente,aluno:alunos!pedidos_aluno_id_fkey(id,email,nome,auth_id),oferta:ofertas(nome,checkout)');
   if (!p || p.status !== 'pago') throw new Erro(409, 'O pedido ainda não está pago.');
+  // Arquivo com licença (a Família Calango): sem curso nem login. A cópia identificada é feita no Mac e o link chega
+  // depois (lib/entrega-arquivo.js). Aqui sai o "recebemos"; reenviar com a cópia já pronta manda o link de novo.
+  const arquivo = arquivoDe(p.oferta);
+  if (arquivo) {
+    const marca = await marcaDoArquivo(env, p.id);
+    const pronto = !!(marca && marca.caminho);
+    const dados = { nome: p.aluno.nome, oferta: p.oferta.nome, o_que: arquivo.o_que, prazo: arquivo.prazo, numero: p.numero };
+    const m = pronto ? emailArquivoPronto({ ...dados, link: telaDoArquivo(env, p.id) }) : emailArquivoAguarde(dados);
+    await enviarEmail(env, { para: p.aluno.email, assunto: m.assunto, html: m.html, texto: m.texto, tipo: pronto ? 'acesso' : 'recibo', ref: `pedido:${p.id}` });
+    return { arquivo: true, pronto };
+  }
   const externa = entregaDe(p.oferta);
   if (externa) {
     // O e-mail de confirmação diz que o acesso é liberado na outra plataforma (a equipe adiciona; lista no conector,

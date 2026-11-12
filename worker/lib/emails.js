@@ -152,6 +152,37 @@ export function emailEntregaExterna({ nome, email, oferta, plataforma = 'Hubla',
   };
 }
 
+// ---------------------------------------------------------------- arquivo com licença (a Família Calango, 11/11/2026)
+// Pago o pedido, a cópia identificada é feita no Mac (o número da licença vai dentro de cada arquivo) e chega depois:
+// primeiro o "recebemos", depois o link da tela de download (lib/acoes-arquivos.js). Nada de login nem de curso.
+export function emailArquivoAguarde({ nome, oferta, o_que, prazo, numero }) {
+  const primeiro = esc(String(nome || '').split(' ')[0] || 'tudo certo');
+  const oq = o_que || oferta;
+  const quando = prazo ? ` ${prazo}` : '';
+  return {
+    assunto: `Recebemos seu pagamento: ${oferta}`,
+    html: moldura(`Tudo certo, ${primeiro}!`, p(`O pagamento do <b>${esc(oferta)}</b> foi confirmado (pedido nº ${esc(numero)}).`)
+      + p(`Agora a gente prepara ${esc(oq)}, com o número da sua licença gravado dentro dos arquivos. Ela chega neste e-mail${esc(quando)}, com o link para baixar.`)
+      + p('Antes de baixar, você confirma de novo que leu e aceita a Licença de Uso e o Termo de Aceite.')
+      + p('Qualquer dúvida, é só responder este e-mail ou chamar a gente no Instagram <a href="https://instagram.com/agenciasetup" style="color:#c2410c">@agenciasetup</a>.')),
+    texto: `O pagamento do ${oferta} foi confirmado (pedido nº ${numero}). Agora a gente prepara ${oq}, com o número da sua licença gravado dentro dos arquivos. Ela chega neste e-mail${quando}, com o link para baixar. Antes de baixar, você confirma de novo que leu e aceita a Licença de Uso e o Termo de Aceite. Dúvidas: responda este e-mail ou chame no Instagram @agenciasetup.`,
+  };
+}
+
+export function emailArquivoPronto({ nome, oferta, o_que, link, numero }) {
+  const primeiro = esc(String(nome || '').split(' ')[0] || 'tudo pronto');
+  const oq = o_que || oferta;
+  return {
+    assunto: `Pronto para baixar: ${oferta}`,
+    html: moldura(`Está pronta, ${primeiro}!`, p(`${esc(oq.charAt(0).toUpperCase() + oq.slice(1))} está pronta para baixar (pedido nº ${esc(numero)}).`)
+      + botao(link, 'Baixar agora')
+      + p('<b>Arquivo licenciado e identificado.</b> Esta cópia leva o número da sua licença. É proibido repassar, revender ou compartilhar os arquivos. Antes de baixar, você confirma o aceite da licença.')
+      + p('O link é só seu: guarde este e-mail para baixar de novo quando precisar.')
+      + p('Qualquer dúvida, é só responder este e-mail ou chamar a gente no Instagram <a href="https://instagram.com/agenciasetup" style="color:#c2410c">@agenciasetup</a>.')),
+    texto: `${oq.charAt(0).toUpperCase() + oq.slice(1)} está pronta para baixar (pedido nº ${numero}): ${link}\n\nArquivo licenciado e identificado. Esta cópia leva o número da sua licença. É proibido repassar, revender ou compartilhar os arquivos. Antes de baixar, você confirma o aceite da licença. O link é só seu: guarde este e-mail para baixar de novo quando precisar. Dúvidas: responda este e-mail ou chame no Instagram @agenciasetup.`,
+  };
+}
+
 // ---------------------------------------------------------------- curso com marca própria (tema "leitura")
 // Papel claro, título em serifa, botão escuro e a cruz dourada: a mesma cara do app do curso. Texto curto e direto,
 // pensado para quem tem dificuldade com e-mail: o PDF já vai anexado e o botão principal é um só.

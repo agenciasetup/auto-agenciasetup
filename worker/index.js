@@ -28,7 +28,8 @@ import { cursoUrl } from './lib/alunos.js';
 import { marcaDaOferta, marcaDoPedido, marcaPorHost, pdfDoPedido } from './lib/marcas.js';
 import { paginaVendaLeitura } from './render/venda-leitura.js';
 import { paginaCertificado, paginaNaoAchada, paginaPerfil } from './render/publico.js';
-import { paginaCheckout, paginaFechada, paginaObrigado, paginaSemPdf } from './render/checkout.js';
+import { paginaArquivo, paginaCheckout, paginaFechada, paginaObrigado, paginaSemPdf } from './render/checkout.js';
+import { estadoDoArquivo } from './lib/acoes-arquivos.js';
 import { paginaVenda } from './render/venda.js';
 import { paginaLicenca } from './render/licenca.js';
 import { licencaDe } from './lib/licencas.js';
@@ -537,6 +538,12 @@ export default {
         const pedido = url.searchParams.get('pedido') || '';
         if (!/^[0-9a-f-]{36}$/.test(pedido)) return Response.redirect(`${url.origin}/cursos`, 302);
         return checkoutHtml(paginaObrigado({ pedidoId: pedido, simulado: env.AMBIENTE === 'local' && !env.ASAAS_CHAVE, rastrear: env.__rastreio || null }));
+      }
+      // A tela de download do arquivo com licença (a Família Calango): o link chega por e-mail; o id do pedido é o segredo.
+      const arq = url.pathname.match(/^\/arquivo\/([0-9a-f-]{36})$/);
+      if (arq && (request.method === 'GET' || request.method === 'HEAD')) {
+        const e = await estadoDoArquivo(env, arq[1]);
+        return checkoutHtml(paginaArquivo(e), e.estado === 'nao_achado' ? 404 : 200);
       }
       const ck = url.pathname.match(/^\/checkout\/([a-z0-9-]{2,80})$/);
       if (ck && (request.method === 'GET' || request.method === 'HEAD')) {

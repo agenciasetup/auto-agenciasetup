@@ -26,6 +26,7 @@ export * from './acoes-cursos.js';
 export * from './acoes-plataforma.js';
 export * from './acoes-suporte.js';
 export * from './acoes-entregas.js';
+export * from './acoes-arquivos.js'; // a entrega de arquivo com licença (a Família Calango)
 export * from './acoes-followup.js';
 export * from './acoes-avisos.js';
 export * from './acoes-seo.js';

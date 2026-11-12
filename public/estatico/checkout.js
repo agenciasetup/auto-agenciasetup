@@ -54,6 +54,12 @@
               entrar.hidden = false;
             }
           }
+          // Arquivo com licença (a Família Calango): a cópia identificada é preparada e o link chega por e-mail.
+          if (p.arquivo) {
+            titulo.textContent = 'Pagamento confirmado!';
+            texto.textContent = `Agora a gente prepara ${p.arquivo.o_que || 'a sua cópia'}, com o número da sua licença gravado dentro dos arquivos. O link para baixar chega em ${p.email || 'o seu e-mail'}${p.arquivo.prazo ? ` ${p.arquivo.prazo}` : ''}.`;
+            entrar.hidden = true;
+          }
           // Curso de leitura: o PDF começa a baixar sozinho (uma vez) e fica o botão, para quem não viu o download.
           const pdf = $('#pdf');
           if (p.leitura) {

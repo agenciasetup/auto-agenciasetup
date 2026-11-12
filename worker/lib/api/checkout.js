@@ -7,6 +7,7 @@ import { cookieVisitante, destinoComMarcas, lerVisitante, marcasDe, novoVisitant
 import { codigoValido, comPessoa } from '../pessoa.js';
 import { dadosParaRetomar, guardarContato, moedaDaLinha, pararLembretes } from '../recuperacao.js';
 import { cotar, criarPedido, criarUpsell, guardarAviso, ofertaDepois, processarAviso, situacaoPedido } from '../vendas.js';
+import { baixarArquivo } from '../acoes-arquivos.js';
 
 async function turnstileOk(env, token, ip) {
   if (!env.TURNSTILE_SEGREDO) return true;
@@ -27,6 +28,9 @@ export async function apiCheckout(request, env, ctx, url) {
       if (!(await turnstileOk(env, dados.turnstile, ip))) throw new Erro(400, 'Confirme que você não é um robô e tente de novo.');
       return json(await criarPedido(env, { dados, visitante: lerVisitante(request), ip, navegador: request.headers.get('user-agent'), ctx }));
     }
+    // O botão "Baixar" da tela do arquivo com licença (a Família Calango): grava o aceite e devolve o link do zip.
+    const arq = caminho.match(/^\/api\/checkout\/arquivo\/([0-9a-f-]{36})$/);
+    if (arq && request.method === 'POST') return json(await baixarArquivo(env, arq[1], { dados: await corpoJson(request, 2_000), ip, navegador: request.headers.get('user-agent') }));
     if (caminho === '/api/checkout/preco' && request.method === 'POST') return json(await cotar(env, await corpoJson(request, 4_000), ip));
     // O checkout guarda o contato quando a pessoa sai de um campo: responde logo e grava depois, sem atrasar a tela.
     if (caminho === '/api/checkout/contato' && request.method === 'POST') {

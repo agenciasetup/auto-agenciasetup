@@ -328,6 +328,14 @@ export function DetalheVenda({ id, fechar, mudou }: { id: string | null; fechar:
         </dl>
 
         {p.nota_fiscal ? <><h3 className="sub-titulo">Nota fiscal</h3><p className="linha-pequena">{p.nota_fiscal.status === 'emitida' ? `Emitida${p.nota_fiscal.numero ? ` · nº ${p.nota_fiscal.numero}` : ''}` : p.nota_fiscal.status === 'erro' ? `Erro: ${p.nota_fiscal.erro}` : p.nota_fiscal.status === 'pendente' ? 'Na fila para emitir' : p.nota_fiscal.status}{p.nota_fiscal.pdf_url ? <> · <a href={p.nota_fiscal.pdf_url} target="_blank" rel="noreferrer">PDF</a></> : null}</p></> : null}
+        {p.arquivo ? <>
+          <h3 className="sub-titulo">Entrega do arquivo</h3>
+          <p className="linha-pequena">
+            {p.arquivo.marca?.caminho
+              ? <>Cópia identificada pronta {dataHora(p.arquivo.marca.pronto_em)}{p.arquivo.marca.enviado_em ? `, link mandado ${dataHora(p.arquivo.marca.enviado_em)}` : ', link ainda não mandado'}. Baixou {(p.aceites || []).filter((a: any) => a.momento === 'download').length} {(p.aceites || []).filter((a: any) => a.momento === 'download').length === 1 ? 'vez' : 'vezes'}.</>
+              : p.status === 'pago' ? 'Esperando a cópia identificada, que o Mac prepara (arquivos_pendentes no conector). O comprador já recebeu o e-mail de que ela chega.' : 'A cópia só é feita depois do pagamento.'}
+          </p>
+        </> : null}
         {p.aceites?.length ? <>
           <h3 className="sub-titulo">Aceite da licença</h3>
           {p.aceites.map((a: any) => (

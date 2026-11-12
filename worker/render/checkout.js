@@ -198,6 +198,39 @@ export function paginaSemPdf({ marca }) {
   return pagina({ titulo: `PDF · ${marca.nome}`, marca, corpo: `<div class="fechada"><span class="bola ruim">${ic('fechar')}</span><h2>Não deu para abrir o PDF por este link</h2><p class="mudo">Confira se o pagamento já foi aprovado. Se você já pagou, entre no curso com o seu e-mail ou fale com a gente.</p><a class="bt bt-marca" href="/entrar">Entrar com o meu e-mail</a>${zap ? ` <a class="bt" href="${esc(zap)}">Falar no WhatsApp</a>` : ''}</div>` });
 }
 
+// A tela de download do arquivo com licença (/arquivo/<pedido_id>, a Família Calango): o aviso em destaque, a caixa
+// de aceite de novo e o botão de baixar, que só segue com ela marcada. O estado vem de lib/acoes-arquivos.js
+// (estadoDoArquivo); o botão chama /api/checkout/arquivo/<pedido_id>, que grava o aceite e devolve o link do zip.
+export function paginaArquivo(e) {
+  const fechada = (titulo, texto, bola = 'ruim') => pagina({ titulo: `${titulo} · Agência Setup`, corpo: `<div class="fechada"><span class="bola ${bola}">${bola === 'ruim' ? ic('fechar') : '<span class="giro"></span>'}</span><h2>${esc(titulo)}</h2><p class="mudo">${texto}</p><a class="bt" href="mailto:contato@agenciasetup.com.br">Falar com a gente</a></div>` });
+  if (e.estado === 'nao_achado') return fechada('Não achamos este link', 'Confira se o endereço está igual ao do e-mail. Se o problema continuar, fale com a gente.');
+  if (e.estado === 'encerrado') return fechada('Esta licença foi encerrada', `O valor do pedido nº ${esc(e.numero)} foi devolvido. Com isso a licença acaba e o arquivo não fica mais disponível (cláusula 8.5 da licença).`);
+  if (e.estado === 'nao_pago') return fechada('O pagamento ainda não foi confirmado', 'Quando ele for confirmado, a sua cópia é preparada e o link para baixar chega no seu e-mail.', 'espera');
+  if (e.estado === 'preparando') return fechada('Sua cópia está sendo preparada', `Ela leva o número da sua licença gravado dentro dos arquivos. O link para baixar chega no seu e-mail${e.prazo ? ` ${esc(e.prazo)}` : ''}.`, 'espera');
+  const aviso = e.aviso ? `<div class="arq-aviso" role="note"><b>${esc(e.aviso.titulo)}</b><p>${esc(e.aviso.texto)}</p></div>` : '';
+  const corpo = `
+<div class="arq">
+  <span class="etiqueta">Pedido nº ${esc(e.numero)}</span>
+  <h1>${esc(e.oferta)}</h1>
+  <p class="mudo">Sua cópia está pronta. Antes de baixar, confirme que leu e aceita a licença.</p>
+  ${aviso}
+  ${caixaDeAceite(e.aceite, '')}
+  <div class="erro-geral" id="erro" role="alert" hidden></div>
+  <button type="button" class="bt bt-marca bt-g bt-cheio" id="baixar" aria-disabled="true">Baixar a ${esc(e.oferta)}</button>
+  <p class="mudo arq-pe" id="arq-pe">O link do arquivo vale por 10 minutos. Para baixar de novo, volte a esta página pelo link do e-mail.</p>
+</div>
+<script type="application/json" id="arq-dados">${jsonScript({ pedido: e.pedido, versao: e.aceite.versao })}</script>
+<script>(function(){var D=JSON.parse(document.getElementById('arq-dados').textContent),c=document.getElementById('aceite'),b=document.getElementById('baixar'),er=document.getElementById('erro'),cx=document.querySelector('.ck-aceite'),pe=document.getElementById('arq-pe');
+function marcar(){b.setAttribute('aria-disabled',c.checked?'false':'true');if(c.checked){cx.classList.remove('erro');er.hidden=true}}
+c.addEventListener('change',marcar);marcar();
+b.addEventListener('click',async function(){if(!c.checked){cx.classList.add('erro');er.textContent='Para baixar, marque que leu e aceita a licença e o termo.';er.hidden=false;c.focus();return}
+var t=b.textContent;b.disabled=true;b.textContent='Abrindo o arquivo...';er.hidden=true;
+try{var r=await fetch('/api/checkout/arquivo/'+D.pedido,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({aceite:{marcado:true,versao:D.versao}})});var d=await r.json().catch(function(){return{}});if(!r.ok)throw new Error(d.erro||'Não deu certo. Tente de novo.');
+pe.innerHTML='O download começou. Se não começar, <a href="'+d.url.replace(/"/g,'&quot;')+'">toque aqui</a>.';location.href=d.url}
+catch(x){er.textContent=x.message;er.hidden=false}finally{b.disabled=false;b.textContent=t}})})();</script>`;
+  return pagina({ titulo: `${e.oferta} · Download`, corpo });
+}
+
 export function paginaFechada({ marca = null } = {}) {
   if (marca) {
     const zap = zapDe(marca);

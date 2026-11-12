@@ -11,6 +11,7 @@ import { asaas, esquecerAsaas, prepararAsaas } from '../pagamento/index.js';
 import { canalDe } from './origem.js';
 import { cancelarReembolso, devolverReembolsoAgora, entregarAcesso, filaDeReembolso, reembolsar } from './vendas.js';
 import { avisarSistemas, pessoa } from './plataforma.js';
+import { arquivoDe, marcaDoArquivo } from './entrega-arquivo.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const id = (v) => { if (!UUID.test(String(v))) throw new Erro(404, 'Não encontrado.'); return v; };
@@ -194,7 +195,7 @@ export async function listarVendas(x, { status, busca, limite = 30, offset = 0, 
 
 export async function lerVenda(x, pedidoId) {
   exigir(x.u, 'vendas.ver');
-  const p = await db.um(x.env, 'pedidos', { id: `eq.${id(pedidoId)}` }, `*,aluno:alunos!pedidos_aluno_id_fkey(id,nome,email,celular),oferta:ofertas(nome,slug)`);
+  const p = await db.um(x.env, 'pedidos', { id: `eq.${id(pedidoId)}` }, `*,aluno:alunos!pedidos_aluno_id_fkey(id,nome,email,celular),oferta:ofertas(nome,slug,checkout)`);
   if (!p) throw new Erro(404, 'Pedido não encontrado.');
   const [eventos, emails, nota, reembolsos, aceites] = await Promise.all([
     db.select(x.env, 'eventos_pagamento', { filtros: { pedido_id: `eq.${p.id}` }, select: 'id,tipo,recebido_em,processado_em,erro', ordem: 'recebido_em.asc' }),
@@ -204,8 +205,10 @@ export async function lerVenda(x, pedidoId) {
     // A prova do aceite da licença (produto para baixar, ex.: a Família Calango). Antes da migration 48, vazio.
     db.select(x.env, 'aceites', { filtros: { pedido_id: `eq.${p.id}` }, select: 'id,momento,licenca,versao,texto,hash,nome,documento,email,ip,navegador,criado_em', ordem: 'criado_em.asc' }).catch(() => []),
   ]);
-  const { pix_qr, ...resto } = p;
-  return { ...pedidoComCanal(resto), toques: (resto.toques || []).map(comCanal), eventos, emails, nota_fiscal: nota, reembolsos, aceites };
+  // Arquivo com licença (a Família Calango): se a cópia já foi feita e mandada (lib/entrega-arquivo.js).
+  const arquivo = arquivoDe(p.oferta) ? { ...arquivoDe(p.oferta), marca: await marcaDoArquivo(x.env, p.id).catch(() => null) } : null;
+  const { pix_qr, oferta, ...resto } = p;
+  return { ...pedidoComCanal({ ...resto, oferta: oferta ? { nome: oferta.nome, slug: oferta.slug } : null }), toques: (resto.toques || []).map(comCanal), eventos, emails, nota_fiscal: nota, reembolsos, aceites, arquivo };
 }
 
 // corpo: { dias: 0 a 30 (0 = agora), motivo, tirar_acesso }. Sem dias, devolve agora (como era antes da fila).
