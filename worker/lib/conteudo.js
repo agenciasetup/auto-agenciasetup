@@ -106,15 +106,20 @@ export const landing = (env, slug) => db.um(env, 'landing_pages', { slug: `eq.${
 // O que a página de venda mostra além do texto: a oferta ativa do produto, o curso (módulos, aulas e kit)
 // e o vídeo do topo. Vídeo: "aula:1.1" (só aula marcada como grátis) ou o id de um vídeo do Bunny (a VSL).
 export async function dadosDaVenda(env, lp) {
-  if (!lp.produto_id) return { oferta: null, curso: null, video: null };
-  const [ofertas, acessos] = await Promise.all([
-    db.select(env, 'ofertas', { filtros: { produto_id: `eq.${lp.produto_id}`, ativa: 'eq.true' }, select: 'id,slug,nome,preco_centavos,preco_de_centavos,parcelas_max,juros_mes,pix_desconto_pct,metodos,garantia_dias,checkout,valida_ate', ordem: 'criado_em.asc' }),
+  if (!lp.produto_id) return { oferta: null, curso: null, video: null, garantiaDias: null };
+  const [todas, acessos] = await Promise.all([
+    db.select(env, 'ofertas', { filtros: { produto_id: `eq.${lp.produto_id}` }, select: 'id,slug,nome,preco_centavos,preco_de_centavos,parcelas_max,juros_mes,pix_desconto_pct,metodos,garantia_dias,checkout,valida_ate,ativa', ordem: 'criado_em.asc' }),
     db.select(env, 'produto_acessos', { filtros: { produto_id: `eq.${lp.produto_id}` }, select: 'curso_id' }),
   ]);
   const agora = Date.now();
-  const abertas = ofertas.filter((o) => !o.valida_ate || new Date(o.valida_ate).getTime() > agora).map((o) => comCampanha(o));
+  const abertas = todas.filter((o) => o.ativa && (!o.valida_ate || new Date(o.valida_ate).getTime() > agora)).map((o) => comCampanha(o));
   const doLink = ((lp.produto && lp.produto.link_checkout) || '').match(/\/checkout\/([a-z0-9-]+)/);
   const oferta = (doLink && abertas.find((o) => o.slug === doLink[1])) || abertas[0] || null;
+  // A garantia que a página mostra: a da oferta ligada. Sem oferta ligada, a da última oferta do produto, mesmo
+  // desligada (a Família Calango, 11/11/2026: produto sem garantia não pode mostrar "7 dias" antes de a oferta ligar).
+  // Sem oferta nenhuma, nulo (a página usa os 7 dias de sempre).
+  const ultima = todas[todas.length - 1];
+  const garantiaDias = oferta ? oferta.garantia_dias : ultima ? ultima.garantia_dias : null;
   // Os bumps da oferta: a página oferece o primeiro como botão ("Vitalício por + R$ ..."), que chega ao checkout já marcado.
   if (oferta) {
     const bumps = await db.select(env, 'ofertas_bumps', { filtros: { oferta_id: `eq.${oferta.id}` }, select: 'titulo,ordem,bump:ofertas!ofertas_bumps_bump_id_fkey(slug,nome,preco_centavos)', ordem: 'ordem.asc' }).catch(() => []);
@@ -142,7 +147,7 @@ export async function dadosDaVenda(env, lp) {
       video = { url: b.url, poster: heroi.video_capa || (aula && aula.capa_url) || (curso && curso.capa_url) || null, duracao_s: Number(heroi.video_duracao_s) || (aula && aula.duracao_s) || null };
     }
   }
-  return { oferta, curso, video };
+  return { oferta, curso, video, garantiaDias };
 }
 
 // Parecidos: mesmo tipo primeiro, depois mesmo assunto.

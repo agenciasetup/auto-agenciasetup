@@ -197,6 +197,10 @@ function FormBloco({ b, mudar, desativado }: { b: any; mudar: (k: string, v: any
       </div>
       <AreaTexto rotulo="Subtítulo" valor={b.subtitulo} mudar={(v) => mudar('subtitulo', v)} linhas={2} desativado={desativado} />
       <Campo rotulo="Botão" valor={b.cta} mudar={(v) => mudar('cta', v)} desativado={desativado} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <Campo rotulo="Botão da barra de baixo" valor={b.barra_cta} mudar={(v) => mudar('barra_cta', v)} desativado={desativado} placeholder="Quero entrar" dica="A barra que fica presa embaixo no celular." />
+        <Campo rotulo="Linha embaixo do preço" valor={b.barra_linha} mudar={(v) => mudar('barra_linha', v)} desativado={desativado} placeholder="Pagamento seguro" dica="Só aparece sem garantia e sem parcelas." />
+      </div>
       <Campo rotulo="Vídeo (opcional)" valor={b.video} mudar={(v) => mudar('video', v)} desativado={desativado} mono placeholder="aula:1.1" dica={'"aula:1.1" usa uma aula marcada como grátis; o id de um vídeo do Bunny usa esse vídeo (a VSL).'} />
       <Campo rotulo="Texto em cima do vídeo" valor={b.video_rotulo} mudar={(v) => mudar('video_rotulo', v)} desativado={desativado} placeholder="Assista à aula 1 de graça" />
       <CampoImagem rotulo="Capa do vídeo (opcional)" valor={b.video_capa || ''} mudar={(v) => mudar('video_capa', v)} desativado={desativado} />
@@ -307,6 +311,7 @@ function FormBloco({ b, mudar, desativado }: { b: any; mudar: (k: string, v: any
     </>;
     case 'estilos': return <>
       <Cabeca b={b} mudar={mudar} desativado={desativado} texto />
+      <Campo rotulo="Dica embaixo das imagens" valor={b.dica} mudar={(v) => mudar('dica', v)} desativado={desativado} placeholder="Toque num post para ver o carrossel inteiro." />
       {itens.map((it, i) => (
         <div className="item-lista" key={i}>
           <div>

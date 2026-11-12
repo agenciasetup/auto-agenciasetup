@@ -17,6 +17,18 @@ const FILA: Record<string, { t: string; cor: string }> = {
 const ABERTOS = ['agendado', 'devolvendo', 'falhou'];
 
 // "em 3 dias", "amanhã", "em 5 h": quanto falta para a devolução.
+// A hora do aceite com os segundos, no horário de Brasília: é prova, então vai inteira.
+function quandoExato(iso: string) {
+  return new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' (Brasília)';
+}
+// CPF (11 números) ou CNPJ (14) com os pontos. Outro formato sai como veio.
+function documentoBr(d?: string | null) {
+  const s = String(d || '').replace(/\D/g, '');
+  if (s.length === 11) return `CPF ${s.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}`;
+  if (s.length === 14) return `CNPJ ${s.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')}`;
+  return d || '';
+}
+
 function faltam(iso: string) {
   const ms = new Date(iso).getTime() - Date.now();
   if (ms <= 10 * 60_000) return 'nos próximos minutos';
@@ -316,6 +328,17 @@ export function DetalheVenda({ id, fechar, mudou }: { id: string | null; fechar:
         </dl>
 
         {p.nota_fiscal ? <><h3 className="sub-titulo">Nota fiscal</h3><p className="linha-pequena">{p.nota_fiscal.status === 'emitida' ? `Emitida${p.nota_fiscal.numero ? ` · nº ${p.nota_fiscal.numero}` : ''}` : p.nota_fiscal.status === 'erro' ? `Erro: ${p.nota_fiscal.erro}` : p.nota_fiscal.status === 'pendente' ? 'Na fila para emitir' : p.nota_fiscal.status}{p.nota_fiscal.pdf_url ? <> · <a href={p.nota_fiscal.pdf_url} target="_blank" rel="noreferrer">PDF</a></> : null}</p></> : null}
+        {p.aceites?.length ? <>
+          <h3 className="sub-titulo">Aceite da licença</h3>
+          {p.aceites.map((a: any) => (
+            <dl key={a.id} className="lista-dados">
+              <dt>Quando</dt><dd>{quandoExato(a.criado_em)}<small>{a.momento === 'download' ? 'Antes de baixar' : 'Antes de pagar'} · {a.licenca}, versão {a.versao}</small></dd>
+              <dt>Quem aceitou</dt><dd>{a.nome}<small>{[documentoBr(a.documento), a.email].filter(Boolean).join(' · ')}</small></dd>
+              <dt>De onde</dt><dd><span className="mono">{a.ip || 'IP não informado'}</span><small>{a.navegador || 'Navegador não informado'}</small></dd>
+              <dt>O que marcou</dt><dd><small>“{a.texto}”</small><small className="mono" style={{ wordBreak: 'break-all' }}>SHA-256 {a.hash}</small></dd>
+            </dl>
+          ))}
+        </> : null}
         {p.presente ? <><h3 className="sub-titulo">Presente</h3><p className="linha-pequena">Para {p.presente.nome || p.presente.email} ({p.presente.email}){p.presente.mensagem ? `: "${p.presente.mensagem}"` : ''}</p></> : null}
         {link && <><h3 className="sub-titulo">Link de entrada</h3><Segredo texto={link} aviso="Vale uma vez. Mande só para a própria pessoa (WhatsApp)." /></>}
 

@@ -15,6 +15,7 @@ import { avisarSistemas, pessoa } from './plataforma.js';
 import { paisPorCodigo } from './paises.js';
 import { pedidoCriado, pedidoPago } from './recuperacao.js';
 import { avisarDepois, avisarPedido } from './push.js';
+import { aceiteDaOferta, hashDoAceite } from './licencas.js';
 
 const OFERTA = 'id,slug,produto_id,nome,preco_centavos,preco_de_centavos,parcelas_max,juros_mes,pix_desconto_pct,pix_minutos,metodos,garantia_dias,checkout,limite_vendas,valida_ate,ativa,moeda';
 
@@ -178,6 +179,8 @@ async function criarPedidoDolar(env, { dados, visitante, ip, ctx }) {
 
   const oferta = await lerOferta(env, String(dados.oferta || ''), { local });
   if (!oferta || oferta.fechada) throw new Erro(404, 'This offer is not available right now.');
+  // A caixa de aceite da licença só existe no checkout em real: oferta em dólar com aceite não vende.
+  if (aceiteDaOferta(oferta)) throw new Erro(404, 'This offer is not available right now.');
   const bumps = oferta.bumps.filter((b) => Array.isArray(dados.bumps) && dados.bumps.includes(b.id));
   let cupom;
   try { cupom = await lerCupom(env, dados.cupom, oferta, email); } catch { throw new Erro(400, 'This coupon is not valid for this offer or has run out.', { campo: 'cupom' }); }
@@ -237,7 +240,36 @@ async function conferirVoltaStripe(env, p) {
 
 // ---------------------------------------------------------------- checkout
 // ctx (opcional): o aviso "Pedido feito" no celular da equipe sai depois da resposta, sem atrasar o Pix de quem compra.
-export async function criarPedido(env, { dados, visitante, ip, ctx }) {
+// ---------------------------------------------------------------- aceite da licença (produto para baixar)
+// A oferta com checkout.aceite (a Família Calango, 11/11/2026) só vende com a caixa marcada, na versão que a página
+// mostrou. A tela já não deixa seguir sem ela; esta é a trava de verdade (pedido mandado direto para a API).
+// Antes de criar qualquer coisa, confere também que a tabela da prova responde: sem onde gravar, não vende.
+async function conferirAceite(env, oferta, dados) {
+  const a = aceiteDaOferta(oferta);
+  if (!a) return null;
+  if (a.invalida) throw new Erro(503, 'Esta oferta está sem o texto da licença. Fale com a gente antes de comprar.');
+  const d = dados.aceite && typeof dados.aceite === 'object' ? dados.aceite : {};
+  if (d.marcado !== true) throw new Erro(400, 'Para comprar, marque que leu e aceita a licença e o termo.', { campo: 'aceite' });
+  if (String(d.versao || '') !== a.versao) throw new Erro(409, 'A licença foi atualizada. Recarregue a página, leia de novo e marque a caixa.', { campo: 'aceite' });
+  try { await db.select(env, 'aceites', { select: 'id', limite: 1 }); } catch (e) {
+    console.error('aceites', e.message);
+    throw new Erro(503, 'Não deu para registrar o seu aceite agora. Tente de novo em alguns minutos.');
+  }
+  return a;
+}
+
+// A prova do aceite (tabela aceites): o pedido, o nome, o CPF (ou CNPJ), o e-mail, a data e a hora, o IP, o navegador,
+// a versão, a frase marcada e o hash dela junto com a licença e o termo (lib/licencas.js). Falhou, o pedido não segue:
+// não há venda sem a prova.
+async function gravarAceite(env, { pedido, aceite, nome, documento, email, ip, navegador, teste, momento = 'compra' }) {
+  await db.insert(env, 'aceites', {
+    pedido_id: pedido, momento, licenca: aceite.l.chave, versao: aceite.versao, texto: aceite.texto, hash: await hashDoAceite(aceite.texto, aceite.l),
+    nome: String(nome || '').slice(0, 160), documento: documento || null, email: email || null, ip: ip ? String(ip).slice(0, 64) : null,
+    navegador: navegador ? String(navegador).slice(0, 500) : null, teste: !!teste,
+  }, { select: 'id' });
+}
+
+export async function criarPedido(env, { dados, visitante, ip, navegador = null, ctx }) {
   const local = env.AMBIENTE === 'local';
   // Oferta em dólar: outro caminho (Stripe, sem CPF), com as mensagens em inglês.
   const qual = await db.um(env, 'ofertas', { slug: `eq.${String(dados.oferta || '').slice(0, 80)}` }, 'moeda').catch(() => null);
@@ -273,6 +305,7 @@ export async function criarPedido(env, { dados, visitante, ip, ctx }) {
   const oferta = await lerOferta(env, String(dados.oferta || ''), { local });
   if (!oferta || oferta.fechada) throw new Erro(404, 'Esta oferta não está disponível agora.');
   if (!oferta.metodos.includes(metodo)) throw new Erro(400, deFora ? 'Esta oferta ainda não aceita cartão, que é o pagamento de quem mora fora.' : 'Essa forma de pagamento não vale para esta oferta.');
+  const aceite = await conferirAceite(env, oferta, dados);
   const bumps = oferta.bumps.filter((b) => Array.isArray(dados.bumps) && dados.bumps.includes(b.id));
   const cupom = await lerCupom(env, dados.cupom, oferta, email);
   const extra = await descontoUpgrade(env, oferta, email);
@@ -311,6 +344,15 @@ export async function criarPedido(env, { dados, visitante, ip, ctx }) {
     visitante, primeiro_toque: origem.primeiro, ultimo_toque: origem.ultimo, toques: origem.lista,
     presente, indicado_por: indicador, vagas, ...(pagador ? { pagador } : {}),
   }, { select: 'id,numero' });
+  if (aceite) {
+    try {
+      await gravarAceite(env, { pedido: pedido.id, aceite, nome, documento: cpf || null, email, ip, navegador, teste: !!oferta.teste || pag.nome === 'simulado' });
+    } catch (e) {
+      console.error('aceite', e.message);
+      await db.update(env, 'pedidos', { id: `eq.${pedido.id}` }, { status: 'cancelado' }, 'id').catch(() => {});
+      throw new Erro(503, 'Não deu para registrar o seu aceite agora. Tente de novo em alguns minutos.');
+    }
+  }
   if (indicador) await db.insert(env, 'indicacoes', { indicador_id: indicador, pedido_id: pedido.id }, { ignorar: true, conflito: 'pedido_id', select: 'id' }).catch(() => {});
   if (!oferta.teste && pag.nome !== 'simulado') await pedidoCriado(env, { email, nome, celular, oferta, total: preco.total, pedido: pedido.id, visitante, toque: origem.ultimo }).catch((e) => console.error('recuperacao', e.message));
 
@@ -755,6 +797,9 @@ async function compraParaReembolso(env, aluno, id) {
   if (p.status !== 'pago') throw new Erro(409, 'Só dá para pedir reembolso de uma compra paga.');
   if ((p.reembolsos || []).some((r) => ['agendado', 'devolvendo', 'falhou'].includes(r.status))) throw new Erro(409, 'O reembolso desta compra já foi pedido.');
   const ate = fimDaGarantia(p);
+  // Produto para baixar com licença própria (garantia 0, ex.: a Família Calango): sem botão de reembolso no app. O que
+  // a lei garante (cláusula 8.4 da licença) é pedido por escrito ao contato, e a equipe resolve no painel.
+  if (p.oferta && Number(p.oferta.garantia_dias) === 0) throw new Erro(409, 'Esta compra não tem prazo de garantia: é um arquivo com licença própria. Para falar sobre ela, escreva para contato@agenciasetup.com.br.');
   if (!ate || new Date(ate).getTime() < Date.now()) throw new Erro(409, 'O prazo de garantia desta compra já passou. Para falar sobre ela, escreva para contato@agenciasetup.com.br.');
   return p;
 }
@@ -876,6 +921,8 @@ export async function criarUpsell(env, { pedido, oferta, metodo }) {
   const alvo = pode.find((o) => o.slug === oferta);
   if (!alvo) throw new Erro(404, 'Essa oferta não está disponível.');
   const o = await lerOferta(env, alvo.slug, { local: env.AMBIENTE === 'local' });
+  // Oferta com aceite de licença não vai no 1 toque: a pessoa precisa ler e marcar a caixa no checkout dela.
+  if (aceiteDaOferta(o)) throw new Erro(409, 'Essa oferta precisa do aceite da licença: compre pela página dela.');
   const met = metodo === 'cartao' && o.metodos.includes('cartao') ? 'cartao' : 'pix';
   const preco = precificar({ oferta: o, metodo: met, parcelas: 1 });
   const pag = provedorDoPedido(env, p);

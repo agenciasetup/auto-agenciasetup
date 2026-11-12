@@ -25,7 +25,7 @@ export async function apiCheckout(request, env, ctx, url) {
     if (caminho === '/api/checkout' && request.method === 'POST') {
       const dados = await corpoJson(request, 20_000);
       if (!(await turnstileOk(env, dados.turnstile, ip))) throw new Erro(400, 'Confirme que você não é um robô e tente de novo.');
-      return json(await criarPedido(env, { dados, visitante: lerVisitante(request), ip, ctx }));
+      return json(await criarPedido(env, { dados, visitante: lerVisitante(request), ip, navegador: request.headers.get('user-agent'), ctx }));
     }
     if (caminho === '/api/checkout/preco' && request.method === 'POST') return json(await cotar(env, await corpoJson(request, 4_000), ip));
     // O checkout guarda o contato quando a pessoa sai de um campo: responde logo e grava depois, sem atrasar a tela.

@@ -22,7 +22,7 @@ function pagina({ titulo, corpo, scripts = '', turnstile = false, rastrear = nul
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="icon" href="/img/favicon.png" type="image/png">
 <title>${esc(titulo)}</title><meta name="robots" content="noindex"><meta name="theme-color" content="#09090a">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="${FONTES}">
-<link rel="stylesheet" href="/estatico/checkout.css?v=4">${turnstile ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : ''}${rastreio(rastrear)}
+<link rel="stylesheet" href="/estatico/checkout.css?v=5">${turnstile ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : ''}${rastreio(rastrear)}
 </head><body>
 <header class="gutter"><div class="ck-topo"><a class="logo" href="/">${LOGO}${esc((marca && marca.nome) || 'Agência Setup')}</a><span class="seguro">${ic('escudo')}Secure checkout</span></div></header>
 <main class="gutter">${corpo}</main>${scripts}

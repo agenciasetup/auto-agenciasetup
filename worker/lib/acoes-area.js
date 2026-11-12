@@ -196,14 +196,16 @@ export async function lerVenda(x, pedidoId) {
   exigir(x.u, 'vendas.ver');
   const p = await db.um(x.env, 'pedidos', { id: `eq.${id(pedidoId)}` }, `*,aluno:alunos!pedidos_aluno_id_fkey(id,nome,email,celular),oferta:ofertas(nome,slug)`);
   if (!p) throw new Erro(404, 'Pedido não encontrado.');
-  const [eventos, emails, nota, reembolsos] = await Promise.all([
+  const [eventos, emails, nota, reembolsos, aceites] = await Promise.all([
     db.select(x.env, 'eventos_pagamento', { filtros: { pedido_id: `eq.${p.id}` }, select: 'id,tipo,recebido_em,processado_em,erro', ordem: 'recebido_em.asc' }),
     db.select(x.env, 'emails', { filtros: { ref: `eq.pedido:${p.id}` }, select: 'id,assunto,status,criado_em', ordem: 'criado_em.desc' }),
     db.um(x.env, 'notas_fiscais', { pedido_id: `eq.${p.id}` }, 'status,numero,pdf_url,erro'),
     db.select(x.env, 'reembolsos', { filtros: { pedido_id: `eq.${p.id}` }, select: 'id,status,dias,devolver_em,motivo,tirou_acesso,pelo_aluno,nota,erro,feito_em,criado_em,quem:equipe!reembolsos_pedido_por_fkey(nome)', ordem: 'criado_em.desc' }),
+    // A prova do aceite da licença (produto para baixar, ex.: a Família Calango). Antes da migration 48, vazio.
+    db.select(x.env, 'aceites', { filtros: { pedido_id: `eq.${p.id}` }, select: 'id,momento,licenca,versao,texto,hash,nome,documento,email,ip,navegador,criado_em', ordem: 'criado_em.asc' }).catch(() => []),
   ]);
   const { pix_qr, ...resto } = p;
-  return { ...pedidoComCanal(resto), toques: (resto.toques || []).map(comCanal), eventos, emails, nota_fiscal: nota, reembolsos };
+  return { ...pedidoComCanal(resto), toques: (resto.toques || []).map(comCanal), eventos, emails, nota_fiscal: nota, reembolsos, aceites };
 }
 
 // corpo: { dias: 0 a 30 (0 = agora), motivo, tirar_acesso }. Sem dias, devolve agora (como era antes da fila).
@@ -341,7 +343,12 @@ export async function editarOferta(x, ofertaId, d) {
   if (d.juros_mes !== undefined) dados.juros_mes = Math.max(0, Math.min(0.15, Number(d.juros_mes) || 0));
   if (d.pix_desconto_pct !== undefined) dados.pix_desconto_pct = Math.max(0, Math.min(50, Number(d.pix_desconto_pct) || 0));
   if (d.pix_minutos !== undefined) dados.pix_minutos = Math.max(5, Math.min(1440, Math.round(Number(d.pix_minutos) || 30)));
-  if (d.garantia_dias !== undefined) dados.garantia_dias = Math.max(7, Math.round(Number(d.garantia_dias) || 7));
+  // 0 = sem garantia de satisfação (produto para baixar com licença própria, ex.: a Família Calango, 11/11/2026; o que
+  // a lei garante continua valendo). Fora o 0, o mínimo segue 7 dias. Campo vazio volta para 7, nunca para 0.
+  if (d.garantia_dias !== undefined) {
+    const g = d.garantia_dias === '' || d.garantia_dias === null ? NaN : Math.round(Number(d.garantia_dias));
+    dados.garantia_dias = g === 0 ? 0 : Math.max(7, g || 7);
+  }
   if (d.metodos !== undefined) { const m = (d.metodos || []).filter((v) => ['pix', 'cartao'].includes(v)); if (!m.length) throw new Erro(400, 'Deixe pelo menos uma forma de pagamento.'); dados.metodos = m; }
   if (d.ativa !== undefined) dados.ativa = !!d.ativa;
   if (d.valida_ate !== undefined) dados.valida_ate = d.valida_ate || null;

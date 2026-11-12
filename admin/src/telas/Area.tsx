@@ -111,7 +111,7 @@ function Ofertas() {
     await patch(`/area/ofertas/${o.id}`, {
       nome: o.nome, preco_centavos: preco, preco_de_centavos: centavosDe(o.preco_de), parcelas_max: Number(o.parcelas_max),
       juros_mes: (Number(String(o.juros).replace(',', '.')) || 0) / 100, pix_desconto_pct: Number(o.pix_desconto_pct), pix_minutos: Number(o.pix_minutos),
-      garantia_dias: Number(o.garantia_dias), metodos: o.metodos, ativa: o.ativa, checkout,
+      garantia_dias: String(o.garantia_dias ?? '').trim() === '' ? 7 : Number(o.garantia_dias), metodos: o.metodos, ativa: o.ativa, checkout,
     });
     await put(`/area/produtos/${o.produto_id}/acessos`, { acessos: o.acessos.filter((a: any) => a.curso_id) });
     await put(`/area/ofertas/${o.id}/bumps`, { bumps: o.bumps.filter((b: any) => b.bump_id) });
@@ -169,7 +169,8 @@ function Ofertas() {
           <Campo rotulo="Desconto no Pix (%)" tipo="number" min={0} max={50} valor={o.pix_desconto_pct} mudar={(v) => setO({ ...o, pix_desconto_pct: v })} />
           <Campo rotulo="Pix vence em (minutos)" tipo="number" min={5} max={1440} valor={o.pix_minutos} mudar={(v) => setO({ ...o, pix_minutos: v })} />
         </div>
-        <Campo rotulo="Garantia (dias)" tipo="number" min={7} valor={o.garantia_dias} mudar={(v) => setO({ ...o, garantia_dias: v })} dica="O mínimo pela lei é 7 dias." />
+        <Campo rotulo="Garantia (dias)" tipo="number" min={0} valor={o.garantia_dias} mudar={(v) => setO({ ...o, garantia_dias: v })} dica="Curso: 7 dias ou mais. 0 = sem garantia, só para arquivo com licença própria (ex.: a Família Calango): a página e o checkout não falam em garantia." />
+        {o.checkout?.aceite ? <p className="linha-pequena">Esta oferta pede o aceite da licença {o.checkout.aceite.licenca} (versão {o.checkout.aceite.versao}) antes de pagar. Cada aceite fica gravado no pedido.</p> : null}
         <Marcar rotulo="Aceita Pix" valor={o.metodos.includes('pix')} mudar={(v) => metodo('pix', v)} />
         <Marcar rotulo="Aceita cartão" valor={o.metodos.includes('cartao')} mudar={(v) => metodo('cartao', v)} />
 

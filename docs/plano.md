@@ -358,3 +358,19 @@ Pedido do dono em 09/11/2026: automatizar sem depender do computador ligado e or
 - [ ] Posts de frase montados na nuvem (Browser Rendering): o item 5 do lote 3, ainda não começado (cerca de um dia).
 - [ ] Revisão do Escritório: o que ficou aberto está em `docs/revisao-escritorio.md` ("Ainda aberto").
 - [ ] Próximas construções: os primeiros analistas no Worker (chefe de gabinete e gerente de receita), o zelador e o plantão.
+
+## Fase 12. Família Calango à venda (as 5 fontes da agência, arquivo para baixar)
+
+Pedido do dono em 11/11/2026: "Faça as alterações no site pra mim." R$ 997,00, licença própria (versão 1.1), sem garantia de 7 dias, aceite gravado antes de pagar e de baixar, cópia identificada feita no Mac. Decisões em `docs/decisoes.md` ("Família Calango no site").
+
+- [x] Garantia zero: a página de venda, o checkout, o app do aluno e o `/termos` não prometem devolução para oferta com `garantia_dias = 0`. Os cursos seguem com 7 dias (conferido em `/cursos/posts-automaticos`).
+- [x] Caixa de aceite no checkout (só na oferta com `checkout.aceite`), desmarcada, com a licença e o termo em links; o botão só segue com ela marcada; o servidor recusa o pedido sem o aceite (conferido mandando direto para a API).
+- [x] Páginas públicas da licença e do termo (`/cursos/familia-calango/licenca` e `/termo`), com os textos do dono em `worker/lib/licencas.js`.
+- [x] Botão e linha da barra fixa e dica da galeria por campo da landing (`heroi.barra_cta`, `heroi.barra_linha`, `estilos.dica`), já preenchidos na página da Família Calango.
+- [x] Oferta `familia-calango` criada DESLIGADA (R$ 997,00, garantia 0, com o aceite).
+- [x] Migration 48 (`aceites`) escrita e o aceite na tela do pedido em Vendas (aparece quando a tabela existir).
+- [ ] Ok do dono para aplicar a migration 48; depois, uma compra de teste no computador (pagamento simulado) para ver o aceite gravado e no painel, e apagar o teste.
+- [ ] Ok do dono para o deploy (as mudanças do site só valem em produção depois dele).
+- [ ] Decidir com o dono a entrega do arquivo e construir (lista de entregas, cópia no Mac, bucket privado, tela de download com aviso e caixa de aceite, link que vence).
+- [ ] Ligar a oferta (só com a entrega pronta e o ok do dono). Ligada, os botões da página levam ao checkout.
+- [ ] Depois, se o dono quiser: compra com CNPJ no checkout (hoje só CPF).

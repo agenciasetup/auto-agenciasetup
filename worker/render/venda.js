@@ -66,7 +66,9 @@ export function precoDaVenda(oferta, produto) {
     base, de: (oferta && oferta.preco_de_centavos) || null,
     pix: temPix && pct ? base - Math.round((base * pct) / 100) : null, pixPct: pct,
     parcelas: n > 1 ? { n, valor: parcelaCentavos(base, n, oferta.juros_mes) } : null,
-    garantia: (oferta && oferta.garantia_dias) || 7,
+    // 0 = sem garantia de satisfação (produto para baixar com licença própria, ex.: a Família Calango). Por isso `??`
+    // e não `||`: o `||` trocava o 0 por 7.
+    garantia: oferta && oferta.garantia_dias != null ? Number(oferta.garantia_dias) : 7,
   };
 }
 
@@ -78,7 +80,9 @@ function contador(texto) {
 }
 
 // idioma 'en' (curso em inglês, marca própria): preço em dólar e os rótulos fixos em inglês (render/venda-en.js).
-export function paginaVenda({ lp, oferta, curso, video, depoimentos = [], rastrear = null, url, idioma = 'pt', marca = null }) {
+// garantiaDias: a garantia quando não há oferta ligada (dadosDaVenda tira da oferta desligada do produto). Com 0, a
+// página não fala em garantia em lugar nenhum: nem selo, nem bloco, nem barra fixa.
+export function paginaVenda({ lp, oferta, curso, video, depoimentos = [], garantiaDias = null, rastrear = null, url, idioma = 'pt', marca = null }) {
   lp = { ...lp, blocos: blocosComCampanha(lp.blocos) }; // o que é de campanha com data some depois dela (lib/campanha.js)
   const en = idioma === 'en';
   const brl = en ? usd : brlReal;
@@ -88,7 +92,7 @@ export function paginaVenda({ lp, oferta, curso, video, depoimentos = [], rastre
   const comprar = esc(linkCompra);
   const bump = oferta && Array.isArray(oferta.bumps) ? oferta.bumps[0] : null;
   const linhaPreco = preco ? `${preco.parcelas ? `${preco.parcelas.n}x de ${brl(preco.parcelas.valor)} ou ` : ''}${brl(preco.base)} à vista` : '';
-  const garantia = preco ? preco.garantia : 7;
+  const garantia = oferta && preco ? preco.garantia : garantiaDias != null ? Number(garantiaDias) || 0 : 7;
   const aulas = curso ? curso.modulos.reduce((s, m) => s + m.aulas.length, 0) : 0;
   const totalS = curso ? curso.modulos.reduce((s, m) => s + m.aulas.reduce((x, a) => x + (a.duracao_s || 0), 0), 0) : 0;
   const bt = (texto, extra = '') => `<a class="v-bt" href="${comprar}" data-comprar${extra}><span>${esc(texto || 'Quero entrar')}</span>${ic('seta')}</a>`;
@@ -96,9 +100,12 @@ export function paginaVenda({ lp, oferta, curso, video, depoimentos = [], rastre
   const btVitalicio = () => (bump ? `<a class="v-bt-vitalicio" href="${esc(`${linkCompra}?com=${encodeURIComponent(bump.slug)}`)}" data-comprar>${ic('fogo')}<span>Vitalício por + ${esc(brl(bump.preco_centavos))}</span></a>` : '');
   // Os selos do topo. `heroi.selos` troca os textos (ex.: o combo de cursos de fora não tem "Acesso na hora");
   // os ícones seguem a ordem raio, escudo, Pix.
+  // Sem garantia (0), o selo padrão do escudo some e os outros dois ficam com os seus ícones.
   const selosDoTopo = (b) => {
-    const textos = Array.isArray(b.selos) ? b.selos.filter(Boolean) : ['Acesso na hora', `${garantia} dias de garantia`, 'Pix ou cartão'];
-    return textos.length ? `<ul class="v-selos">${textos.map((t, i) => `<li>${ic(['raio', 'escudo', 'pix'][i % 3])}${esc(t)}</li>`).join('')}</ul>` : '';
+    const pares = Array.isArray(b.selos)
+      ? b.selos.filter(Boolean).map((t, i) => [t, ['raio', 'escudo', 'pix'][i % 3]])
+      : [['Acesso na hora', 'raio'], ...(garantia ? [[`${garantia} dias de garantia`, 'escudo']] : []), ['Pix ou cartão', 'pix']];
+    return pares.length ? `<ul class="v-selos">${pares.map(([t, i]) => `<li>${ic(i)}${esc(t)}</li>`).join('')}</ul>` : '';
   };
   const cab = (b, padrao, intro) => `${b.olho ? `<p class="v-olho">${esc(b.olho)}</p>` : ''}<h2 class="v-h2" data-split>${tituloComDestaque(b.titulo || padrao, b.destaque)}</h2>${(b.texto || intro) ? `<p class="v-intro">${esc(b.texto || intro)}</p>` : ''}`;
   const ancoraDe = (b) => String(b.ancora || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
@@ -244,7 +251,7 @@ export function paginaVenda({ lp, oferta, curso, video, depoimentos = [], rastre
       <p class="v-parede-nome"><b>${esc(x.nome)}</b><small>${esc(x.nicho)}</small></p>
     </div>`).join('')}
   </div>
-  <p class="v-parede-dica">Toque num post para ver o carrossel inteiro.</p>
+  <p class="v-parede-dica">${esc(b.dica || 'Toque num post para ver o carrossel inteiro.')}</p>
 </div>
 <dialog class="v-galeria" data-galeria aria-label="Exemplo de carrossel" data-lenis-prevent><div class="v-galeria-topo"><b data-galeria-nome></b><button type="button" data-galeria-fechar aria-label="Fechar">${ic('nao')}</button></div><div class="v-galeria-fotos" data-galeria-fotos></div><p class="v-galeria-pe" data-galeria-pe></p></dialog>
 <script type="application/json" data-estilos>${jsonScript(dados)}</script>
@@ -335,11 +342,11 @@ export function paginaVenda({ lp, oferta, curso, video, depoimentos = [], rastre
 </div></section>`;
     },
 
-    garantia: (b) => sec(b.tema || 'preto', 'v-garantia-sec', `
+    garantia: (b) => (!garantia ? '' : sec(b.tema || 'preto', 'v-garantia-sec', `
   <div class="v-garantia" data-revelar>
     <div class="v-selo-garantia"><b>${garantia}</b><span>dias</span></div>
     <div><h2 class="v-h3">${esc(b.titulo || `${garantia} dias de garantia`)}</h2><p>${esc(b.texto || 'Entrou e achou que não é para você? É só pedir e devolvemos todo o seu dinheiro.')}</p></div>
-  </div>`),
+  </div>`)),
 
     faq: (b) => sec(b.tema || 'preto', 'v-faq-sec', `
   ${cab(b, 'Perguntas frequentes')}
@@ -445,7 +452,11 @@ export function paginaVenda({ lp, oferta, curso, video, depoimentos = [], rastre
     .filter(([id]) => corpo.includes(`id="${id}"`))
     .sort((a, c) => corpo.indexOf(`id="${a[0]}"`) - corpo.indexOf(`id="${c[0]}"`))
     .map(([id, t]) => `<a href="#${id}">${esc(t)}</a>`).join('');
-  const barra = `<div class="v-barra" data-barra><div class="v-barra-preco">${preco ? `<b>${brl(preco.base)}</b><span>${preco.parcelas ? `ou ${preco.parcelas.n}x de ${brl(preco.parcelas.valor)}` : `${garantia} dias de garantia`}</span>` : `<b>${esc(lp.titulo)}</b>`}</div><a class="v-bt v-bt-p" href="${comprar}" data-comprar><span>Quero entrar</span>${ic('seta')}</a></div>`;
+  // A barra fixa de baixo. `heroi.barra_cta` troca o "Quero entrar" (que é de curso; a Família Calango usa "Quero a
+  // Família Calango") e `heroi.barra_linha` é a linha embaixo do preço quando não há parcelas nem garantia.
+  const hbBarra = (Array.isArray(lp.blocos) ? lp.blocos : []).find((b) => b && b.tipo === 'heroi') || {};
+  const linhaBarra = garantia ? `${garantia} dias de garantia` : hbBarra.barra_linha || 'Pagamento seguro';
+  const barra = `<div class="v-barra" data-barra><div class="v-barra-preco">${preco ? `<b>${brl(preco.base)}</b><span>${preco.parcelas ? `ou ${preco.parcelas.n}x de ${brl(preco.parcelas.valor)}` : esc(linhaBarra)}</span>` : `<b>${esc(lp.titulo)}</b>`}</div><a class="v-bt v-bt-p" href="${comprar}" data-comprar><span>${esc(hbBarra.barra_cta || 'Quero entrar')}</span>${ic('seta')}</a></div>`;
 
   const seo = lp.seo || {};
   const titulo = seo.titulo || `${lp.titulo} | ${en && marca ? marca.nome : 'Agência Setup'}`;

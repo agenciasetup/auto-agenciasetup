@@ -4,6 +4,7 @@
 import { esc, jsonScript } from '../nucleo/util.js';
 import { parcelasPossiveis } from '../lib/vendas.js';
 import { PAISES } from '../lib/paises.js';
+import { aceiteDaOferta } from '../lib/licencas.js';
 
 const FONTES = 'https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Instrument+Serif:ital@1&display=swap';
 const LOGO = '<img src="/img/logo-setup-128.png" alt="" width="30" height="30">';
@@ -46,7 +47,7 @@ function pagina({ titulo, corpo, scripts = '', turnstile = false, rastrear = nul
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">${PRE}<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="icon" href="${leitura ? `/img/marcas/${esc(marca.curso.slug)}-192.png` : '/img/favicon.png'}" type="image/png">
 <title>${esc(titulo)}</title><meta name="robots" content="noindex"><meta name="theme-color" content="${leitura ? '#FBF7EF' : '#09090a'}">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="${leitura ? FONTES_LEITURA : FONTES}">
-<link rel="stylesheet" href="/estatico/checkout.css?v=4">${leitura ? '<link rel="stylesheet" href="/estatico/checkout-leitura.css?v=2">' : ''}${turnstile ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : ''}${rastreio(rastrear)}
+<link rel="stylesheet" href="/estatico/checkout.css?v=5">${leitura ? '<link rel="stylesheet" href="/estatico/checkout-leitura.css?v=2">' : ''}${turnstile ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : ''}${rastreio(rastrear)}
 </head><body${leitura ? ' class="tema-leitura"' : ''}>
 <header class="gutter"><div class="ck-topo">${leitura ? `<span class="logo">${CRUZ}${esc(marca.nome)}</span>` : `<a class="logo" href="/">${LOGO}Agência Setup</a>`}<span class="seguro">${ic('escudo')}Pagamento seguro</span></div></header>
 <main class="gutter">${corpo}</main>${scripts}
@@ -57,6 +58,21 @@ function poster(o) {
   const p = (o.checkout && o.checkout.poster) || {};
   const nome = p.a || o.produto?.nome || o.nome;
   return `<div class="poster" style="--c:${esc(p.cor || '#ff7a00')}"><span class="tipo">${esc(p.tipo || 'Curso')}</span><span class="nome">${esc(nome)}${p.b ? `<span class="serifa">${esc(p.b)}</span>` : ''}</span><span class="pe">${esc(p.pe || '')}</span></div>`;
+}
+
+// A caixa de aceite da licença (11/11/2026, a Família Calango): só na oferta com checkout.aceite (lib/licencas.js,
+// aceiteDaOferta). Começa desmarcada; "Licença de Uso" e "Termo de Aceite" abrem os textos numa aba nova. O servidor
+// também confere (lib/vendas.js, conferirAceite).
+function caixaDeAceite(a, site) {
+  const link = (url, nome) => `<a href="${esc(site + url)}" target="_blank" rel="noopener">${nome}</a>`;
+  let html = esc(a.texto);
+  const temLicenca = html.includes('Licença de Uso'), temTermo = html.includes('Termo de Aceite');
+  html = html.replace('Licença de Uso', link(a.licenca_url, 'Licença de Uso')).replace('Termo de Aceite', link(a.termo_url, 'Termo de Aceite'));
+  // Texto da oferta sem os dois nomes: os links vão no fim, para a pessoa sempre poder ler antes de marcar.
+  const extra = !temLicenca || !temTermo ? ` (${[!temLicenca && link(a.licenca_url, 'ler a licença'), !temTermo && link(a.termo_url, 'ler o termo')].filter(Boolean).join(' e ')})` : '';
+  return `<div class="ck-bloco ck-aceite" data-campo="aceite">
+      <label class="aceite" for="aceite"><input type="checkbox" id="aceite" name="aceite"><span>${html}${extra}</span></label>
+    </div>`;
 }
 
 // estrangeiros: a chave "Aceitar compra de quem mora fora do Brasil" (lib/vendas.js, estrangeirosLigado). Desligada,
@@ -70,7 +86,9 @@ export function paginaCheckout({ oferta, simulado, turnstileSite, rastrear = nul
   const temCartao = oferta.metodos.includes('cartao');
   const deFora = !!estrangeiros && temCartao;
   const pixDesc = Number(oferta.pix_desconto_pct) || 0;
+  const aceite = aceiteDaOferta(oferta);
   const dados = {
+    ...(aceite && !aceite.invalida ? { aceite: aceite.versao } : {}),
     oferta: oferta.slug, preco: oferta.preco_centavos, juros: Number(oferta.juros_mes), parcelas_max: oferta.parcelas_max,
     pix_desconto: pixDesc, bumps: oferta.bumps.map((b) => ({ id: b.id, nome: b.nome, preco: b.preco_centavos })),
     nome: oferta.nome, simulado: !!simulado, teste: !!oferta.teste, turnstile: turnstileSite || null,
@@ -83,7 +101,7 @@ export function paginaCheckout({ oferta, simulado, turnstileSite, rastrear = nul
     <div class="ck-prod">${marca ? `<img class="ck-capa" src="/img/marcas/${esc(marca.curso.slug)}-capa.webp" alt="Capa do livro ${esc(marca.nome)}">` : poster(oferta)}<div><h1>${esc(oferta.nome)}</h1><p>${esc(c.subtitulo || 'Acesso começa na hora')}</p>${oferta.preco_de_centavos > oferta.preco_centavos ? `<p class="ck-de"><s>${brl(oferta.preco_de_centavos)}</s><b>${brl(oferta.preco_centavos)}</b><span>-${Math.round((1 - oferta.preco_centavos / oferta.preco_de_centavos) * 100)}%</span></p>` : ''}</div></div>
     ${inclui ? `<ul class="ck-inclui">${inclui}</ul>` : ''}
     <div class="ck-linhas" id="ck-linhas"><div class="total"><span>Total</span><span class="num">${brl(oferta.preco_centavos)}</span></div></div>
-    <div class="ck-garantia">${ic('escudo')}<span><b>Garantia de ${oferta.garantia_dias} dias.</b> Não gostou, devolvemos tudo.</span></div>
+    ${Number(oferta.garantia_dias) > 0 ? `<div class="ck-garantia">${ic('escudo')}<span><b>Garantia de ${oferta.garantia_dias} dias.</b> Não gostou, devolvemos tudo.</span></div>` : ''}
   </aside>
 
   <form class="ck-form" id="ck-form" novalidate>
@@ -130,10 +148,11 @@ export function paginaCheckout({ oferta, simulado, turnstileSite, rastrear = nul
       </div>` : ''}
     </div>
 
+    ${aceite ? (aceite.invalida ? '<div class="erro-geral">Esta oferta está sem o texto da licença. Fale com a gente antes de comprar.</div>' : caixaDeAceite(aceite, marca ? SITE : '')) : ''}
     ${turnstileSite ? `<div class="cf-turnstile" data-sitekey="${esc(turnstileSite)}" data-theme="${marca ? 'light' : 'dark'}" data-size="flexible"></div>` : ''}
     <div class="erro-geral" id="erro" role="alert" hidden></div>
     <div class="pagar-fixo">
-      <button type="submit" class="bt bt-marca bt-g bt-cheio" id="pagar">Continuar</button>
+      <button type="submit" class="bt bt-marca bt-g bt-cheio" id="pagar"${aceite ? ' aria-disabled="true"' : ''}>Continuar</button>
       <small>Ao pagar você aceita os <a href="${marca ? SITE : ''}/termos">termos de uso</a> e a <a href="${marca ? SITE : ''}/privacidade">política de privacidade</a>.</small>
     </div>
     ${depos ? `<div class="depos">${depos}</div>` : ''}
@@ -150,7 +169,7 @@ export function paginaCheckout({ oferta, simulado, turnstileSite, rastrear = nul
   </section>
 </div>
 <script type="application/json" id="ck-dados">${jsonScript(dados)}</script>`;
-  return pagina({ titulo: `${oferta.nome} · Pagamento`, corpo, scripts: '<script src="/estatico/checkout.js?v=8" defer></script>', turnstile: !!turnstileSite, rastrear, marca });
+  return pagina({ titulo: `${oferta.nome} · Pagamento`, corpo, scripts: '<script src="/estatico/checkout.js?v=9" defer></script>', turnstile: !!turnstileSite, rastrear, marca });
 }
 
 // Curso de leitura: pago, a tela oferece o PDF (e já começa o download) e o "Ler no celular", com a ajuda no WhatsApp.
@@ -170,7 +189,7 @@ export function paginaObrigado({ pedidoId, simulado, rastrear = null, marca = nu
   <section class="upsell-tela" id="upsell" hidden aria-live="polite"></section>
 </div>
 <script type="application/json" id="ck-dados">${jsonScript({ pedido: pedidoId, simulado: !!simulado, rastreio: rastrear ? { meta: !!rastrear.meta_pixel, ga4: !!rastrear.ga4, ads: rastrear.google_ads && rastrear.google_ads_rotulo ? `${rastrear.google_ads}/${rastrear.google_ads_rotulo}` : null } : null })}</script>`;
-  return pagina({ titulo: `Pagamento · ${marca ? marca.nome : 'Agência Setup'}`, corpo, scripts: '<script src="/estatico/checkout.js?v=8" defer></script>', rastrear, marca });
+  return pagina({ titulo: `Pagamento · ${marca ? marca.nome : 'Agência Setup'}`, corpo, scripts: '<script src="/estatico/checkout.js?v=9" defer></script>', rastrear, marca });
 }
 
 // O link do PDF não abriu: pedido que não existe, ainda não pago ou devolvido.

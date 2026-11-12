@@ -30,6 +30,8 @@ import { paginaVendaLeitura } from './render/venda-leitura.js';
 import { paginaCertificado, paginaNaoAchada, paginaPerfil } from './render/publico.js';
 import { paginaCheckout, paginaFechada, paginaObrigado, paginaSemPdf } from './render/checkout.js';
 import { paginaVenda } from './render/venda.js';
+import { paginaLicenca } from './render/licenca.js';
+import { licencaDe } from './lib/licencas.js';
 import { paginaCheckoutEn, paginaFechadaEn, paginaObrigadoEn } from './render/checkout-en.js';
 import { paginaLegalEn } from './render/legal-en.js';
 import { paginaRecursoEn } from './render/recurso-en.js';
@@ -436,13 +438,29 @@ async function pagina(request, env, ctx, url) {
     }));
   }
 
+  // A licença e o termo de aceite de um produto para baixar (a Família Calango, 11/11/2026): os textos que a caixa de
+  // aceite do checkout abre. ?v=1.1 mostra uma versão antiga, para quem comprou com ela (lib/licencas.js).
+  m = caminho.match(/^\/cursos\/([a-z0-9-]+)\/(licenca|termo)$/);
+  if (m) {
+    const l = licencaDe(m[1], url.searchParams.get('v'));
+    if (!l) return naoEncontrada(base);
+    const titulo = `${m[2] === 'termo' ? 'Termo de Aceite' : 'Licença de Uso'} · ${l.nome}`;
+    return html(casca({ ...base, titulo, descricao: `${m[2] === 'termo' ? 'O termo de aceite' : 'A licença de uso'} da ${l.nome}, versão ${l.versao}.`, corpo: paginaLicenca({ l, qual: m[2], voltar: `/cursos/${m[1]}` }) }));
+  }
+
   m = caminho.match(/^\/cursos\/([a-z0-9-]+)$/);
   if (m) {
     const lp = await C.landing(env, m[1]);
     if (!lp) return naoEncontrada(base);
     const daMarca = lp.produto_id ? await marcaDoPedido(env, [{ produto_id: lp.produto_id }]) : null;
     if (daMarca) return Response.redirect(`${daMarca.url}/`, 302);
-    const { oferta, curso, video } = await C.dadosDaVenda(env, lp);
+    let { oferta, curso, video, garantiaDias } = await C.dadosDaVenda(env, lp);
+    // Oferta ainda desligada (prévia no computador): o preço e a garantia mostrados são os dela, e o botão leva ao
+    // checkout dela (que no computador abre em modo de teste). Em produção, nada muda: sem oferta ligada, sem checkout.
+    if (!oferta && env.AMBIENTE === 'local' && lp.produto_id) {
+      oferta = await db.um(env, 'ofertas', { produto_id: `eq.${lp.produto_id}` }, 'id,slug,nome,preco_centavos,preco_de_centavos,parcelas_max,juros_mes,pix_desconto_pct,metodos,garantia_dias,checkout').catch(() => null);
+      if (oferta) oferta.bumps = [];
+    }
     // Depoimentos aprovados e autorizados pelos alunos entram sozinhos na página (antes do preço, se não houver o bloco).
     const deps = curso ? await depoimentosDaLanding(env, [curso.id]).catch(() => []) : [];
     const depoimentos = deps.map((d) => ({ texto: d.texto, nome: `${d.aluno.nome}${d.aluno.instagram ? ` (@${d.aluno.instagram})` : ''}` }));
@@ -450,7 +468,7 @@ async function pagina(request, env, ctx, url) {
       const p = lp.blocos.findIndex((b) => b.tipo === 'preco');
       lp.blocos = [...lp.blocos]; lp.blocos.splice(p >= 0 ? p : lp.blocos.length, 0, { tipo: 'depoimentos', titulo: 'Quem já fez' });
     }
-    return html(paginaVenda({ lp, oferta, curso, video, depoimentos, rastrear: env.__rastreio || null, url: `${env.SITE_URL || 'https://agenciasetup.com.br'}/cursos/${lp.slug}` }));
+    return html(paginaVenda({ lp, oferta, curso, video, depoimentos, garantiaDias, rastrear: env.__rastreio || null, url: `${env.SITE_URL || 'https://agenciasetup.com.br'}/cursos/${lp.slug}` }));
   }
 
   if (caminho === '/privacidade') return html(casca({ ...base, titulo: 'Política de privacidade', corpo: P.institucional('Política de privacidade', PRIVACIDADE) }));
@@ -606,6 +624,7 @@ Mostramos anúncios dos nossos próprios cursos e, em algumas páginas, anúncio
 - **Medição de anúncios:** quando ligados, o Pixel da Meta e o Google Analytics medem a visita ao checkout e a compra. A compra também é avisada à Meta pelo nosso servidor, com o e-mail e o celular embaralhados (hash), sem enviar os dados abertos.
 - **Na área do aluno:** progresso das aulas, os materiais que você baixou, notas, comentários, criações e conquistas. Perfil público e ranking só com o seu aceite. Perguntas ao tutor de IA vão para a Anthropic (Claude) só para responder.
 - **Reembolso:** pedido pelo app, mostramos o que você já usou (aulas e materiais baixados) e o motivo fica guardado com o pedido.
+- **Aceite de licença:** na compra de um produto com licença própria (como a Família Calango), guardamos a prova de que você aceitou a licença e o termo: nome, CPF, e-mail, data e hora, endereço de internet (IP), navegador e a versão aceita, junto do pedido.
 
 ## Redes sociais
 - **Comentários nos nossos posts:** quando você comenta a palavra pedida num post nosso no Instagram ou no Facebook, a rede nos manda o seu nome de usuário e o texto do comentário. Usamos isso para responder no post e mandar o material no direct, uma vez por post. O texto vai para a Anthropic (Claude) só para escrever a resposta.
@@ -620,5 +639,7 @@ const TERMOS = `Os recursos de agenciasetup.com.br são gratuitos para uso pesso
 - Não revenda nem redistribua os arquivos como se fossem seus.
 - Os recursos são oferecidos como estão. Confira o resultado antes de usar com clientes.
 - Marcas e ferramentas citadas pertencem aos seus donos.
+
+Cursos e produtos pagos seguem as condições da página de venda e do checkout de cada um. Produto para baixar com licença própria, como a Família Calango, segue a licença dele: não tem garantia de satisfação nem devolução depois do download, ressalvado o que a lei garante a quem compra como consumidor.
 
 Dúvidas: contato@agenciasetup.com.br.`;

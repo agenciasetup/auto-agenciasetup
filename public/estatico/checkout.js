@@ -275,8 +275,17 @@
     $('#pais').addEventListener('change', () => { $('#ddi').value = ddiDoPais() ? `+${ddiDoPais()}` : '+'; if (!ddiDoPais()) $('#ddi').focus(); });
   }
 
+  // A caixa de aceite da licença (só na oferta que pede, ex.: a Família Calango): o botão de pagar fica apagado e não
+  // segue enquanto ela está desmarcada. O servidor confere de novo.
+  const caixaAceite = $('#aceite');
+  if (caixaAceite) {
+    const marcar = () => { $('#pagar').setAttribute('aria-disabled', caixaAceite.checked ? 'false' : 'true'); if (caixaAceite.checked) { const c = $('.ck-aceite.erro'); if (c) { c.classList.remove('erro'); const m = c.querySelector('.msg-erro'); if (m) m.remove(); } } };
+    caixaAceite.addEventListener('change', marcar);
+    marcar();
+  }
+
   function erroCampo(campo, msg) {
-    $$('.campo.erro').forEach((c) => { c.classList.remove('erro'); const m = c.querySelector('.msg-erro'); if (m) m.remove(); });
+    $$('.campo.erro, .ck-aceite.erro').forEach((c) => { c.classList.remove('erro'); const m = c.querySelector('.msg-erro'); if (m) m.remove(); });
     $('#erro').hidden = true;
     if (!campo) return;
     const c = $(`[data-campo="${campo}"]`);
@@ -288,7 +297,9 @@
   $('#ck-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     erroCampo(null);
+    if (caixaAceite && !caixaAceite.checked) { erroCampo('aceite', 'Para continuar, marque que leu e aceita a licença e o termo.'); return; }
     const corpo = {
+      ...(caixaAceite ? { aceite: { marcado: caixaAceite.checked, versao: D.aceite } } : {}),
       oferta: D.oferta, email: $('#email').value, nome: $('#nome').value, cpf: fora ? null : $('#cpf').value, celular: $('#celular').value,
       ...(fora ? { estrangeiro: true, pais: $('#pais').value, ddi: $('#ddi').value } : {}),
       metodo, parcelas: metodo === 'cartao' && !fora ? +$('#parcelas').value : 1, bumps: bumpsMarcados(), cupom: $('#cupom').value || null,
