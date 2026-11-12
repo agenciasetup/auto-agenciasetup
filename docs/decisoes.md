@@ -918,6 +918,13 @@ Pedido do dono: "Faça as alterações no site pra mim", com o documento das mud
 - **O que a troca muda de cara:** a sans da agência é mais larga que a Inter. Título ganha uma linha (o do início foi de 3 para 4) e botão pode quebrar; por isso a página de venda tem dois ajustes (os dois botões do topo na mesma linha no computador, o botão verde numa linha só no celular). A família não tem Black (800 e 900 saem no Bold) e a vírgula do Bold é curta (nos preços, de longe, parece ponto).
 - **No ar desde 12/11/2026** (versão `707cabf7`, ok do dono: "Sim, pode publicar"), no mesmo deploy da Família Calango. Conferido no ar em Chrome de verdade, computador e celular. Não testado em Safari nem em iPhone de verdade.
 
+## Tomadas em 12/11/2026 (quem vendeu mais na sala de Vendas)
+
+- **Pedido do dono:** "no escritório de VENDAS, crie uma seção pra mim que dê pra ver qual calango vendeu mais". A seção fica na sala de Vendas, nos três lugares em que a sala aparece: a sala aberta da planta, o bloco da lista e a sala no app do celular. Períodos de 7, 30 e 90 dias.
+- **A regra da venda é o último link que a pessoa tocou antes de pagar** (a mesma de Vendas > Canais): o botão do Comenta X é do Entregador, o link mandado numa conversa do direct é de quem mandou (Atendente, Vendedor Calango ou Vendedor Pergunta) e o e-mail de recuperação é da Recuperadora. O resto (bio, story, busca, anúncio, canal de transmissão) aparece como "do seu conteúdo". Venda é pessoa, e o dinheiro soma os pedidos. Só real.
+- **O placar do vendedor no perfil continua com a regra dele** (comprou depois do primeiro toque, por qualquer caminho). Por isso um vendedor pode ter venda no perfil e zero em "Quem vendeu mais": a nota da seção explica.
+- **Na mesma passada:** vendas por post passaram a contar pessoas, e a faixa do mini curso na página do material passou a levar a pessoa e a versão do Comenta X (os dois itens de `docs/revisao-escritorio.md`).
+
 ## Em aberto
 
 - **Família Calango:** a tarefa agendada no Mac (falta o caminho do `montar.py` e a primeira cópia de verdade) e ligar a oferta (só com a tarefa do Mac rodando e o ok do dono). O deploy foi feito em 12/11/2026, junto com as fontes do site. O pacote nunca vai para o bucket público `midia` e as fontes nunca vão para o Git.

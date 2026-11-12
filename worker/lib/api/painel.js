@@ -305,6 +305,7 @@ const rotas = roteador([
   // ---------------------------------------------------------------- escritório de IA (agentes, turnos e a mesa de propostas)
   ['GET', '/escritorio', (x) => A.verOEscritorio(x)],
   ['GET', '/escritorio/sinal', (x) => A.verSinalDeVida(x)],
+  ['GET', '/escritorio/vendas', (x) => A.verVendasDosCalangos(x, x.url.searchParams.get('dias'))],
   ['GET', '/escritorio/agentes/:id', (x) => A.lerAgenteDoEscritorio(x, x.params.id)],
   ['POST', '/escritorio/agentes/:id', async (x) => A.salvarAgenteDoEscritorio(x, await corpoJson(x.request), x.params.id)],
   ['POST', '/escritorio/teto', async (x) => A.salvarTetoDoEscritorio(x, (await corpoJson(x.request)).teto_dia_usd)],

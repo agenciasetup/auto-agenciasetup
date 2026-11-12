@@ -328,6 +328,65 @@ async function vendasDaSemana(env) {
   for (const f of linhas || []) if (f.tocado_em && Date.parse(f.comprou_em) >= Date.parse(f.tocado_em)) n[f.vendedor] = (n[f.vendedor] || 0) + 1;
   return n;
 }
+// Quem vendeu mais na sala de Vendas (pedido do dono em 12/11/2026: "uma seção pra ver qual calango vendeu mais").
+// Cada venda paga vai para o Calango do último link que a pessoa tocou antes de pagar (pedidos.ultimo_toque, a mesma
+// marca que Vendas > Canais lê com canalDe): o botão do Comenta X é do Entregador, o link mandado na conversa do direct
+// é de quem mandou (Atendente ou um dos vendedores, pelo "?de=a|c|p-" de pessoa.js) e o e-mail de recuperação é da
+// Recuperadora. O resto (bio, story, busca, anúncio, canal de transmissão) é "fora": veio do conteúdo do dono.
+// Quem comprou depois de uma conversa, mas por outro caminho, não entra aqui: aparece no placar do vendedor, no perfil.
+const CALANGOS_QUE_VENDEM = {
+  entregador: 'Comenta X: o material e o botão do curso no direct',
+  atendente: 'Respondeu no direct e mandou o link',
+  'vendedor-calango': 'Follow-up do direct: amigo, link e frase curta',
+  'vendedor-pergunta': 'Follow-up do direct: pergunta antes da oferta',
+  recuperador: 'E-mail para quem não terminou a compra',
+};
+const DA_CONVERSA = { atendente: 'atendente', calango: 'vendedor-calango', pergunta: 'vendedor-pergunta' };
+export function calangoDaVenda(t) {
+  if (!t || !t.origem) return null;
+  const o = String(t.origem).toLowerCase();
+  const m = String(t.meio || '').toLowerCase();
+  if (o === 'recuperacao') return m === 'email' ? 'recuperador' : null;
+  if (!/^(?:instagram|ig)(?:-.+)?$/.test(o)) return null;
+  if (m === 'dm') return 'entregador';
+  if (m === 'direct') return DA_CONVERSA[String(t.conteudo || '')] || null;
+  return null;
+}
+export const PERIODOS_DE_VENDA = [7, 30, 90];
+export async function vendasDosCalangos(env, dias) {
+  const d = PERIODOS_DE_VENDA.includes(Number(dias)) ? Number(dias) : 30;
+  const desde = new Date(Date.now() - d * 86_400_000).toISOString();
+  // Só real: as vendas em dólar são do perfil em inglês, que ainda não tem Comenta X com link curto nem Atendente.
+  const pedidos = [];
+  let cortou = false;
+  for (let i = 0; i < 5; i++) {
+    const l = await db.select(env, 'pedidos', { filtros: { status: 'eq.pago', moeda: 'eq.brl', pago_em: `gte.${desde}` }, select: 'id,aluno_id,total_centavos,teste,ultimo_toque', ordem: 'pago_em.desc', limite: 1000, offset: i * 1000 });
+    pedidos.push(...l);
+    if (l.length < 1000) break;
+    if (i === 4) cortou = true;
+  }
+  const agentes = await db.select(env, 'agentes', { filtros: { id: `in.(${Object.keys(CALANGOS_QUE_VENDEM).join(',')})` }, select: 'id,nome,apelido,estado', limite: 20 }).catch(() => []);
+  // Vendas são pessoas que compraram (quem comprou duas vezes pelo mesmo Calango conta uma); o dinheiro soma tudo.
+  const novo = () => ({ gente: new Set(), pedidos: 0, centavos: 0 });
+  const soma = Object.fromEntries(Object.keys(CALANGOS_QUE_VENDEM).map((id) => [id, novo()]));
+  const fora = novo();
+  for (const p of pedidos) {
+    if (p.teste) continue;
+    const s = soma[calangoDaVenda(p.ultimo_toque)] || fora;
+    s.gente.add(p.aluno_id || p.id);
+    s.pedidos += 1;
+    s.centavos += Number(p.total_centavos) || 0;
+  }
+  const fim = (s) => ({ vendas: s.gente.size, pedidos: s.pedidos, centavos: s.centavos });
+  const ordem = Object.keys(CALANGOS_QUE_VENDEM);
+  const ranking = ordem.map((id) => {
+    const a = agentes.find((x) => x.id === id) || {};
+    return { agente: id, apelido: a.apelido || null, nome: a.nome || id, estado: a.estado || null, como: CALANGOS_QUE_VENDEM[id], ...fim(soma[id]) };
+  }).sort((a, b) => b.vendas - a.vendas || b.centavos - a.centavos || ordem.indexOf(a.agente) - ordem.indexOf(b.agente));
+  const dosCalangos = ranking.reduce((t, r) => ({ vendas: t.vendas + r.vendas, centavos: t.centavos + r.centavos }), { vendas: 0, centavos: 0 });
+  return { dias: d, desde, ranking, calangos: dosCalangos, fora: fim(fora), cortou };
+}
+
 // De qual tarefa foi cada turno recente (dados.tarefa: a frase das 8h e o carrossel das 10h gravam nos mesmos agentes).
 // A função escritorio_resumo devolve o último turno sem os dados; esta leitura completa, pelo id do turno.
 async function tarefasDosTurnos(env) {

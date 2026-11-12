@@ -1031,6 +1031,20 @@ button.pl-placa:hover svg { opacity: 1; }
 .pl-m-planejado .pl-membro-foto { filter: grayscale(1); opacity: 0.4; }
 .pl-m-planejado .pl-membro-nome b { color: var(--mudo); font-weight: 600; }
 .pl-m-pausado .pl-membro-foto { filter: grayscale(0.8); }
+/* Quem vendeu mais, na sala de Vendas (QuemVendeuMais em EscritorioPlanta.tsx): o período, uma frase e o placar. */
+.pl-periodos { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.pl-vendeu-frase { margin: 0 0 8px; font-size: 13.5px; line-height: 1.45; }
+.pl-placar li > .pl-membro { cursor: default; }
+.pl-placar li > button.pl-membro { cursor: pointer; }
+.pl-posicao { flex: none; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: var(--fundo-3); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pl-placar-1 .pl-membro { background: color-mix(in srgb, var(--verde) 14%, transparent); }
+.pl-placar-1 .pl-posicao { background: var(--verde); color: #141414; }
+.pl-placar-0 .pl-membro-foto { filter: grayscale(0.7); opacity: 0.7; }
+.pl-placar-num { flex: none; display: grid; justify-items: end; font-variant-numeric: tabular-nums; }
+.pl-placar-num b { font-size: 13px; white-space: nowrap; }
+.pl-placar-num small { font-size: 11.5px; color: var(--mudo); white-space: nowrap; }
+.esc-bloco-extra { padding: 4px 18px 16px; border-top: 1px solid var(--borda); }
+.esc-bloco-extra h3 { margin: 12px 0 8px; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fraco); }
 /* no perfil */
 .pl-sinal { display: flex; align-items: center; gap: 8px; margin: 8px 0 0 !important; padding: 6px 10px; border-radius: 10px; background: var(--fundo-3); font-size: 13px; }
 .pl-renomear { margin-top: 6px; }

@@ -8,7 +8,7 @@ import { Check, ChevronRight, Clock, Inbox, Undo2, X, Zap } from 'lucide-react';
 import { get, post } from '../nucleo/api';
 import { Carregando, ErroCarga, Etiqueta, Modal, avisar, useSessao } from '../nucleo/ui';
 import { haQuanto, numero } from '../nucleo/util';
-import { Perfil, SalaIso } from './EscritorioPlanta';
+import { Perfil, QuemVendeuMais, SalaIso } from './EscritorioPlanta';
 import { Arrastar, Barra, COR_SALA, Secao, SemRede, Trecho, corDaSala, dolar, estiloCor, useGuardado } from './CelularBase';
 
 const FEITO: Record<string, string> = { aprovada: 'Aprovada', depois: 'Guardada para depois', descartada: 'Descartada' };
@@ -106,6 +106,12 @@ export default function CelularEscritorio({ versao, mudou }: { versao: number; m
     )}
 
     <Modal titulo={sala ? sala.nome : ''} aberto={!!sala} fechar={() => setSalaAberta(null)}>
+      {sala && sala.id === 'vendas' && (
+        <section className="cel-vendeu" aria-label="Quem vendeu mais">
+          <h3>Quem vendeu mais</h3>
+          <QuemVendeuMais bonecos={bonecos} agentes={sala.agentes} abrir={(a) => { setSalaAberta(null); setAgente(a); }} />
+        </section>
+      )}
       {sala && (sala.agentes || []).length === 0 && <p className="cel-quieto">Ninguém trabalha nesta sala ainda.</p>}
       {sala && (sala.agentes || []).map((a: any) => {
         const u = a.turnos && a.turnos.ultimo;

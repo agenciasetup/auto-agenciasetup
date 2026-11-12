@@ -4,7 +4,7 @@ import { db } from '../../nucleo/db.js';
 import { Erro, corpoJson, json, respostaErro } from '../../nucleo/util.js';
 import { asaas, stripe } from '../../pagamento/index.js';
 import { cookieVisitante, destinoComMarcas, lerVisitante, marcasDe, novoVisitante, registrarToque } from '../origem.js';
-import { codigoValido, comPessoa } from '../pessoa.js';
+import { codigoDeLink, codigoValido, comPessoa } from '../pessoa.js';
 import { dadosParaRetomar, guardarContato, moedaDaLinha, pararLembretes } from '../recuperacao.js';
 import { cotar, criarPedido, criarUpsell, guardarAviso, ofertaDepois, processarAviso, situacaoPedido } from '../vendas.js';
 import { baixarArquivo } from '../acoes-arquivos.js';
@@ -126,6 +126,15 @@ export async function apiCheckout(request, env, ctx, url) {
   }
 }
 
+// O código do link curto vai junto ("&l=", pessoa.js) quando o destino é o nosso próprio site: a página do material
+// passa a versão para a faixa do mini curso no topo (linkDoTopo em render/paginas.js), e a venda pela faixa cai na
+// versão certa do Comenta X. A visita com o mesmo código não vira toque novo (registrarToque compara sem o link).
+function comVersao(destino, codigo, host) {
+  const c = codigoDeLink(codigo);
+  if (!c) return destino;
+  try { const u = new URL(destino); if (u.hostname !== host) return destino; u.searchParams.set('l', c); return u.toString(); } catch { return destino; }
+}
+
 // /l/<codigo>: conta o clique, guarda o toque e leva para o destino com as marcas.
 export async function linkCurto(request, env, ctx, url, codigo) {
   const l = await db.rpc(env, 'clicar_link', { p_codigo: codigo }).catch(() => null);
@@ -140,7 +149,7 @@ export async function linkCurto(request, env, ctx, url, codigo) {
   const soCaminho = (u, base) => { try { return new URL(u, base).pathname; } catch { return null; } };
   const soDominio = (u) => { try { return new URL(u).hostname; } catch { return null; } };
   ctx.waitUntil(registrarToque(env, v, marcas, { link: l.codigo, pagina: soCaminho(l.destino, url.origin), referer: soDominio(request.headers.get('referer') || ''), pais: request.cf?.country || null }).catch(() => {}));
-  const headers = { location: comPessoa(destinoComMarcas(url.origin, l), pessoa), 'cache-control': 'no-store' };
+  const headers = { location: comVersao(comPessoa(destinoComMarcas(url.origin, l), pessoa), l.codigo, url.hostname), 'cache-control': 'no-store' };
   if (novo) headers['set-cookie'] = cookieVisitante(env, v, new URL(request.url).hostname);
   return new Response(null, { status: 302, headers });
 }

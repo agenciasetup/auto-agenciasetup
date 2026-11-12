@@ -128,8 +128,8 @@ Pedido dele olhando a tela: a Direção estava poluída, o Salomão estava com o
 - [ ] **`teto_dia_usd` por agente** é gravado e ninguém lê.
 - [ ] **Posts de frase montados na nuvem** (Browser Rendering, que o Workers pago já inclui): hoje a arte sai do computador, e a tarefa das 8h depende dele ligado.
 - [ ] **O perfil em inglês não tem link curto** (`/l/` não existe em `agenciasetup.com`): o botão do curso em inglês não leva a versão, e o Comenta X em inglês não conta clique nem venda por versão.
-- [ ] **A faixa "material-topo"** da página do material não leva a pessoa nem a versão (`linkDoTopo` em `worker/render/paginas.js`): a venda dela vale pelo toque do material que veio antes.
-- [ ] **As vendas por post contam pedidos, não pessoas** (`atribuirVendas` em `worker/lib/acoes.js`): quem comprou duas vezes pelo mesmo post conta duas em Resultados.
+- [x] **A faixa "material-topo"** agora leva a pessoa (`p`) e a versão (`l`) para a venda (12/11/2026): o link curto passa o próprio código para a página do nosso site (`comVersao` em `worker/lib/api/checkout.js`), e `linkDoTopo` (`worker/render/paginas.js`) passa os dois adiante. Falta o deploy.
+- [x] **As vendas por post contam pessoas** (12/11/2026, `atribuirVendas` e `somarVendas` em `worker/lib/acoes.js`): quem comprou duas vezes pelo mesmo post conta uma, como em Vendas > Canais; o dinheiro soma os dois pedidos. Falta o deploy.
 - [ ] **Espelhar os buckets `curso` e `recursos`** (uns 90 MB): a cópia do banco leva só a lista dos arquivos. Hoje a segunda cópia deles são as pastas deste computador.
 
 ## O que está bem feito (não mexer)

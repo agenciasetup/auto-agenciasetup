@@ -13,8 +13,8 @@ import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { ArrowDown, ArrowLeft, ArrowUp, Maximize2, Pause, Pencil, Play, UserMinus, UserPlus, X } from 'lucide-react';
 import { get, post } from '../nucleo/api';
-import { Etiqueta, avisar } from '../nucleo/ui';
-import { dataHora, haQuanto, numero } from '../nucleo/util';
+import { Etiqueta, avisar, useSessao } from '../nucleo/ui';
+import { dataHora, dinheiro, haQuanto, numero } from '../nucleo/util';
 import folhaDoCalango from '../img/escritorio-calango.webp';
 
 // Onde cada um fica, em [x, y] por cento da imagem. SENTAR: quem trabalha sentado; em Vendas e Conteúdo os primeiros
@@ -285,13 +285,78 @@ export function SalaIso({ s, imagem, bonecos, abrir, expandir, grande = false }:
   );
 }
 
-// Ao lado da sala aberta: quanto o setor gastou, por modelo, e a equipe (o toque abre o perfil).
+// Quem vendeu mais (pedido do dono em 12/11/2026), na sala de Vendas: a planta, a lista e o app do celular usam este
+// mesmo bloco. Cada venda paga vai para o Calango do último link que a pessoa tocou antes de pagar (vendasDosCalangos
+// em worker/lib/escritorio.js). Traz dinheiro: só aparece para quem vê vendas.
+const PERIODOS = [7, 30, 90];
+export function QuemVendeuMais({ bonecos, agentes, abrir }: { bonecos: Record<string, string>; agentes?: any[]; abrir?: (a: any) => void }) {
+  const { pode } = useSessao();
+  const podeVer = pode('vendas.ver');
+  const [dias, setDias] = useState(30);
+  const [d, setD] = useState<any>(null);
+  const [erro, setErro] = useState('');
+  useEffect(() => {
+    if (!podeVer) return;
+    let vale = true;
+    setErro('');
+    get(`/escritorio/vendas?dias=${dias}`).then((r) => { if (vale) setD(r); }).catch((e) => { if (vale) setErro(e.message || 'Não consegui somar as vendas. Tente de novo.'); });
+    return () => { vale = false; };
+  }, [dias, podeVer]);
+  if (!podeVer) return null;
+  const lista: any[] | null = d && d.dias === dias ? d.ranking : null;
+  const primeiro = lista && lista[0] && lista[0].vendas > 0 ? lista[0] : null;
+  const todas = d ? d.calangos.vendas + d.fora.vendas : 0;
+  return (
+    <div className="pl-vendeu">
+      <div className="pl-periodos" role="group" aria-label="Período das vendas">
+        {PERIODOS.map((n) => <button key={n} type="button" className={`bt bt-mini ${n === dias ? 'bt-tingido' : 'bt-texto'}`} aria-pressed={n === dias} onClick={() => setDias(n)}>{n} dias</button>)}
+      </div>
+      {erro && <p className="mudo">{erro}</p>}
+      {!erro && !lista && <p className="mudo">Somando as vendas...</p>}
+      {lista && (
+        <>
+          <p className="pl-vendeu-frase">{primeiro
+            ? <><b>{primeiro.apelido || primeiro.nome}</b> vendeu mais nos últimos {dias} dias: {primeiro.vendas} {primeiro.vendas === 1 ? 'venda' : 'vendas'}, {dinheiro(primeiro.centavos)}.</>
+            : `Nenhum Calango vendeu pelo link dele nos últimos ${dias} dias.`}</p>
+          <ol className="pl-equipe pl-placar">
+            {lista.map((r, i) => {
+              const a = (agentes || []).find((x: any) => x.id === r.agente);
+              const corpo = (
+                <>
+                  <span className="pl-posicao" aria-label={`${i + 1}º lugar`}>{i + 1}</span>
+                  <span className="pl-membro-foto" style={bonecos[r.agente] ? { backgroundImage: `url(${bonecos[r.agente]})` } : undefined} aria-hidden="true" />
+                  <span className="pl-membro-nome"><b>{r.apelido || r.nome}</b><small>{r.como}</small></span>
+                  <span className="pl-placar-num"><b>{r.vendas} {r.vendas === 1 ? 'venda' : 'vendas'}</b><small>{dinheiro(r.centavos)}</small></span>
+                </>
+              );
+              return (
+                <li key={r.agente} className={primeiro && r.agente === primeiro.agente ? 'pl-placar-1' : r.vendas === 0 ? 'pl-placar-0' : undefined}>
+                  {a && abrir
+                    ? <button type="button" className="pl-membro" onClick={() => abrir(a)} aria-label={`${r.apelido || r.nome}: ${r.vendas} vendas. Abrir o perfil`}>{corpo}</button>
+                    : <div className="pl-membro">{corpo}</div>}
+                </li>
+              );
+            })}
+          </ol>
+          <p className="mudo pl-nota">
+            Os Calangos trouxeram {d.calangos.vendas} de {todas} {todas === 1 ? 'venda' : 'vendas'} ({dinheiro(d.calangos.centavos)}). As outras {d.fora.vendas} ({dinheiro(d.fora.centavos)}) vieram do seu conteúdo: bio, story, busca e o resto.
+            {' '}Conta pelo último link que a pessoa tocou antes de pagar. Quem comprou depois de uma conversa, mas por outro caminho, aparece no placar do vendedor, no perfil dele.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Ao lado da sala aberta: quanto o setor gastou, por modelo, e a equipe (o toque abre o perfil). Na sala de Vendas,
+// antes de tudo, quem vendeu mais.
 function LadoDoSetor({ s, bonecos, abrir }: { s: any; bonecos: Record<string, string>; abrir: (a: any) => void }) {
   const c = s.consumo;
   const noPlano = s.agentes.filter((a: any) => a.estado === 'ativo' && a.onde === 'computador').length;
   return (
     <aside className={`pl-lado esc-${s.id}`}>
       <h2 className="pl-lado-titulo"><span className="pl-ponto" />{s.nome}</h2>
+      {s.id === 'vendas' && <><h3>Quem vendeu mais</h3><QuemVendeuMais bonecos={bonecos} agentes={s.agentes} abrir={abrir} /></>}
 
       <h3>Consumo de IA</h3>
       <div className="pl-custos">

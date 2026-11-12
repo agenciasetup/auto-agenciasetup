@@ -770,7 +770,7 @@ async function atribuirVendas(env, posts) {
   const desde = posts.reduce((m, p) => (p.publicado_em && p.publicado_em < m ? p.publicado_em : m), new Date().toISOString());
   // A moeda das vendas é a do perfil dos posts (Brasil em real, inglês em dólar): nunca soma uma com a outra.
   const moedas = [...new Set(posts.map((p) => (p.perfil === 'en' ? 'usd' : 'brl')))];
-  const pedidos = await db.select(env, 'pedidos', { filtros: { status: 'eq.pago', teste: 'is.false', pago_em: `gte.${desde}`, moeda: `in.(${moedas.join(',') || 'brl'})` }, select: 'total_centavos,pago_em,ultimo_toque', limite: 2000 });
+  const pedidos = await db.select(env, 'pedidos', { filtros: { status: 'eq.pago', teste: 'is.false', pago_em: `gte.${desde}`, moeda: `in.(${moedas.join(',') || 'brl'})` }, select: 'id,aluno_id,total_centavos,pago_em,ultimo_toque', limite: 2000 });
   // Todos os posts com palavra (não só os desta página), para dar a venda ao post mais recente antes da compra.
   // Só os posts dos perfis desta lista disputam a venda (lib/perfis.js): a palavra igual no outro perfil não leva.
   const perfis = [...new Set(posts.map((p) => p.perfil || 'br'))];
@@ -785,13 +785,16 @@ async function atribuirVendas(env, posts) {
       dono = cands[0] ? posts.find((x) => x.id === cands[0].id) || null : null;
     }
     if (!dono) continue;
-    (por[dono.id] = por[dono.id] || []).push({ pago_em: p.pago_em, total_centavos: p.total_centavos });
+    (por[dono.id] = por[dono.id] || []).push({ pago_em: p.pago_em, total_centavos: p.total_centavos, comprador: p.aluno_id || p.id });
   }
   return por;
 }
+// Vendas de um post são pessoas que compraram (quem comprou duas vezes pelo mesmo post conta uma, como em Vendas >
+// Canais); o dinheiro soma todos os pedidos.
+const pessoasQueCompraram = (l) => new Set(l.map((v) => v.comprador)).size;
 export async function somarVendas(env, posts) {
   const por = await atribuirVendas(env, posts);
-  for (const p of posts) { const l = por[p.id] || []; p.vendas = l.length; p.vendas_centavos = l.reduce((s, v) => s + v.total_centavos, 0); }
+  for (const p of posts) { const l = por[p.id] || []; p.vendas = pessoasQueCompraram(l); p.vendas_centavos = l.reduce((s, v) => s + v.total_centavos, 0); }
 }
 
 // ---------------------------------------------------------------- resultados por post
@@ -877,7 +880,7 @@ export async function verPost(x, id) {
   let vendas = null;
   if (veVendasDe(x.u)) {
     const l = (await atribuirVendas(x.env, [p]).catch(() => ({})))[p.id] || [];
-    vendas = { quantidade: l.length, centavos: l.reduce((s, v) => s + v.total_centavos, 0), pedidos: l.slice(0, 50) };
+    vendas = { quantidade: pessoasQueCompraram(l), centavos: l.reduce((s, v) => s + v.total_centavos, 0), pedidos: l.slice(0, 50).map(({ comprador, ...v }) => v) };
   }
   return {
     post: p, peca, medianas: med, ...classe(p, med),

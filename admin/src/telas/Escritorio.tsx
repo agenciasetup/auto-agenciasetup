@@ -8,7 +8,7 @@ import { Check, Clock, ExternalLink, Inbox, LayoutGrid, List, X } from 'lucide-r
 import { get, post } from '../nucleo/api';
 import { Carregando, ErroCarga, Etiqueta, Grupo, Titulo, Vazio, avisar, useCarregar, useSessao } from '../nucleo/ui';
 import { data, haQuanto, numero } from '../nucleo/util';
-import { Perfil, Planta, chamado, dolar } from './EscritorioPlanta';
+import { Perfil, Planta, QuemVendeuMais, chamado, dolar } from './EscritorioPlanta';
 
 const COR_SALA: Record<string, string> = { direcao: 'ambar', vendas: 'verde', conteudo: 'azul', video: 'vermelho', design: 'laranja', sistema: 'cinza', produto: 'azul', receita: 'ambar' };
 const COR_CARREIRA: Record<string, string> = { admitido: 'verde', promovido: 'azul', voltou: 'verde', pausado: 'ambar', rebaixado: 'laranja', demitido: 'vermelho', nota: 'cinza' };
@@ -224,6 +224,12 @@ function Lista({ salas, bonecos, abrir }: { salas: any[]; bonecos: Record<string
                   );
                 })}
               </ul>
+            )}
+            {s.id === 'vendas' && (
+              <div className="esc-bloco-extra">
+                <h3>Quem vendeu mais</h3>
+                <QuemVendeuMais bonecos={bonecos} agentes={s.agentes} abrir={abrir} />
+              </div>
             )}
           </section>
         );

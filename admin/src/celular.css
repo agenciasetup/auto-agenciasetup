@@ -296,6 +296,9 @@ button.cel-hud-pilula { cursor: pointer; }
 .cel-sala-texto small { font-size: 12px; color: rgba(255, 255, 255, 0.8); }
 .cel-sala:active { transform: scale(0.98); }
 .cel-agente { display: flex; gap: 12px; padding: 14px 0; border-top: 1px solid var(--borda); }
+/* Quem vendeu mais, no topo da sala de Vendas (o mesmo bloco da tela grande, QuemVendeuMais). */
+.cel-vendeu { padding-bottom: 14px; }
+.cel-vendeu h3 { margin: 4px 0 10px; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fraco); }
 .cel-agente:first-child { border-top: 0; padding-top: 2px; }
 .cel-agente > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .cel-agente strong { font-size: 15px; font-weight: 650; }

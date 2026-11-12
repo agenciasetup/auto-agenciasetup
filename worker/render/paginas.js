@@ -357,6 +357,10 @@ function linkDoTopo(link, endereco) {
     const u = new URL(destino);
     for (const [k, v] of [['utm_source', m.origem], ['utm_medium', m.meio], ['utm_campaign', m.campanha], ['utm_term', m.termo]]) if (v) u.searchParams.set(k, v);
     u.searchParams.set('utm_content', MARCA_TOPO);
+    // A pessoa do Instagram ("p", que o link curto do Comenta X põe na página) e a versão da mensagem ("l", quando veio
+    // no endereço) seguem para a venda: sem elas, a compra pela faixa perdia quem era e qual versão vendeu.
+    if (m.pessoa) u.searchParams.set('p', m.pessoa);
+    if (m.link) u.searchParams.set('l', m.link);
     return u.toString();
   } catch {
     return destino;

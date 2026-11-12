@@ -6,13 +6,21 @@ import { Erro } from '../nucleo/util.js';
 import { salvarConfigAtendente } from './atendente.js';
 import { avisarEquipe } from './push.js';
 import { VENDEDORES } from './followup.js';
-import { CONTROLA, baterPonto, sinalDeVida, criarProposta, decidirProposta, lerAgente, registrarTurno, resultadoProposta, salvarAgente, salvarTeto, verEscritorio, verFilaDoExecutor } from './escritorio.js';
+import { CONTROLA, baterPonto, sinalDeVida, criarProposta, decidirProposta, lerAgente, registrarTurno, resultadoProposta, salvarAgente, salvarTeto, vendasDosCalangos, verEscritorio, verFilaDoExecutor } from './escritorio.js';
 
 const quemE = (u) => ({ quem: u.casa ? null : u.id, quemNome: u.casa ? 'Claude' : String(u.nome || '').trim().split(/\s+/)[0] });
 
 export async function verOEscritorio(x) {
   exigir(x.u, 'escritorio.ver');
   return verEscritorio(x.env);
+}
+
+// Quem vendeu mais na sala de Vendas, em 7, 30 ou 90 dias (vendasDosCalangos em escritorio.js). Traz dinheiro: só para
+// quem vê vendas, além do Escritório (o Suporte nunca vê valores).
+export async function verVendasDosCalangos(x, dias) {
+  exigir(x.u, 'escritorio.ver');
+  exigir(x.u, 'vendas.ver');
+  return vendasDosCalangos(x.env, dias);
 }
 
 // A fila do Executor (docs/tarefa-aprovadas.md): se ele pode trabalhar, o próximo cartão aprovado que dá para fazer
