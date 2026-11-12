@@ -369,8 +369,9 @@ Pedido do dono em 11/11/2026: "Faça as alterações no site pra mim." R$ 997,00
 - [x] Botão e linha da barra fixa e dica da galeria por campo da landing (`heroi.barra_cta`, `heroi.barra_linha`, `estilos.dica`), já preenchidos na página da Família Calango.
 - [x] Oferta `familia-calango` criada DESLIGADA (R$ 997,00, garantia 0, com o aceite).
 - [x] Migration 48 (`aceites`) escrita e o aceite na tela do pedido em Vendas (aparece quando a tabela existir).
-- [ ] Ok do dono para aplicar a migration 48; depois, uma compra de teste no computador (pagamento simulado) para ver o aceite gravado e no painel, e apagar o teste.
-- [ ] Ok do dono para o deploy (as mudanças do site só valem em produção depois dele).
-- [ ] Decidir com o dono a entrega do arquivo e construir (lista de entregas, cópia no Mac, bucket privado, tela de download com aviso e caixa de aceite, link que vence).
+- [x] Migration 48 aplicada (11/11/2026, ok do dono: "Pode criar"). Compra de teste no computador (pagamento simulado, pedido 234): o aceite ficou gravado com data, hora, IP, navegador, versão, nome, CPF, e-mail e hash, apareceu no painel, o banco recusou a tentativa de mudar o aceite e o teste foi apagado.
+- [ ] Deploy: o dono mandou esperar (11/11/2026). Publicar depois que a conversa das fontes do site terminar (a pasta tem o `site.css` dela sem commit, que iria junto) ou junto com a entrega pronta.
+- [x] Entrega decidida (11/11/2026, o dono escolheu "E-mail com link"): a venda paga entra numa lista; no Mac, o Claude gera a cópia identificada (`montar.py`) e sobe no bucket privado `curso`; o comprador recebe um e-mail com o link da nossa tela de download (aviso em destaque e caixa de aceite, gravada com o momento "download"); o arquivo abre por um link que vence em minutos. A marca de pronto e enviado fica em `config`, como a do Combo, sem tabela nova.
+- [ ] Construir a entrega (site: lista, e-mail, tela de download; Mac: o script que roda o `montar.py`, sobe o zip e marca pronto, e a tarefa agendada).
 - [ ] Ligar a oferta (só com a entrega pronta e o ok do dono). Ligada, os botões da página levam ao checkout.
 - [ ] Depois, se o dono quiser: compra com CNPJ no checkout (hoje só CPF).
